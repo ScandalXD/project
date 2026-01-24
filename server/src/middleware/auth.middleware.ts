@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export const authMiddleware = (
   req: Request,
@@ -12,7 +15,8 @@ export const authMiddleware = (
   const token = authHeader.split(" ")[1];
 
   try {
-    jwt.verify(token, process.env.JWT_SECRET as string);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    (req as any).user = decoded;
     next();
   } catch {
     res.sendStatus(403);
