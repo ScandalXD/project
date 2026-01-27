@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { db } from "../config/db";
+import jwt from "jsonwebtoken";
 
 export const registerUser = async (
   email: string,
@@ -23,4 +24,15 @@ export const loginUser = async (email: string) => {
   );
 
   return rows[0];
+};
+
+export const generateToken = (user: { id: number; email: string }) => {
+  return jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+    },
+    process.env.JWT_SECRET!,
+    { expiresIn: "7d" }
+  );
 };
