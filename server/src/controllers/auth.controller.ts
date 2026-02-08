@@ -1,30 +1,62 @@
 import { Request, Response } from "express";
-import bcrypt from "bcrypt";
-import { generateToken } from "../services/token.service";
 import { registerUser, loginUser } from "../services/auth.service";
+import { generateToken } from "../services/token.service";
 
-export const register = async (req: Request, res: Response) => {
+interface RegisterBody {
+  email: string;
+  password: string;
+  name: string;
+}
+
+interface LoginBody {
+  email: string;
+  password: string;
+}
+
+export const register = async (
+  req: Request<{}, {}, RegisterBody>,
+  res: Response
+) => {
   const { email, password, name } = req.body;
 
-  await registerUser(email, password, name);
+  if (!email || !password || !name) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
 
-  res.status(201).json({ message: "User registered" });
+  try {
+    const user = await registerUser(email, password, name);
+
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+    });
+
+    res.status(201).json({ token });
+  } catch {
+    res.status(400).json({ message: "Registration failed" });
+  }
 };
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (
+  req: Request<{}, {}, LoginBody>,
+  res: Response
+) => {
   const { email, password } = req.body;
 
-  const user = await loginUser(email);
-  if (!user) {
-    return res.status(401).json({ message: "Invalid credentials" });
+  if (!email || !password) {
+    return res.status(400).json({ message: "Missing credentials" });
   }
 
-  const isValid = await bcrypt.compare(password, user.password_hash);
-  if (!isValid) {
-    return res.status(401).json({ message: "Invalid credentials" });
+  try {
+    const user = await loginUser(email, password);
+
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+    });
+
+    res.json({ token });
+  } catch {
+    res.status(401).json({ message: "Invalid credentials" });
   }
-
-  const token = generateToken({ id: user.id, email: user.email });
-
-  res.json({ token });
 };

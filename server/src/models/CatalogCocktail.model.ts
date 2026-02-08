@@ -1,12 +1,11 @@
 import { CocktailCategory } from "./UserCocktail.model";
 
-export interface PublicCocktail {
-  id: number;
-  author_id: number;
+export interface CatalogCocktail {
+  id: string;
   name: string;
   category: CocktailCategory;
   ingredients: string;
   instructions: string;
-  image: string | null;
+  image: string;
   created_at: string;
 }

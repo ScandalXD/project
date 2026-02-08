@@ -1,8 +1,8 @@
-import { CocktailCategory } from "./UserCocktail.model";
+export type CocktailCategory = "Alkoholowy" | "Bezalkoholowy";
 
-export interface PublicCocktail {
+export interface UserCocktail {
   id: number;
-  author_id: number;
+  owner_id: number;
   name: string;
   category: CocktailCategory;
   ingredients: string;

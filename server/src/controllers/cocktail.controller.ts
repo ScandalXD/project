@@ -1,64 +1,120 @@
 import { Request, Response } from "express";
-import { getCatalogCocktails, addCocktail, getPublicCocktails, deleteCocktail, getUserCocktails } from "../services/cocktail.service";
+import {
+  getCatalogCocktails,
+  getPublicCocktails,
+  getUserCocktails,
+  addCocktail,
+  updateCocktail,
+  publishUserCocktail,
+  deleteCocktail,
+  deletePublicCocktail,
+} from "../services/cocktail.service";
 
+const handleError = (res: Response, err: unknown) => {
+  if (err instanceof Error) {
+    return res.status(400).json({ message: err.message });
+  }
 
-export const getCatalog = async (_req: Request, res: Response) => {
-  try {
-    const cocktails = await getCatalogCocktails();
-    res.json(cocktails);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to fetch catalog" });
-  }
-};
-export const getPublic = async (_req: Request, res: Response) => {
-  try {
-    const cocktails = await getPublicCocktails();
-    res.json(cocktails);
-  } catch (e) {
-    res.status(500).json({ message: "Failed to fetch public cocktails" });
-  }
+  return res.status(500).json({ message: "Internal server error" });
 };
 
-export const createCocktail = async (req: Request, res: Response) => {
-  try {
-    const { name, category, image, ingredients, instructions } = req.body;
-    const userId = (req as any).user.id;
-    await addCocktail(
-      name,
-      category,
-      image,
-      ingredients,
-      instructions,
-      userId
-    );
+interface CreateCocktailBody {
+  name: string;
+  category: "Alkoholowy" | "Bezalkoholowy";
+  ingredients: string;
+  instructions: string;
+  image: string | null;
+}
 
-    res.status(201).json({ message: "Cocktail added" });
-  } catch (e) {
-    res.status(500).json({ message: "Failed to add cocktail" });
-  }
+export const getCatalog = async (_: Request, res: Response) => {
+  res.json(await getCatalogCocktails());
 };
 
+export const getPublic = async (_: Request, res: Response) => {
+  res.json(await getPublicCocktails());
+};
 
 export const getMyCocktails = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user.id;
+  res.json(await getUserCocktails(req.user.id));
+};
 
-    const cocktails = await getUserCocktails(userId);
-    res.json(cocktails);
+export const createCocktail = async (
+  req: Request<{}, {}, CreateCocktailBody>,
+  res: Response
+) => {
+  try {
+    await addCocktail({
+      ...req.body,
+      owner_id: req.user.id,
+    });
+
+    res.status(201).json({ message: "Created" });
   } catch (e) {
-    res.status(500).json({ message: "Failed to load user cocktails" });
+    handleError(res, e);
   }
 };
 
-
-export const removeCocktail = async (req: Request, res: Response) => {
+export const editCocktail = async (
+  req: Request<{ id: string }, {}, CreateCocktailBody>,
+  res: Response
+) => {
   try {
-    const cocktailId = Number(req.params.id);
-    const userId = (req as any).user.id;
-    await deleteCocktail(cocktailId, userId);
-    res.json({ message: "Cocktail deleted" });
+    await updateCocktail(
+      Number(req.params.id),
+      req.user.id,
+      req.body
+    );
+
+    res.json({ message: "Updated" });
   } catch (e) {
-    res.status(500).json({ message: "Failed to delete cocktail" });
+    handleError(res, e);
+  }
+};
+
+export const publishUserCocktailHandler = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
+  try {
+    await publishUserCocktail(
+      Number(req.params.id),
+      req.user.id
+    );
+
+    res.json({ message: "Published" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const removeCocktail = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
+  try {
+    await deleteCocktail(
+      Number(req.params.id),
+      req.user.id
+    );
+
+    res.json({ message: "Deleted" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const removePublicCocktail = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
+  try {
+    await deletePublicCocktail(
+      Number(req.params.id),
+      req.user.id
+    );
+
+    res.json({ message: "Public cocktail deleted" });
+  } catch (e) {
+    handleError(res, e);
   }
 };
