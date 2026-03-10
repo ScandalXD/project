@@ -35,17 +35,28 @@ export const getPublic = async (_: Request, res: Response) => {
 };
 
 export const getMyCocktails = async (req: Request, res: Response) => {
-  res.json(await getUserCocktails(req.user.id));
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = req.user;
+  res.json(await getUserCocktails(user.id));
 };
 
 export const createCocktail = async (
   req: Request<{}, {}, CreateCocktailBody>,
   res: Response
 ) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = req.user;
+
   try {
     await addCocktail({
       ...req.body,
-      owner_id: req.user.id,
+      owner_id: user.id,
     });
 
     res.status(201).json({ message: "Created" });
@@ -58,12 +69,14 @@ export const editCocktail = async (
   req: Request<{ id: string }, {}, CreateCocktailBody>,
   res: Response
 ) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = req.user;
+
   try {
-    await updateCocktail(
-      Number(req.params.id),
-      req.user.id,
-      req.body
-    );
+    await updateCocktail(Number(req.params.id), user.id, req.body);
 
     res.json({ message: "Updated" });
   } catch (e) {
@@ -75,11 +88,14 @@ export const publishUserCocktailHandler = async (
   req: Request<{ id: string }>,
   res: Response
 ) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = req.user;
+
   try {
-    await publishUserCocktail(
-      Number(req.params.id),
-      req.user.id
-    );
+    await publishUserCocktail(Number(req.params.id), user.id);
 
     res.json({ message: "Published" });
   } catch (e) {
@@ -91,11 +107,14 @@ export const removeCocktail = async (
   req: Request<{ id: string }>,
   res: Response
 ) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = req.user;
+
   try {
-    await deleteCocktail(
-      Number(req.params.id),
-      req.user.id
-    );
+    await deleteCocktail(Number(req.params.id), user.id);
 
     res.json({ message: "Deleted" });
   } catch (e) {
@@ -107,11 +126,14 @@ export const removePublicCocktail = async (
   req: Request<{ id: string }>,
   res: Response
 ) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = req.user;
+
   try {
-    await deletePublicCocktail(
-      Number(req.params.id),
-      req.user.id
-    );
+    await deletePublicCocktail(Number(req.params.id), user.id);
 
     res.json({ message: "Public cocktail deleted" });
   } catch (e) {

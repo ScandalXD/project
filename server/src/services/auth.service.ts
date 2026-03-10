@@ -6,20 +6,32 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 export const registerUser = async (
   email: string,
   password: string,
-  name: string
+  name: string,
+  nickname: string
 ): Promise<User> => {
+  const [existingUsers] = await db.query<RowDataPacket[]>(
+    "SELECT id FROM users WHERE email = ? OR nickname = ?",
+    [email, nickname]
+  );
+
+  if (existingUsers.length > 0) {
+    throw new Error("EMAIL_OR_NICKNAME_ALREADY_EXISTS");
+  }
+
   const hash = await bcrypt.hash(password, 10);
 
   const [result] = await db.query<ResultSetHeader>(
-    "INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)",
-    [email, hash, name]
+    "INSERT INTO users (email, password_hash, name, nickname, role) VALUES (?, ?, ?, ?, ?)",
+    [email, hash, name, nickname, "user"]
   );
 
   return {
     id: result.insertId,
     email,
     name,
+    nickname,
     password_hash: hash,
+    role: "user",
     created_at: new Date().toISOString(),
   };
 };

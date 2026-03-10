@@ -22,8 +22,23 @@ export const getCatalogCocktails = async (): Promise<CatalogCocktail[]> => {
 
 export const getPublicCocktails = async (): Promise<PublicCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT * FROM public_cocktails"
+    `
+    SELECT
+      p.id,
+      p.author_id,
+      u.nickname AS author_nickname,
+      p.name,
+      p.category,
+      p.ingredients,
+      p.instructions,
+      p.image,
+      p.created_at
+    FROM public_cocktails p
+    INNER JOIN users u ON p.author_id = u.id
+    ORDER BY p.created_at DESC
+    `
   );
+
   return rows as PublicCocktail[];
 };
 

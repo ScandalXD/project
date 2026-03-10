@@ -6,6 +6,7 @@ interface RegisterBody {
   email: string;
   password: string;
   name: string;
+  nickname: string;
 }
 
 interface LoginBody {
@@ -17,22 +18,36 @@ export const register = async (
   req: Request<{}, {}, RegisterBody>,
   res: Response
 ) => {
-  const { email, password, name } = req.body;
+  const { email, password, name, nickname } = req.body;
 
-  if (!email || !password || !name) {
+  if (!email || !password || !name || !nickname) {
     return res.status(400).json({ message: "Missing fields" });
   }
 
   try {
-    const user = await registerUser(email, password, name);
+    const user = await registerUser(email, password, name, nickname);
 
     const token = generateToken({
       id: user.id,
       email: user.email,
+      role: user.role,
     });
 
-    res.status(201).json({ token });
-  } catch {
+    res.status(201).json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        nickname: user.nickname,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "EMAIL_OR_NICKNAME_ALREADY_EXISTS") {
+      return res.status(400).json({ message: "Email or nickname already exists" });
+    }
+
     res.status(400).json({ message: "Registration failed" });
   }
 };
@@ -53,9 +68,19 @@ export const login = async (
     const token = generateToken({
       id: user.id,
       email: user.email,
+      role: user.role,
     });
 
-    res.json({ token });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        nickname: user.nickname,
+        role: user.role,
+      },
+    });
   } catch {
     res.status(401).json({ message: "Invalid credentials" });
   }

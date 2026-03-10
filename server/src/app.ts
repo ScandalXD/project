@@ -14,9 +14,8 @@ app.use(cors({
 }));
 
 app.use("/api/auth", authRoutes);
-
-app.use("/api", cocktailRoutes);
 app.use("/api", profileRoutes);
+app.use("/api", cocktailRoutes);
 app.use("/api", favoriteRoutes);
 
 export default app;
