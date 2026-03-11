@@ -3,13 +3,13 @@ CREATE DATABASE IF NOT EXISTS cocktailapp
   COLLATE utf8mb4_unicode_ci;
 
 USE cocktailapp;
-
+/*
 DROP TABLE IF EXISTS favorites;
 DROP TABLE IF EXISTS public_cocktails;
 DROP TABLE IF EXISTS user_cocktails;
 DROP TABLE IF EXISTS catalog_cocktails;
 DROP TABLE IF EXISTS users;
-
+*/
 CREATE TABLE users (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(255) NOT NULL UNIQUE,

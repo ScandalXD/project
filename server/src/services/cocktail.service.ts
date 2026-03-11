@@ -1,42 +1,46 @@
 import { db } from "../config/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { UserCocktail } from "../models/UserCocktail.model";
 import { CatalogCocktail } from "../models/CatalogCocktail.model";
 import { PublicCocktail } from "../models/PublicCocktail.model";
-import { UserCocktail } from "../models/UserCocktail.model";
 
-class ServiceError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
+export class ServiceError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
     super(message);
+    this.status = status;
   }
+}
+
+interface CreateCocktailData {
+  owner_id: number;
+  name: string;
+  category: "Alkoholowy" | "Bezalkoholowy";
+  ingredients: string;
+  instructions: string;
+  image: string | null;
+}
+
+interface UpdateCocktailData {
+  name: string;
+  category: "Alkoholowy" | "Bezalkoholowy";
+  ingredients: string;
+  instructions: string;
+  image: string | null;
 }
 
 export const getCatalogCocktails = async (): Promise<CatalogCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT * FROM catalog_cocktails"
+    "SELECT * FROM catalog_cocktails ORDER BY created_at DESC"
   );
+
   return rows as CatalogCocktail[];
 };
 
 export const getPublicCocktails = async (): Promise<PublicCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    `
-    SELECT
-      p.id,
-      p.author_id,
-      u.nickname AS author_nickname,
-      p.name,
-      p.category,
-      p.ingredients,
-      p.instructions,
-      p.image,
-      p.created_at
-    FROM public_cocktails p
-    INNER JOIN users u ON p.author_id = u.id
-    ORDER BY p.created_at DESC
-    `
+    "SELECT * FROM public_cocktails ORDER BY created_at DESC"
   );
 
   return rows as PublicCocktail[];
@@ -46,104 +50,65 @@ export const getUserCocktails = async (
   userId: number
 ): Promise<UserCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT * FROM user_cocktails WHERE owner_id = ?",
+    "SELECT * FROM user_cocktails WHERE owner_id = ? ORDER BY created_at DESC",
     [userId]
   );
+
   return rows as UserCocktail[];
 };
 
-export const addCocktail = async (
-  data: Omit<UserCocktail, "id" | "created_at">
-): Promise<void> => {
-  await db.query<ResultSetHeader>(
-    `
-    INSERT INTO user_cocktails
-    (name, category, ingredients, instructions, image, owner_id)
-    VALUES (?, ?, ?, ?, ?, ?)
-    `,
-    [
-      data.name,
-      data.category,
-      data.ingredients,
-      data.instructions,
-      data.image,
-      data.owner_id,
-    ]
+export const addCocktail = async (data: CreateCocktailData): Promise<number> => {
+  const { owner_id, name, category, ingredients, instructions, image } = data;
+
+  if (!name || !category || !ingredients || !instructions) {
+    throw new ServiceError("Missing required fields", 400);
+  }
+
+  const [result] = await db.query<ResultSetHeader>(
+    `INSERT INTO user_cocktails 
+      (owner_id, name, category, ingredients, instructions, image)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [owner_id, name, category, ingredients, instructions, image]
   );
+
+  return result.insertId;
 };
 
 export const updateCocktail = async (
   cocktailId: number,
   userId: number,
-  data: Pick<
-    UserCocktail,
-    "name" | "category" | "ingredients" | "instructions" | "image"
-  >
+  data: UpdateCocktailData
 ): Promise<void> => {
-  const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT id FROM user_cocktails WHERE id = ? AND owner_id = ?",
-    [cocktailId, userId]
-  );
-
-  if (rows.length === 0) {
-    throw new ServiceError(403, "You cannot edit this cocktail");
+  if (!Number.isInteger(cocktailId)) {
+    throw new ServiceError("Invalid cocktail id", 400);
   }
 
-  await db.query(
-    `
-    UPDATE user_cocktails
-    SET name=?, category=?, ingredients=?, instructions=?, image=?
-    WHERE id=?
-    `,
-    [
-      data.name,
-      data.category,
-      data.ingredients,
-      data.instructions,
-      data.image,
-      cocktailId,
-    ]
-  );
-};
-
-export const publishUserCocktail = async (
-  cocktailId: number,
-  userId: number
-): Promise<void> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT * FROM user_cocktails WHERE id = ? AND owner_id = ?",
-    [cocktailId, userId]
+    "SELECT * FROM user_cocktails WHERE id = ?",
+    [cocktailId]
   );
 
   if (rows.length === 0) {
-    throw new ServiceError(403, "You cannot publish this cocktail");
+    throw new ServiceError("Cocktail not found", 404);
   }
 
   const cocktail = rows[0] as UserCocktail;
 
-  const [exists] = await db.query<RowDataPacket[]>(
-    "SELECT id FROM public_cocktails WHERE author_id = ? AND name = ?",
-    [userId, cocktail.name]
-  );
-
-  if (exists.length > 0) {
-    throw new ServiceError(409, "Cocktail already published");
+  if (cocktail.owner_id !== userId) {
+    throw new ServiceError("Forbidden", 403);
   }
 
-  await db.query<ResultSetHeader>(
-    `
-    INSERT INTO public_cocktails
-    (name, category, ingredients, instructions, image, author_id)
-    VALUES (?, ?, ?, ?, ?, ?)
-    `,
-    [
-      cocktail.name,
-      cocktail.category,
-      cocktail.ingredients,
-      cocktail.instructions,
-      cocktail.image,
-      userId,
-    ]
+  const { name, category, ingredients, instructions, image } = data;
+
+  if (!name || !category || !ingredients || !instructions) {
+    throw new ServiceError("Missing required fields", 400);
+  }
+
+  await db.query(
+    `UPDATE user_cocktails
+     SET name = ?, category = ?, ingredients = ?, instructions = ?, image = ?
+     WHERE id = ?`,
+    [name, category, ingredients, instructions, image, cocktailId]
   );
 };
 
@@ -151,31 +116,100 @@ export const deleteCocktail = async (
   cocktailId: number,
   userId: number
 ): Promise<void> => {
-  const [result] = await db.query<ResultSetHeader>(
-    "DELETE FROM user_cocktails WHERE id = ? AND owner_id = ?",
-    [cocktailId, userId]
+  if (!Number.isInteger(cocktailId)) {
+    throw new ServiceError("Invalid cocktail id", 400);
+  }
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT * FROM user_cocktails WHERE id = ?",
+    [cocktailId]
   );
 
-  if (result.affectedRows === 0) {
-    throw new ServiceError(403, "You cannot delete this cocktail");
+  if (rows.length === 0) {
+    throw new ServiceError("Cocktail not found", 404);
   }
+
+  const cocktail = rows[0] as UserCocktail;
+
+  if (cocktail.owner_id !== userId) {
+    throw new ServiceError("Forbidden", 403);
+  }
+
+  await db.query("DELETE FROM user_cocktails WHERE id = ?", [cocktailId]);
 };
 
-export const deletePublicCocktail = async (
+export const publishUserCocktail = async (
   cocktailId: number,
   userId: number
 ): Promise<void> => {
-  const [result] = await db.query<ResultSetHeader>(
-    `
-    DELETE FROM public_cocktails
-    WHERE id = ? AND author_id = ?
-    `,
-    [cocktailId, userId]
+  if (!Number.isInteger(cocktailId)) {
+    throw new ServiceError("Invalid cocktail id", 400);
+  }
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT * FROM user_cocktails WHERE id = ?",
+    [cocktailId]
   );
 
-  if (result.affectedRows === 0) {
-    throw new ServiceError(403, "You cannot delete this public cocktail");
+  if (rows.length === 0) {
+    throw new ServiceError("Cocktail not found", 404);
   }
+
+  const cocktail = rows[0] as UserCocktail;
+
+  if (cocktail.owner_id !== userId) {
+    throw new ServiceError("Forbidden", 403);
+  }
+
+  const [existing] = await db.query<RowDataPacket[]>(
+    `SELECT id FROM public_cocktails
+     WHERE author_id = ? AND name = ? AND ingredients = ? AND instructions = ?`,
+    [userId, cocktail.name, cocktail.ingredients, cocktail.instructions]
+  );
+
+  if (existing.length > 0) {
+    throw new ServiceError("Cocktail is already published", 400);
+  }
+
+  await db.query(
+    `INSERT INTO public_cocktails
+      (author_id, name, category, ingredients, instructions, image)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      userId,
+      cocktail.name,
+      cocktail.category,
+      cocktail.ingredients,
+      cocktail.instructions,
+      cocktail.image,
+    ]
+  );
 };
 
-export { ServiceError };
+export const deletePublicCocktail = async (
+  publicCocktailId: number,
+  userId: number
+): Promise<void> => {
+  if (!Number.isInteger(publicCocktailId)) {
+    throw new ServiceError("Invalid cocktail id", 400);
+  }
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT * FROM public_cocktails WHERE id = ?",
+    [publicCocktailId]
+  );
+
+  if (rows.length === 0) {
+    throw new ServiceError("Public cocktail not found", 404);
+  }
+
+  const cocktail = rows[0] as PublicCocktail;
+
+  if (cocktail.author_id !== userId) {
+    throw new ServiceError("Forbidden", 403);
+  }
+
+  await db.query("DELETE FROM public_cocktails WHERE id = ?", [
+    publicCocktailId,
+  ]);
+};
