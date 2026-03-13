@@ -1,6 +1,6 @@
 import { db } from "../config/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-import { UserCocktail } from "../models/UserCocktail.model";
+import { UserCocktail, PublicationStatus } from "../models/UserCocktail.model";
 import { CatalogCocktail } from "../models/CatalogCocktail.model";
 import { PublicCocktail } from "../models/PublicCocktail.model";
 
@@ -30,6 +30,19 @@ interface UpdateCocktailData {
   image: string | null;
 }
 
+const resetModerationToDraft = async (cocktailId: number) => {
+  await db.query(
+    `UPDATE user_cocktails
+     SET publication_status = 'draft',
+         moderation_reason = NULL,
+         submitted_at = NULL,
+         moderated_at = NULL,
+         moderated_by = NULL
+     WHERE id = ?`,
+    [cocktailId]
+  );
+};
+
 export const getCatalogCocktails = async (): Promise<CatalogCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT * FROM catalog_cocktails ORDER BY created_at DESC"
@@ -40,7 +53,10 @@ export const getCatalogCocktails = async (): Promise<CatalogCocktail[]> => {
 
 export const getPublicCocktails = async (): Promise<PublicCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT * FROM public_cocktails ORDER BY created_at DESC"
+    `SELECT pc.*, u.nickname AS author_nickname
+     FROM public_cocktails pc
+     JOIN users u ON pc.author_id = u.id
+     ORDER BY pc.created_at DESC`
   );
 
   return rows as PublicCocktail[];
@@ -65,9 +81,9 @@ export const addCocktail = async (data: CreateCocktailData): Promise<number> => 
   }
 
   const [result] = await db.query<ResultSetHeader>(
-    `INSERT INTO user_cocktails 
-      (owner_id, name, category, ingredients, instructions, image)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO user_cocktails
+      (owner_id, name, category, ingredients, instructions, image, publication_status)
+     VALUES (?, ?, ?, ?, ?, ?, 'draft')`,
     [owner_id, name, category, ingredients, instructions, image]
   );
 
@@ -98,10 +114,21 @@ export const updateCocktail = async (
     throw new ServiceError("Forbidden", 403);
   }
 
+  if (cocktail.publication_status === "pending") {
+    throw new ServiceError("Cocktail is under moderation and cannot be edited", 409);
+  }
+
   const { name, category, ingredients, instructions, image } = data;
 
   if (!name || !category || !ingredients || !instructions) {
     throw new ServiceError("Missing required fields", 400);
+  }
+
+  if (cocktail.publication_status === "approved") {
+    await db.query("DELETE FROM public_cocktails WHERE source_cocktail_id = ?", [
+      cocktailId,
+    ]);
+    await resetModerationToDraft(cocktailId);
   }
 
   await db.query(
@@ -135,6 +162,10 @@ export const deleteCocktail = async (
     throw new ServiceError("Forbidden", 403);
   }
 
+  await db.query("DELETE FROM public_cocktails WHERE source_cocktail_id = ?", [
+    cocktailId,
+  ]);
+
   await db.query("DELETE FROM user_cocktails WHERE id = ?", [cocktailId]);
 };
 
@@ -161,28 +192,23 @@ export const publishUserCocktail = async (
     throw new ServiceError("Forbidden", 403);
   }
 
-  const [existing] = await db.query<RowDataPacket[]>(
-    `SELECT id FROM public_cocktails
-     WHERE author_id = ? AND name = ? AND ingredients = ? AND instructions = ?`,
-    [userId, cocktail.name, cocktail.ingredients, cocktail.instructions]
-  );
+  if (cocktail.publication_status === "pending") {
+    throw new ServiceError("Cocktail is already under moderation", 409);
+  }
 
-  if (existing.length > 0) {
-    throw new ServiceError("Cocktail is already published", 400);
+  if (cocktail.publication_status === "approved") {
+    throw new ServiceError("Cocktail is already approved and published", 409);
   }
 
   await db.query(
-    `INSERT INTO public_cocktails
-      (author_id, name, category, ingredients, instructions, image)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [
-      userId,
-      cocktail.name,
-      cocktail.category,
-      cocktail.ingredients,
-      cocktail.instructions,
-      cocktail.image,
-    ]
+    `UPDATE user_cocktails
+     SET publication_status = 'pending',
+         moderation_reason = NULL,
+         submitted_at = NOW(),
+         moderated_at = NULL,
+         moderated_by = NULL
+     WHERE id = ?`,
+    [cocktailId]
   );
 };
 
@@ -212,4 +238,6 @@ export const deletePublicCocktail = async (
   await db.query("DELETE FROM public_cocktails WHERE id = ?", [
     publicCocktailId,
   ]);
+
+  await resetModerationToDraft(cocktail.source_cocktail_id);
 };

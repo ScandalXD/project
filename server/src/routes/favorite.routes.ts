@@ -8,10 +8,12 @@ import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
-router.use(authMiddleware);
-
-router.post("/favorites", addToFavorites);
-router.get("/favorites", getUserFavorites);
-router.delete("/favorites/:cocktailId/:cocktail_type", removeFromFavorites);
+router.post("/favorites", authMiddleware, addToFavorites);
+router.get("/favorites", authMiddleware, getUserFavorites);
+router.delete(
+  "/favorites/:cocktailId/:cocktail_type",
+  authMiddleware,
+  removeFromFavorites
+);
 
 export default router;

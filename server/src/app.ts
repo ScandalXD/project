@@ -4,6 +4,7 @@ import authRoutes from "./routes/auth.routes";
 import profileRoutes from "./routes/profile.routes";
 import cocktailRoutes from "./routes/cocktail.routes";
 import favoriteRoutes from "./routes/favorite.routes";
+import adminRoutes from "./routes/admin.routes";
 
 const app = express();
 
@@ -15,7 +16,8 @@ app.use(cors({
 
 app.use("/api/auth", authRoutes);
 app.use("/api", profileRoutes);
-app.use("/api", cocktailRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api", favoriteRoutes);
+app.use("/api", cocktailRoutes);
 
 export default app;

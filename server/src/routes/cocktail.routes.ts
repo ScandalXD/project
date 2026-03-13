@@ -1,23 +1,26 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth.middleware";
-import * as c from "../controllers/cocktail.controller";
+import {
+  getCatalog,
+  getPublic,
+  getMyCocktails,
+  createCocktail,
+  editCocktail,
+  publishUserCocktailHandler,
+  removeCocktail,
+  removePublicCocktail,
+} from "../controllers/cocktail.controller";
 
 const router = Router();
 
-router.get("/catalog", c.getCatalog);
-router.get("/public", c.getPublic);
+router.get("/catalog", getCatalog);
+router.get("/public", getPublic);
 
-router.use(authMiddleware);
-
-router.get("/my", c.getMyCocktails);
-router.post("/", c.createCocktail);
-router.put("/:id", c.editCocktail);
-router.delete("/:id", c.removeCocktail);
-router.post("/:id/publish", c.publishUserCocktailHandler);
-router.delete(
-  "/public/:id",
-  authMiddleware,
-  c.removePublicCocktail
-);
+router.get("/my", authMiddleware, getMyCocktails);
+router.post("/", authMiddleware, createCocktail);
+router.put("/:id", authMiddleware, editCocktail);
+router.delete("/:id", authMiddleware, removeCocktail);
+router.post("/:id/publish", authMiddleware, publishUserCocktailHandler);
+router.delete("/public/:id", authMiddleware, removePublicCocktail);
 
 export default router;

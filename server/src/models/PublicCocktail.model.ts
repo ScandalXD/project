@@ -1,13 +1,12 @@
-import { CocktailCategory } from "./UserCocktail.model";
-
 export interface PublicCocktail {
   id: number;
+  source_cocktail_id: number;
   author_id: number;
-  author_nickname: string;
   name: string;
-  category: CocktailCategory;
+  category: "Alkoholowy" | "Bezalkoholowy";
   ingredients: string;
   instructions: string;
   image: string | null;
   created_at: string;
+  author_nickname?: string;
 }

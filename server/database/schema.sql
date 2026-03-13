@@ -1,15 +1,10 @@
 CREATE DATABASE IF NOT EXISTS cocktailapp
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
 
 USE cocktailapp;
-/*
-DROP TABLE IF EXISTS favorites;
-DROP TABLE IF EXISTS public_cocktails;
-DROP TABLE IF EXISTS user_cocktails;
-DROP TABLE IF EXISTS catalog_cocktails;
-DROP TABLE IF EXISTS users;
-*/
+
+
 CREATE TABLE users (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(255) NOT NULL UNIQUE,
@@ -38,13 +33,21 @@ CREATE TABLE user_cocktails (
   ingredients TEXT NOT NULL,
   instructions TEXT NOT NULL,
   image VARCHAR(255) NULL,
+  publication_status ENUM('draft', 'pending', 'approved', 'rejected') NOT NULL DEFAULT 'draft',
+  moderation_reason TEXT NULL,
+  submitted_at DATETIME NULL,
+  moderated_at DATETIME NULL,
+  moderated_by BIGINT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_user_cocktails_owner
-    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_user_cocktails_moderated_by
+    FOREIGN KEY (moderated_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE public_cocktails (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  source_cocktail_id BIGINT NOT NULL UNIQUE,
   author_id BIGINT NOT NULL,
   name VARCHAR(100) NOT NULL,
   category ENUM('Alkoholowy', 'Bezalkoholowy') NOT NULL,
@@ -52,6 +55,8 @@ CREATE TABLE public_cocktails (
   instructions TEXT NOT NULL,
   image VARCHAR(255) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_public_cocktails_source
+    FOREIGN KEY (source_cocktail_id) REFERENCES user_cocktails(id) ON DELETE CASCADE,
   CONSTRAINT fk_public_cocktails_author
     FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
 );

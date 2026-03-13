@@ -71,12 +71,15 @@ export const createCocktail = async (
   }
 
   try {
-    await addCocktail({
+    const cocktailId = await addCocktail({
       owner_id: req.user.id,
       ...req.body,
     });
 
-    res.status(201).json({ message: "Created" });
+    res.status(201).json({
+      message: "Cocktail created",
+      cocktailId,
+    });
   } catch (e) {
     handleError(res, e);
   }
@@ -92,7 +95,8 @@ export const editCocktail = async (
 
   try {
     await updateCocktail(Number(req.params.id), req.user.id, req.body);
-    res.json({ message: "Updated" });
+
+    res.json({ message: "Cocktail updated" });
   } catch (e) {
     handleError(res, e);
   }
@@ -108,7 +112,8 @@ export const publishUserCocktailHandler = async (
 
   try {
     await publishUserCocktail(Number(req.params.id), req.user.id);
-    res.json({ message: "Published" });
+
+    res.json({ message: "Submitted for moderation" });
   } catch (e) {
     handleError(res, e);
   }
@@ -124,7 +129,8 @@ export const removeCocktail = async (
 
   try {
     await deleteCocktail(Number(req.params.id), req.user.id);
-    res.json({ message: "Deleted" });
+
+    res.json({ message: "Cocktail deleted" });
   } catch (e) {
     handleError(res, e);
   }
@@ -140,7 +146,8 @@ export const removePublicCocktail = async (
 
   try {
     await deletePublicCocktail(Number(req.params.id), req.user.id);
-    res.json({ message: "Public cocktail deleted" });
+
+    res.json({ message: "Publication removed" });
   } catch (e) {
     handleError(res, e);
   }
