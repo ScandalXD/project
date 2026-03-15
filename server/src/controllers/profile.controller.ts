@@ -122,3 +122,56 @@ export const updateProfile = async (
     res.status(500).json({ message: "Failed to update profile" });
   }
 };
+
+export const deleteProfile = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const userId = Number(req.user.id);
+
+    if (!Number.isInteger(userId)) {
+      return res.status(401).json({ message: "Invalid user id in token" });
+    }
+
+    const [userRows] = await db.query<RowDataPacket[]>(
+      "SELECT id, role FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const currentUser = userRows[0] as { id: number; role: "user" | "admin" };
+
+    if (currentUser.role === "admin") {
+      const [adminRows] = await db.query<RowDataPacket[]>(
+        "SELECT COUNT(*) AS count FROM users WHERE role = 'admin'"
+      );
+
+      const adminCount = Number(adminRows[0].count);
+
+      if (adminCount === 1) {
+        return res.status(409).json({
+          message: "You cannot delete the last admin account",
+        });
+      }
+    }
+
+    const [result] = await db.query<ResultSetHeader>(
+      "DELETE FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "Account deleted" });
+  } catch (error) {
+    console.error("deleteProfile error:", error);
+    res.status(500).json({ message: "Failed to delete account" });
+  }
+};

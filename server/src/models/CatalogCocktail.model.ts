@@ -1,9 +1,7 @@
-import { CocktailCategory } from "./UserCocktail.model";
-
 export interface CatalogCocktail {
   id: string;
   name: string;
-  category: CocktailCategory;
+  category: "Alkoholowy" | "Bezalkoholowy";
   ingredients: string;
   instructions: string;
   image: string;

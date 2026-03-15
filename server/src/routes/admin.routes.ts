@@ -9,6 +9,11 @@ import {
   cancelModerationHandler,
   removePublishedCocktailHandler,
 } from "../controllers/adminModeration.controller";
+import {
+  addCatalogCocktailHandler,
+  updateCatalogCocktailHandler,
+  deleteCatalogCocktailHandler,
+} from "../controllers/adminCatalog.controller";
 
 const router = Router();
 
@@ -20,5 +25,9 @@ router.post("/moderation/:id/approve", approveCocktailHandler);
 router.post("/moderation/:id/reject", rejectCocktailHandler);
 router.post("/moderation/:id/cancel", cancelModerationHandler);
 router.post("/moderation/:id/remove", removePublishedCocktailHandler);
+
+router.post("/catalog", addCatalogCocktailHandler);
+router.put("/catalog/:id", updateCatalogCocktailHandler);
+router.delete("/catalog/:id", deleteCatalogCocktailHandler);
 
 export default router;
