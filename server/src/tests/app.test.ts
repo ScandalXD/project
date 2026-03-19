@@ -19,6 +19,8 @@ const makeUser = (prefix: string): AuthUser => ({
 });
 
 async function resetDatabase() {
+  await db.query("DELETE FROM cocktail_likes");
+  await db.query("DELETE FROM cocktail_comments");
   await db.query("DELETE FROM favorites");
   await db.query("DELETE FROM public_cocktails");
   await db.query("DELETE FROM user_cocktails");
@@ -196,7 +198,7 @@ describe("CocktailApp integration tests", () => {
     expect(updateRes.body.message).toBe("Cocktail updated");
   });
 
-  test("editing чужого cocktail returns 403", async () => {
+  test("editing someone else's cocktail returns 403", async () => {
     const owner = makeUser("owner2");
     const other = makeUser("other2");
 
@@ -219,7 +221,7 @@ describe("CocktailApp integration tests", () => {
     expect(res.status).toBe(403);
   });
 
-  test("deleting чужого cocktail returns 403", async () => {
+  test("deleting someone else's cocktail returns 403", async () => {
     const owner = makeUser("owner3");
     const other = makeUser("other3");
 
@@ -534,263 +536,548 @@ describe("CocktailApp integration tests", () => {
   });
 
   test("user can delete own account", async () => {
-  const user = makeUser("delete_self_user");
-  const token = await registerAndLogin(user);
+    const user = makeUser("delete_self_user");
+    const token = await registerAndLogin(user);
 
-  const deleteRes = await request(app)
-    .delete("/api/profile")
-    .set("Authorization", `Bearer ${token}`);
+    const deleteRes = await request(app)
+      .delete("/api/profile")
+      .set("Authorization", `Bearer ${token}`);
 
-  expect(deleteRes.status).toBe(200);
-  expect(deleteRes.body.message).toBe("Account deleted");
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.message).toBe("Account deleted");
 
-  const loginRes = await login({
-    email: user.email,
-    password: user.password,
-  });
-
-  expect(loginRes.status).toBe(401);
-});
-
-test("admin can delete own account if not the last admin", async () => {
-  const admin1 = makeUser("admin_delete_1");
-  const admin2 = makeUser("admin_delete_2");
-
-  await register(admin1);
-  await register(admin2);
-
-  await promoteToAdmin(admin1.email);
-  await promoteToAdmin(admin2.email);
-
-  const admin1Login = await login({
-    email: admin1.email,
-    password: admin1.password,
-  });
-
-  const admin1Token = admin1Login.body.token as string;
-
-  const deleteRes = await request(app)
-    .delete("/api/profile")
-    .set("Authorization", `Bearer ${admin1Token}`);
-
-  expect(deleteRes.status).toBe(200);
-  expect(deleteRes.body.message).toBe("Account deleted");
-
-  const loginRes = await login({
-    email: admin1.email,
-    password: admin1.password,
-  });
-
-  expect(loginRes.status).toBe(401);
-});
-
-test("last admin cannot delete own account", async () => {
-  const admin = makeUser("last_admin");
-
-  await register(admin);
-  await promoteToAdmin(admin.email);
-
-  const adminLogin = await login({
-    email: admin.email,
-    password: admin.password,
-  });
-
-  const adminToken = adminLogin.body.token as string;
-
-  const deleteRes = await request(app)
-    .delete("/api/profile")
-    .set("Authorization", `Bearer ${adminToken}`);
-
-  expect(deleteRes.status).toBe(409);
-  expect(deleteRes.body.message).toBe("You cannot delete the last admin account");
-});
-
-test("admin can add catalog cocktail", async () => {
-  const admin = makeUser("catalog_admin_create");
-
-  await register(admin);
-  await promoteToAdmin(admin.email);
-
-  const adminLogin = await login({
-    email: admin.email,
-    password: admin.password,
-  });
-
-  const adminToken = adminLogin.body.token as string;
-
-  const newCatalogId = `test-negroni-${Date.now()}`;
-
-  const createRes = await request(app)
-    .post("/api/admin/catalog")
-    .set("Authorization", `Bearer ${adminToken}`)
-    .send({
-      id: newCatalogId,
-      name: "Negroni",
-      category: "Alkoholowy",
-      ingredients: "Gin, Campari, Sweet Vermouth",
-      instructions: "Stir with ice and strain into a glass",
-      image: "assets/cocktails/alcoholic/negroni.jpg",
+    const loginRes = await login({
+      email: user.email,
+      password: user.password,
     });
 
-  expect(createRes.status).toBe(201);
-  expect(createRes.body.message).toBe("Catalog cocktail created");
-
-  const catalogRes = await request(app).get("/api/catalog");
-
-  expect(catalogRes.status).toBe(200);
-  expect(Array.isArray(catalogRes.body)).toBe(true);
-
-  const created = catalogRes.body.find((c: any) => c.id === newCatalogId);
-  expect(created).toBeTruthy();
-  expect(created.name).toBe("Negroni");
-});
-
-test("admin can update catalog cocktail", async () => {
-  const admin = makeUser("catalog_admin_update");
-
-  await register(admin);
-  await promoteToAdmin(admin.email);
-
-  const adminLogin = await login({
-    email: admin.email,
-    password: admin.password,
+    expect(loginRes.status).toBe(401);
   });
 
-  const adminToken = adminLogin.body.token as string;
-  const newCatalogId = `test-update-${Date.now()}`;
+  test("admin can delete own account if not the last admin", async () => {
+    const admin1 = makeUser("admin_delete_1");
+    const admin2 = makeUser("admin_delete_2");
 
-  await request(app)
-    .post("/api/admin/catalog")
-    .set("Authorization", `Bearer ${adminToken}`)
-    .send({
-      id: newCatalogId,
-      name: "Test Cocktail",
-      category: "Alkoholowy",
-      ingredients: "A, B, C",
-      instructions: "Mix",
-      image: "assets/cocktails/alcoholic/test.jpg",
+    await register(admin1);
+    await register(admin2);
+
+    await promoteToAdmin(admin1.email);
+    await promoteToAdmin(admin2.email);
+
+    const admin1Login = await login({
+      email: admin1.email,
+      password: admin1.password,
     });
 
-  const updateRes = await request(app)
-    .put(`/api/admin/catalog/${newCatalogId}`)
-    .set("Authorization", `Bearer ${adminToken}`)
-    .send({
-      name: "Test Cocktail Updated",
-      category: "Alkoholowy",
-      ingredients: "A, B, C, D",
-      instructions: "Shake and serve",
-      image: "assets/cocktails/alcoholic/test-updated.jpg",
+    const admin1Token = admin1Login.body.token as string;
+
+    const deleteRes = await request(app)
+      .delete("/api/profile")
+      .set("Authorization", `Bearer ${admin1Token}`);
+
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.message).toBe("Account deleted");
+
+    const loginRes = await login({
+      email: admin1.email,
+      password: admin1.password,
     });
 
-  expect(updateRes.status).toBe(200);
-  expect(updateRes.body.message).toBe("Catalog cocktail updated");
-
-  const catalogRes = await request(app).get("/api/catalog");
-  const updated = catalogRes.body.find((c: any) => c.id === newCatalogId);
-
-  expect(updated).toBeTruthy();
-  expect(updated.name).toBe("Test Cocktail Updated");
-  expect(updated.ingredients).toBe("A, B, C, D");
-});
-
-test("admin can delete catalog cocktail", async () => {
-  const admin = makeUser("catalog_admin_delete");
-
-  await register(admin);
-  await promoteToAdmin(admin.email);
-
-  const adminLogin = await login({
-    email: admin.email,
-    password: admin.password,
+    expect(loginRes.status).toBe(401);
   });
 
-  const adminToken = adminLogin.body.token as string;
-  const newCatalogId = `test-delete-${Date.now()}`;
+  test("last admin cannot delete own account", async () => {
+    const admin = makeUser("last_admin");
 
-  await request(app)
-    .post("/api/admin/catalog")
-    .set("Authorization", `Bearer ${adminToken}`)
-    .send({
-      id: newCatalogId,
-      name: "Delete Me",
-      category: "Alkoholowy",
-      ingredients: "X, Y, Z",
-      instructions: "Delete later",
-      image: "assets/cocktails/alcoholic/delete.jpg",
+    await register(admin);
+    await promoteToAdmin(admin.email);
+
+    const adminLogin = await login({
+      email: admin.email,
+      password: admin.password,
     });
 
-  const deleteRes = await request(app)
-    .delete(`/api/admin/catalog/${newCatalogId}`)
-    .set("Authorization", `Bearer ${adminToken}`);
+    const adminToken = adminLogin.body.token as string;
 
-  expect(deleteRes.status).toBe(200);
-  expect(deleteRes.body.message).toBe("Catalog cocktail deleted");
+    const deleteRes = await request(app)
+      .delete("/api/profile")
+      .set("Authorization", `Bearer ${adminToken}`);
 
-  const catalogRes = await request(app).get("/api/catalog");
-  const deleted = catalogRes.body.find((c: any) => c.id === newCatalogId);
-
-  expect(deleted).toBeUndefined();
-});
-
-test("non-admin cannot add catalog cocktail", async () => {
-  const user = makeUser("catalog_non_admin");
-  const token = await registerAndLogin(user);
-
-  const res = await request(app)
-    .post("/api/admin/catalog")
-    .set("Authorization", `Bearer ${token}`)
-    .send({
-      id: `forbidden-${Date.now()}`,
-      name: "Forbidden Cocktail",
-      category: "Alkoholowy",
-      ingredients: "A, B",
-      instructions: "Mix",
-      image: "assets/cocktails/alcoholic/forbidden.jpg",
-    });
-
-  expect(res.status).toBe(403);
-});
-
-test("admin cannot create duplicate catalog cocktail id", async () => {
-  const admin = makeUser("catalog_duplicate_admin");
-
-  await register(admin);
-  await promoteToAdmin(admin.email);
-
-  const adminLogin = await login({
-    email: admin.email,
-    password: admin.password,
+    expect(deleteRes.status).toBe(409);
+    expect(deleteRes.body.message).toBe(
+      "You cannot delete the last admin account",
+    );
   });
 
-  const adminToken = adminLogin.body.token as string;
-  const duplicateId = `duplicate-${Date.now()}`;
+  test("admin can add catalog cocktail", async () => {
+    const admin = makeUser("catalog_admin_create");
 
-  const firstRes = await request(app)
-    .post("/api/admin/catalog")
-    .set("Authorization", `Bearer ${adminToken}`)
-    .send({
-      id: duplicateId,
-      name: "First",
-      category: "Alkoholowy",
-      ingredients: "A",
-      instructions: "Mix",
-      image: "assets/cocktails/alcoholic/first.jpg",
+    await register(admin);
+    await promoteToAdmin(admin.email);
+
+    const adminLogin = await login({
+      email: admin.email,
+      password: admin.password,
     });
 
-  expect(firstRes.status).toBe(201);
+    const adminToken = adminLogin.body.token as string;
 
-  const secondRes = await request(app)
-    .post("/api/admin/catalog")
-    .set("Authorization", `Bearer ${adminToken}`)
-    .send({
-      id: duplicateId,
-      name: "Second",
-      category: "Alkoholowy",
-      ingredients: "B",
-      instructions: "Mix again",
-      image: "assets/cocktails/alcoholic/second.jpg",
+    const newCatalogId = `test-negroni-${Date.now()}`;
+
+    const createRes = await request(app)
+      .post("/api/admin/catalog")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        id: newCatalogId,
+        name: "Negroni",
+        category: "Alkoholowy",
+        ingredients: "Gin, Campari, Sweet Vermouth",
+        instructions: "Stir with ice and strain into a glass",
+        image: "assets/cocktails/alcoholic/negroni.jpg",
+      });
+
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.message).toBe("Catalog cocktail created");
+
+    const catalogRes = await request(app).get("/api/catalog");
+
+    expect(catalogRes.status).toBe(200);
+    expect(Array.isArray(catalogRes.body)).toBe(true);
+
+    const created = catalogRes.body.find((c: any) => c.id === newCatalogId);
+    expect(created).toBeTruthy();
+    expect(created.name).toBe("Negroni");
+  });
+
+  test("admin can update catalog cocktail", async () => {
+    const admin = makeUser("catalog_admin_update");
+
+    await register(admin);
+    await promoteToAdmin(admin.email);
+
+    const adminLogin = await login({
+      email: admin.email,
+      password: admin.password,
     });
 
-  expect(secondRes.status).toBe(409);
-});
+    const adminToken = adminLogin.body.token as string;
+    const newCatalogId = `test-update-${Date.now()}`;
+
+    await request(app)
+      .post("/api/admin/catalog")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        id: newCatalogId,
+        name: "Test Cocktail",
+        category: "Alkoholowy",
+        ingredients: "A, B, C",
+        instructions: "Mix",
+        image: "assets/cocktails/alcoholic/test.jpg",
+      });
+
+    const updateRes = await request(app)
+      .put(`/api/admin/catalog/${newCatalogId}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        name: "Test Cocktail Updated",
+        category: "Alkoholowy",
+        ingredients: "A, B, C, D",
+        instructions: "Shake and serve",
+        image: "assets/cocktails/alcoholic/test-updated.jpg",
+      });
+
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.message).toBe("Catalog cocktail updated");
+
+    const catalogRes = await request(app).get("/api/catalog");
+    const updated = catalogRes.body.find((c: any) => c.id === newCatalogId);
+
+    expect(updated).toBeTruthy();
+    expect(updated.name).toBe("Test Cocktail Updated");
+    expect(updated.ingredients).toBe("A, B, C, D");
+  });
+
+  test("admin can delete catalog cocktail", async () => {
+    const admin = makeUser("catalog_admin_delete");
+
+    await register(admin);
+    await promoteToAdmin(admin.email);
+
+    const adminLogin = await login({
+      email: admin.email,
+      password: admin.password,
+    });
+
+    const adminToken = adminLogin.body.token as string;
+    const newCatalogId = `test-delete-${Date.now()}`;
+
+    await request(app)
+      .post("/api/admin/catalog")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        id: newCatalogId,
+        name: "Delete Me",
+        category: "Alkoholowy",
+        ingredients: "X, Y, Z",
+        instructions: "Delete later",
+        image: "assets/cocktails/alcoholic/delete.jpg",
+      });
+
+    const deleteRes = await request(app)
+      .delete(`/api/admin/catalog/${newCatalogId}`)
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.message).toBe("Catalog cocktail deleted");
+
+    const catalogRes = await request(app).get("/api/catalog");
+    const deleted = catalogRes.body.find((c: any) => c.id === newCatalogId);
+
+    expect(deleted).toBeUndefined();
+  });
+
+  test("non-admin cannot add catalog cocktail", async () => {
+    const user = makeUser("catalog_non_admin");
+    const token = await registerAndLogin(user);
+
+    const res = await request(app)
+      .post("/api/admin/catalog")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        id: `forbidden-${Date.now()}`,
+        name: "Forbidden Cocktail",
+        category: "Alkoholowy",
+        ingredients: "A, B",
+        instructions: "Mix",
+        image: "assets/cocktails/alcoholic/forbidden.jpg",
+      });
+
+    expect(res.status).toBe(403);
+  });
+
+  test("admin cannot create duplicate catalog cocktail id", async () => {
+    const admin = makeUser("catalog_duplicate_admin");
+
+    await register(admin);
+    await promoteToAdmin(admin.email);
+
+    const adminLogin = await login({
+      email: admin.email,
+      password: admin.password,
+    });
+
+    const adminToken = adminLogin.body.token as string;
+    const duplicateId = `duplicate-${Date.now()}`;
+
+    const firstRes = await request(app)
+      .post("/api/admin/catalog")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        id: duplicateId,
+        name: "First",
+        category: "Alkoholowy",
+        ingredients: "A",
+        instructions: "Mix",
+        image: "assets/cocktails/alcoholic/first.jpg",
+      });
+
+    expect(firstRes.status).toBe(201);
+
+    const secondRes = await request(app)
+      .post("/api/admin/catalog")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        id: duplicateId,
+        name: "Second",
+        category: "Alkoholowy",
+        ingredients: "B",
+        instructions: "Mix again",
+        image: "assets/cocktails/alcoholic/second.jpg",
+      });
+
+    expect(secondRes.status).toBe(409);
+  });
+
+  test("user can like and unlike catalog cocktail", async () => {
+    const user = makeUser("like_catalog_user");
+    const token = await registerAndLogin(user);
+
+    const addRes = await request(app)
+      .post("/api/likes")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        cocktailId: "mojito",
+        cocktailType: "catalog",
+      });
+
+    expect(addRes.status).toBe(201);
+
+    const countRes = await request(app).get("/api/likes/catalog/mojito");
+    expect(countRes.status).toBe(200);
+    expect(countRes.body.count).toBe(1);
+
+    const meRes = await request(app)
+      .get("/api/likes/catalog/mojito/me")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(meRes.status).toBe(200);
+    expect(meRes.body.liked).toBe(true);
+
+    const removeRes = await request(app)
+      .delete("/api/likes/catalog/mojito")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(removeRes.status).toBe(200);
+
+    const countAfterRes = await request(app).get("/api/likes/catalog/mojito");
+    expect(countAfterRes.status).toBe(200);
+    expect(countAfterRes.body.count).toBe(0);
+  });
+
+  test("user cannot like same catalog cocktail twice", async () => {
+    const user = makeUser("like_catalog_duplicate");
+    const token = await registerAndLogin(user);
+
+    const firstRes = await request(app)
+      .post("/api/likes")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        cocktailId: "mojito",
+        cocktailType: "catalog",
+      });
+
+    expect(firstRes.status).toBe(201);
+
+    const secondRes = await request(app)
+      .post("/api/likes")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        cocktailId: "mojito",
+        cocktailType: "catalog",
+      });
+
+    expect(secondRes.status).toBe(409);
+  });
+
+  test("user can comment on catalog cocktail and read comments", async () => {
+    const user = makeUser("comment_catalog_user");
+    const token = await registerAndLogin(user);
+
+    const addRes = await request(app)
+      .post("/api/comments")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        cocktailId: "mojito",
+        cocktailType: "catalog",
+        content: "Great cocktail from catalog",
+      });
+
+    expect(addRes.status).toBe(201);
+    expect(addRes.body.commentId).toBeTruthy();
+
+    const listRes = await request(app).get("/api/comments/catalog/mojito");
+
+    expect(listRes.status).toBe(200);
+    expect(Array.isArray(listRes.body)).toBe(true);
+    expect(listRes.body.length).toBe(1);
+    expect(listRes.body[0].content).toBe("Great cocktail from catalog");
+    expect(listRes.body[0].author_nickname).toBe(user.nickname);
+  });
+
+  test("user can delete own comment from catalog cocktail", async () => {
+    const user = makeUser("delete_catalog_comment_user");
+    const token = await registerAndLogin(user);
+
+    const addRes = await request(app)
+      .post("/api/comments")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        cocktailId: "mojito",
+        cocktailType: "catalog",
+        content: "Comment to remove",
+      });
+
+    expect(addRes.status).toBe(201);
+    const commentId = addRes.body.commentId;
+
+    const deleteRes = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(deleteRes.status).toBe(200);
+
+    const listRes = await request(app).get("/api/comments/catalog/mojito");
+    expect(listRes.status).toBe(200);
+    expect(listRes.body.length).toBe(0);
+  });
+
+  test("user cannot delete someone else's comment", async () => {
+    const user1 = makeUser("comment_owner");
+    const user2 = makeUser("comment_other");
+
+    const token1 = await registerAndLogin(user1);
+    const token2 = await registerAndLogin(user2);
+
+    const addRes = await request(app)
+      .post("/api/comments")
+      .set("Authorization", `Bearer ${token1}`)
+      .send({
+        cocktailId: "mojito",
+        cocktailType: "catalog",
+        content: "My protected comment",
+      });
+
+    expect(addRes.status).toBe(201);
+    const commentId = addRes.body.commentId;
+
+    const deleteRes = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set("Authorization", `Bearer ${token2}`);
+
+    expect(deleteRes.status).toBe(403);
+  });
+
+  test("unauthorized user cannot like cocktail", async () => {
+    const res = await request(app).post("/api/likes").send({
+      cocktailId: "mojito",
+      cocktailType: "catalog",
+    });
+
+    expect(res.status).toBe(401);
+  });
+
+  test("unauthorized user cannot add comment", async () => {
+    const res = await request(app).post("/api/comments").send({
+      cocktailId: "mojito",
+      cocktailType: "catalog",
+      content: "Unauthorized comment",
+    });
+
+    expect(res.status).toBe(401);
+  });
+
+  test("user can like approved public cocktail", async () => {
+    const user = makeUser("like_public_user");
+    const admin = makeUser("like_public_admin");
+
+    const userToken = await registerAndLogin(user);
+    const cocktailId = await createOwnCocktail(userToken);
+
+    await request(app)
+      .post(`/api/${cocktailId}/publish`)
+      .set("Authorization", `Bearer ${userToken}`);
+
+    await register(admin);
+    await promoteToAdmin(admin.email);
+
+    const adminLogin = await login({
+      email: admin.email,
+      password: admin.password,
+    });
+    const adminToken = adminLogin.body.token as string;
+
+    await request(app)
+      .post(`/api/admin/moderation/${cocktailId}/approve`)
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    const publicRes = await request(app).get("/api/public");
+    expect(publicRes.status).toBe(200);
+
+    const publicId = String(publicRes.body[0].id);
+
+    const addLikeRes = await request(app)
+      .post("/api/likes")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({
+        cocktailId: publicId,
+        cocktailType: "public",
+      });
+
+    expect(addLikeRes.status).toBe(201);
+
+    const countRes = await request(app).get(`/api/likes/public/${publicId}`);
+    expect(countRes.status).toBe(200);
+    expect(countRes.body.count).toBe(1);
+  });
+
+  test("user can comment on approved public cocktail", async () => {
+    const user = makeUser("comment_public_user");
+    const admin = makeUser("comment_public_admin");
+
+    const userToken = await registerAndLogin(user);
+    const cocktailId = await createOwnCocktail(userToken);
+
+    await request(app)
+      .post(`/api/${cocktailId}/publish`)
+      .set("Authorization", `Bearer ${userToken}`);
+
+    await register(admin);
+    await promoteToAdmin(admin.email);
+
+    const adminLogin = await login({
+      email: admin.email,
+      password: admin.password,
+    });
+    const adminToken = adminLogin.body.token as string;
+
+    await request(app)
+      .post(`/api/admin/moderation/${cocktailId}/approve`)
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    const publicRes = await request(app).get("/api/public");
+    expect(publicRes.status).toBe(200);
+
+    const publicId = String(publicRes.body[0].id);
+
+    const addCommentRes = await request(app)
+      .post("/api/comments")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({
+        cocktailId: publicId,
+        cocktailType: "public",
+        content: "Nice public cocktail",
+      });
+
+    expect(addCommentRes.status).toBe(201);
+    expect(addCommentRes.body.commentId).toBeTruthy();
+
+    const commentsRes = await request(app).get(
+      `/api/comments/public/${publicId}`,
+    );
+    expect(commentsRes.status).toBe(200);
+    expect(commentsRes.body.length).toBe(1);
+    expect(commentsRes.body[0].content).toBe("Nice public cocktail");
+    expect(commentsRes.body[0].author_nickname).toBe(user.nickname);
+  });
+
+  test("cannot comment on non-existing cocktail", async () => {
+    const user = makeUser("comment_missing");
+    const token = await registerAndLogin(user);
+
+    const res = await request(app)
+      .post("/api/comments")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        cocktailId: "not-existing-id",
+        cocktailType: "catalog",
+        content: "Hello",
+      });
+
+    expect(res.status).toBe(404);
+  });
+
+  test("cannot like non-existing cocktail", async () => {
+    const user = makeUser("like_missing");
+    const token = await registerAndLogin(user);
+
+    const res = await request(app)
+      .post("/api/likes")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        cocktailId: "not-existing-id",
+        cocktailType: "catalog",
+      });
+
+    expect(res.status).toBe(404);
+  });
 });

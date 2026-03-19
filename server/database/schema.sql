@@ -70,3 +70,24 @@ CREATE TABLE favorites (
   CONSTRAINT fk_favorites_user
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE cocktail_likes (
+  user_id BIGINT NOT NULL,
+  cocktail_id VARCHAR(100) NOT NULL,
+  cocktail_type ENUM('catalog', 'public') NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, cocktail_id, cocktail_type),
+  CONSTRAINT fk_cocktail_likes_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE cocktail_comments (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  cocktail_id VARCHAR(100) NOT NULL,
+  cocktail_type ENUM('catalog', 'public') NOT NULL,
+  content TEXT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_cocktail_comments_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

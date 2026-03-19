@@ -5,6 +5,8 @@ import profileRoutes from "./routes/profile.routes";
 import cocktailRoutes from "./routes/cocktail.routes";
 import favoriteRoutes from "./routes/favorite.routes";
 import adminRoutes from "./routes/admin.routes";
+import likeRoutes from "./routes/like.routes";
+import commentRoutes from "./routes/comment.routes";
 
 const app = express();
 
@@ -19,5 +21,7 @@ app.use("/api", profileRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api", favoriteRoutes);
 app.use("/api", cocktailRoutes);
+app.use("/api", likeRoutes);
+app.use("/api", commentRoutes);
 
 export default app;
