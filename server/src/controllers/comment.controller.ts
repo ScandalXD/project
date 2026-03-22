@@ -23,6 +23,7 @@ interface CommentBody {
   cocktailId: string;
   cocktailType: CocktailType;
   content: string;
+  parentCommentId?: number | null;
 }
 
 export const addCommentHandler = async (
@@ -34,12 +35,14 @@ export const addCommentHandler = async (
   }
 
   try {
-    const { cocktailId, cocktailType, content } = req.body;
+    const { cocktailId, cocktailType, content, parentCommentId } = req.body;
+
     const commentId = await addComment(
       req.user.id,
       cocktailId,
       cocktailType,
-      content
+      content,
+      parentCommentId
     );
 
     res.status(201).json({
@@ -56,10 +59,14 @@ export const getCommentsHandler = async (
   res: Response
 ) => {
   try {
+    const currentUserId = req.user ? req.user.id : undefined;
+
     const comments = await getComments(
       req.params.cocktailId,
-      req.params.cocktailType as CocktailType
+      req.params.cocktailType as CocktailType,
+      currentUserId
     );
+
     res.json(comments);
   } catch (e) {
     handleError(res, e);

@@ -87,7 +87,22 @@ CREATE TABLE cocktail_comments (
   cocktail_id VARCHAR(100) NOT NULL,
   cocktail_type ENUM('catalog', 'public') NOT NULL,
   content TEXT NOT NULL,
+  parent_comment_id BIGINT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_cocktail_comments_user
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cocktail_comments_parent
+    FOREIGN KEY (parent_comment_id) REFERENCES cocktail_comments(id) ON DELETE CASCADE
+);
+
+CREATE TABLE comment_likes (
+  user_id BIGINT NOT NULL,
+  comment_id BIGINT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, comment_id),
+
+  CONSTRAINT fk_comment_likes_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_comment_likes_comment
+    FOREIGN KEY (comment_id) REFERENCES cocktail_comments(id) ON DELETE CASCADE
 );

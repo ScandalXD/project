@@ -30,3 +30,27 @@ export const authMiddleware = (
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
+
+
+export const optionalAuthMiddleware = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next();
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = verifyToken(token);
+    req.user = decoded;
+  } catch {
+    
+  }
+
+  next();
+};
