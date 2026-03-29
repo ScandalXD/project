@@ -7,6 +7,7 @@ import favoriteRoutes from "./routes/favorite.routes";
 import adminRoutes from "./routes/admin.routes";
 import likeRoutes from "./routes/like.routes";
 import commentRoutes from "./routes/comment.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 const app = express();
 
@@ -23,5 +24,6 @@ app.use("/api", favoriteRoutes);
 app.use("/api", cocktailRoutes);
 app.use("/api", likeRoutes);
 app.use("/api", commentRoutes);
+app.use("/api", notificationRoutes);
 
 export default app;

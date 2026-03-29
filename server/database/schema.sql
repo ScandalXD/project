@@ -106,3 +106,37 @@ CREATE TABLE comment_likes (
   CONSTRAINT fk_comment_likes_comment
     FOREIGN KEY (comment_id) REFERENCES cocktail_comments(id) ON DELETE CASCADE
 );
+
+CREATE TABLE comment_mentions (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  comment_id BIGINT NOT NULL,
+  mentioned_user_id BIGINT NOT NULL,
+  mentioned_by_user_id BIGINT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  CONSTRAINT fk_comment_mentions_comment
+    FOREIGN KEY (comment_id) REFERENCES cocktail_comments(id) ON DELETE CASCADE,
+  CONSTRAINT fk_comment_mentions_mentioned_user
+    FOREIGN KEY (mentioned_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_comment_mentions_actor_user
+    FOREIGN KEY (mentioned_by_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_comment_mentioned_user (comment_id, mentioned_user_id)
+);
+
+CREATE TABLE notifications (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  type ENUM('mention') NOT NULL,
+  actor_user_id BIGINT NOT NULL,
+  recipe_id VARCHAR(100) NOT NULL,
+  recipe_type ENUM('catalog', 'public') NOT NULL,
+  comment_id BIGINT NOT NULL,
+  is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_notifications_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_notifications_actor_user
+    FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_notifications_comment
+    FOREIGN KEY (comment_id) REFERENCES cocktail_comments(id) ON DELETE CASCADE
+);

@@ -2,6 +2,7 @@ import { db } from "../config/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { CocktailComment, CocktailType } from "../models/Comment.model";
 import { ServiceError } from "./cocktail.service";
+import { processCommentMentions } from "./mention.service";
 
 interface CommentRow extends CocktailComment {
   likes_count: number;
@@ -97,7 +98,17 @@ export const addComment = async (
     [userId, cocktailId, cocktailType, content.trim(), parentCommentId ?? null]
   );
 
-  return result.insertId;
+  const commentId = result.insertId;
+
+  await processCommentMentions(
+    userId,
+    commentId,
+    cocktailId,
+    cocktailType,
+    content.trim()
+  );
+
+  return commentId;
 };
 
 const buildCommentTree = (
