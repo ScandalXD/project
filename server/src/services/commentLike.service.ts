@@ -1,6 +1,7 @@
 import { db } from "../config/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { ServiceError } from "./cocktail.service";
+import { createNotification } from "./notificationEvent.service";
 
 const validateCommentExists = async (commentId: number) => {
   if (!Number.isInteger(commentId)) {
@@ -9,7 +10,7 @@ const validateCommentExists = async (commentId: number) => {
 
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT id FROM cocktail_comments WHERE id = ?",
-    [commentId]
+    [commentId],
   );
 
   if (rows.length === 0) {
@@ -19,7 +20,7 @@ const validateCommentExists = async (commentId: number) => {
 
 export const addCommentLike = async (
   userId: number,
-  commentId: number
+  commentId: number,
 ): Promise<void> => {
   await validateCommentExists(commentId);
 
@@ -27,7 +28,7 @@ export const addCommentLike = async (
     `SELECT user_id
      FROM comment_likes
      WHERE user_id = ? AND comment_id = ?`,
-    [userId, commentId]
+    [userId, commentId],
   );
 
   if (existing.length > 0) {
@@ -37,13 +38,37 @@ export const addCommentLike = async (
   await db.query<ResultSetHeader>(
     `INSERT INTO comment_likes (user_id, comment_id)
      VALUES (?, ?)`,
-    [userId, commentId]
+    [userId, commentId],
   );
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT user_id, cocktail_id, cocktail_type
+     FROM cocktail_comments
+     WHERE id = ?`,
+    [commentId],
+  );
+
+  if (rows.length > 0) {
+    const comment = rows[0] as {
+      user_id: number;
+      cocktail_id: string;
+      cocktail_type: "catalog" | "public";
+    };
+
+    await createNotification({
+      userId: Number(comment.user_id),
+      type: "comment_like",
+      actorUserId: userId,
+      recipeId: String(comment.cocktail_id),
+      recipeType: comment.cocktail_type,
+      commentId,
+    });
+  }
 };
 
 export const removeCommentLike = async (
   userId: number,
-  commentId: number
+  commentId: number,
 ): Promise<void> => {
   if (!Number.isInteger(commentId)) {
     throw new ServiceError("Invalid comment id", 400);
@@ -52,7 +77,7 @@ export const removeCommentLike = async (
   const [result] = await db.query<ResultSetHeader>(
     `DELETE FROM comment_likes
      WHERE user_id = ? AND comment_id = ?`,
-    [userId, commentId]
+    [userId, commentId],
   );
 
   if (result.affectedRows === 0) {
@@ -61,7 +86,7 @@ export const removeCommentLike = async (
 };
 
 export const getCommentLikesCount = async (
-  commentId: number
+  commentId: number,
 ): Promise<number> => {
   await validateCommentExists(commentId);
 
@@ -69,7 +94,7 @@ export const getCommentLikesCount = async (
     `SELECT COUNT(*) AS count
      FROM comment_likes
      WHERE comment_id = ?`,
-    [commentId]
+    [commentId],
   );
 
   return Number(rows[0].count);
@@ -77,7 +102,7 @@ export const getCommentLikesCount = async (
 
 export const isCommentLikedByUser = async (
   userId: number,
-  commentId: number
+  commentId: number,
 ): Promise<boolean> => {
   if (!Number.isInteger(commentId)) {
     throw new ServiceError("Invalid comment id", 400);
@@ -87,7 +112,7 @@ export const isCommentLikedByUser = async (
     `SELECT user_id
      FROM comment_likes
      WHERE user_id = ? AND comment_id = ?`,
-    [userId, commentId]
+    [userId, commentId],
   );
 
   return rows.length > 0;

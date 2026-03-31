@@ -126,11 +126,11 @@ CREATE TABLE comment_mentions (
 CREATE TABLE notifications (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   user_id BIGINT NOT NULL,
-  type ENUM('mention') NOT NULL,
+  type ENUM('mention', 'cocktail_like', 'cocktail_comment', 'comment_like', 'comment_reply') NOT NULL,
   actor_user_id BIGINT NOT NULL,
   recipe_id VARCHAR(100) NOT NULL,
   recipe_type ENUM('catalog', 'public') NOT NULL,
-  comment_id BIGINT NOT NULL,
+  comment_id BIGINT NULL,
   is_read BOOLEAN NOT NULL DEFAULT FALSE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_notifications_user

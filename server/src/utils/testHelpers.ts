@@ -55,7 +55,10 @@ export async function promoteToAdmin(email: string) {
   await db.query(`UPDATE users SET role = 'admin' WHERE email = ?`, [email]);
 }
 
-export async function createOwnCocktail(token: string, overrides?: Partial<any>) {
+export async function createOwnCocktail(
+  token: string,
+  overrides?: Partial<any>,
+) {
   const payload = {
     name: "My Mojito",
     category: "Alkoholowy",

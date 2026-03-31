@@ -3,6 +3,7 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { CocktailComment, CocktailType } from "../models/Comment.model";
 import { ServiceError } from "./cocktail.service";
 import { processCommentMentions } from "./mention.service";
+import { createNotification } from "./notificationEvent.service";
 
 interface CommentRow extends CocktailComment {
   likes_count: number;
@@ -87,8 +88,19 @@ export const addComment = async (
     throw new ServiceError("Comment content is required", 400);
   }
 
+  let parentCommentAuthorId: number | null = null;
+
   if (parentCommentId !== undefined && parentCommentId !== null) {
     await validateParentComment(parentCommentId, cocktailId, cocktailType);
+
+    const [parentRows] = await db.query<RowDataPacket[]>(
+      `SELECT user_id FROM cocktail_comments WHERE id = ?`,
+      [parentCommentId]
+    );
+
+    if (parentRows.length > 0) {
+      parentCommentAuthorId = Number(parentRows[0].user_id);
+    }
   }
 
   const [result] = await db.query<ResultSetHeader>(
@@ -99,6 +111,37 @@ export const addComment = async (
   );
 
   const commentId = result.insertId;
+
+  if (cocktailType === "public") {
+    const [publicRows] = await db.query<RowDataPacket[]>(
+      `SELECT author_id FROM public_cocktails WHERE id = ?`,
+      [cocktailId]
+    );
+
+    if (publicRows.length > 0) {
+      const authorId = Number(publicRows[0].author_id);
+
+      await createNotification({
+        userId: authorId,
+        type: "cocktail_comment",
+        actorUserId: userId,
+        recipeId: cocktailId,
+        recipeType: cocktailType,
+        commentId,
+      });
+    }
+  }
+
+  if (parentCommentAuthorId !== null) {
+    await createNotification({
+      userId: parentCommentAuthorId,
+      type: "comment_reply",
+      actorUserId: userId,
+      recipeId: cocktailId,
+      recipeType: cocktailType,
+      commentId,
+    });
+  }
 
   await processCommentMentions(
     userId,

@@ -7,7 +7,9 @@ import {
   resetDatabase,
   registerAndLogin,
   register,
-  login
+  login,
+  createOwnCocktail,
+  promoteToAdmin
 } from "../utils/testHelpers";
 
 jest.setTimeout(30000);
@@ -214,4 +216,216 @@ describe("Notifications / Mentions tests", () => {
     const res = await request(app).patch("/api/notifications/1/read");
     expect(res.status).toBe(401);
   });
+
+  test("public cocktail like creates notification for author", async () => {
+  const author = makeUser("notif_like_author");
+  const liker = makeUser("notif_like_liker");
+  const authorToken = await registerAndLogin(author);
+  const cocktailId = await createOwnCocktail(authorToken);
+
+  await request(app)
+    .post(`/api/${cocktailId}/publish`)
+    .set("Authorization", `Bearer ${authorToken}`);
+
+  const admin = makeUser("notif_like_admin");
+  await register(admin);
+  await promoteToAdmin(admin.email);
+
+  const adminLogin = await login({
+    email: admin.email,
+    password: admin.password,
+  });
+
+  await request(app)
+    .post(`/api/admin/moderation/${cocktailId}/approve`)
+    .set("Authorization", `Bearer ${adminLogin.body.token}`);
+
+  const likerToken = await registerAndLogin(liker);
+
+  const publicRes = await request(app).get("/api/public");
+  const publicId = String(publicRes.body[0].id);
+
+  const likeRes = await request(app)
+    .post("/api/likes")
+    .set("Authorization", `Bearer ${likerToken}`)
+    .send({
+      cocktailId: publicId,
+      cocktailType: "public",
+    });
+
+  expect(likeRes.status).toBe(201);
+
+  const notificationsRes = await request(app)
+    .get("/api/notifications")
+    .set("Authorization", `Bearer ${authorToken}`);
+
+  expect(notificationsRes.status).toBe(200);
+  expect(notificationsRes.body[0].type).toBe("cocktail_like");
+  expect(notificationsRes.body[0].recipe_type).toBe("public");
+  expect(notificationsRes.body[0].recipe_id).toBe(publicId);
+});
+
+test("comment on public cocktail creates notification for author", async () => {
+  const author = makeUser("notif_comment_author");
+  const commenter = makeUser("notif_comment_commenter");
+  const authorToken = await registerAndLogin(author);
+  const cocktailId = await createOwnCocktail(authorToken);
+
+  await request(app)
+    .post(`/api/${cocktailId}/publish`)
+    .set("Authorization", `Bearer ${authorToken}`);
+
+  const admin = makeUser("notif_comment_admin");
+  await register(admin);
+  await promoteToAdmin(admin.email);
+
+  const adminLogin = await login({
+    email: admin.email,
+    password: admin.password,
+  });
+
+  await request(app)
+    .post(`/api/admin/moderation/${cocktailId}/approve`)
+    .set("Authorization", `Bearer ${adminLogin.body.token}`);
+
+  const commenterToken = await registerAndLogin(commenter);
+
+  const publicRes = await request(app).get("/api/public");
+  const publicId = String(publicRes.body[0].id);
+
+  const commentRes = await request(app)
+    .post("/api/comments")
+    .set("Authorization", `Bearer ${commenterToken}`)
+    .send({
+      cocktailId: publicId,
+      cocktailType: "public",
+      content: "Nice recipe",
+    });
+
+  expect(commentRes.status).toBe(201);
+
+  const notificationsRes = await request(app)
+    .get("/api/notifications")
+    .set("Authorization", `Bearer ${authorToken}`);
+
+  expect(notificationsRes.status).toBe(200);
+  expect(notificationsRes.body[0].type).toBe("cocktail_comment");
+  expect(notificationsRes.body[0].recipe_type).toBe("public");
+  expect(notificationsRes.body[0].recipe_id).toBe(publicId);
+  expect(notificationsRes.body[0].comment_id).toBe(commentRes.body.commentId);
+});
+
+test("reply creates notification for parent comment author", async () => {
+  const user1 = makeUser("notif_reply_user1");
+  const user2 = makeUser("notif_reply_user2");
+
+  const token1 = await registerAndLogin(user1);
+  const token2 = await registerAndLogin(user2);
+
+  const parentRes = await request(app)
+    .post("/api/comments")
+    .set("Authorization", `Bearer ${token1}`)
+    .send({
+      cocktailId: "mojito",
+      cocktailType: "catalog",
+      content: "Parent comment",
+    });
+
+  expect(parentRes.status).toBe(201);
+
+  const replyRes = await request(app)
+    .post("/api/comments")
+    .set("Authorization", `Bearer ${token2}`)
+    .send({
+      cocktailId: "mojito",
+      cocktailType: "catalog",
+      content: "Reply here",
+      parentCommentId: parentRes.body.commentId,
+    });
+
+  expect(replyRes.status).toBe(201);
+
+  const notificationsRes = await request(app)
+    .get("/api/notifications")
+    .set("Authorization", `Bearer ${token1}`);
+
+  expect(notificationsRes.status).toBe(200);
+  expect(notificationsRes.body[0].type).toBe("comment_reply");
+  expect(notificationsRes.body[0].comment_id).toBe(replyRes.body.commentId);
+});
+
+test("comment like creates notification for comment author", async () => {
+  const author = makeUser("notif_comment_like_author");
+  const liker = makeUser("notif_comment_like_liker");
+
+  const authorToken = await registerAndLogin(author);
+  const likerToken = await registerAndLogin(liker);
+
+  const commentRes = await request(app)
+    .post("/api/comments")
+    .set("Authorization", `Bearer ${authorToken}`)
+    .send({
+      cocktailId: "mojito",
+      cocktailType: "catalog",
+      content: "Comment to like",
+    });
+
+  expect(commentRes.status).toBe(201);
+
+  const likeRes = await request(app)
+    .post("/api/comment-likes")
+    .set("Authorization", `Bearer ${likerToken}`)
+    .send({
+      commentId: commentRes.body.commentId,
+    });
+
+  expect(likeRes.status).toBe(201);
+
+  const notificationsRes = await request(app)
+    .get("/api/notifications")
+    .set("Authorization", `Bearer ${authorToken}`);
+
+  expect(notificationsRes.status).toBe(200);
+  expect(notificationsRes.body[0].type).toBe("comment_like");
+  expect(notificationsRes.body[0].comment_id).toBe(commentRes.body.commentId);
+});
+
+test("notifications are sorted newest first", async () => {
+  const author = makeUser("notif_sort_author");
+  const user1 = makeUser("notif_sort_user1");
+  const user2 = makeUser("notif_sort_user2");
+
+  const authorToken = await registerAndLogin(author);
+  const token1 = await registerAndLogin(user1);
+  const token2 = await registerAndLogin(user2);
+
+  await request(app)
+    .post("/api/comments")
+    .set("Authorization", `Bearer ${token1}`)
+    .send({
+      cocktailId: "mojito",
+      cocktailType: "catalog",
+      content: `Hello @${author.nickname}`,
+    });
+
+  await request(app)
+    .post("/api/comments")
+    .set("Authorization", `Bearer ${token2}`)
+    .send({
+      cocktailId: "mojito",
+      cocktailType: "catalog",
+      content: `Hello again @${author.nickname}`,
+    });
+
+  const notificationsRes = await request(app)
+    .get("/api/notifications")
+    .set("Authorization", `Bearer ${authorToken}`);
+
+  expect(notificationsRes.status).toBe(200);
+  expect(notificationsRes.body.length).toBe(2);
+  expect(notificationsRes.body[0].actor_nickname).toBe(user2.nickname);
+  expect(notificationsRes.body[1].actor_nickname).toBe(user1.nickname);
+});
+
+
 });

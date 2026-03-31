@@ -7,17 +7,17 @@ export const getUserNotifications = async (
   userId: number
 ): Promise<Notification[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT
-        n.*,
-        u.nickname AS actor_nickname,
-        cc.content AS comment_content
-     FROM notifications n
-     JOIN users u ON n.actor_user_id = u.id
-     JOIN cocktail_comments cc ON n.comment_id = cc.id
-     WHERE n.user_id = ?
-     ORDER BY n.created_at DESC`,
-    [userId]
-  );
+  `SELECT
+      n.*,
+      u.nickname AS actor_nickname,
+      cc.content AS comment_content
+   FROM notifications n
+   JOIN users u ON n.actor_user_id = u.id
+   LEFT JOIN cocktail_comments cc ON n.comment_id = cc.id
+   WHERE n.user_id = ?
+   ORDER BY n.created_at DESC, n.id DESC`,
+  [userId]
+);
 
   return rows as Notification[];
 };

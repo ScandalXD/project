@@ -2,6 +2,7 @@ import { db } from "../config/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { CocktailType } from "../models/Like.model";
 import { ServiceError } from "./cocktail.service";
+import { createNotification } from "./notificationEvent.service";
 
 const validateCocktailType = (cocktailType: CocktailType) => {
   if (cocktailType !== "catalog" && cocktailType !== "public") {
@@ -54,6 +55,28 @@ export const addLike = async (
      VALUES (?, ?, ?)`,
     [userId, cocktailId, cocktailType]
   );
+
+  if (cocktailType === "public") {
+    const [rows] = await db.query<RowDataPacket[]>(
+      `SELECT id, author_id
+       FROM public_cocktails
+       WHERE id = ?`,
+      [cocktailId]
+    );
+
+    if (rows.length > 0) {
+      const cocktail = rows[0] as { id: number; author_id: number };
+
+      await createNotification({
+        userId: Number(cocktail.author_id),
+        type: "cocktail_like",
+        actorUserId: userId,
+        recipeId: String(cocktailId),
+        recipeType: "public",
+        commentId: null,
+      });
+    }
+  }
 };
 
 export const removeLike = async (

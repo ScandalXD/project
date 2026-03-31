@@ -1,6 +1,7 @@
 import { db } from "../config/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { CocktailType } from "../models/Comment.model";
+import { createNotification } from "./notificationEvent.service";
 
 const extractMentionNicknames = (content: string): string[] => {
   const matches = content.match(/@([a-zA-Z0-9_]+)/g) ?? [];
@@ -45,11 +46,13 @@ export const processCommentMentions = async (
       [commentId, user.id, actorUserId]
     );
 
-    await db.query<ResultSetHeader>(
-      `INSERT INTO notifications
-        (user_id, type, actor_user_id, recipe_id, recipe_type, comment_id)
-       VALUES (?, 'mention', ?, ?, ?, ?)`,
-      [user.id, actorUserId, recipeId, recipeType, commentId]
-    );
+    await createNotification({
+      userId: user.id,
+      type: "mention",
+      actorUserId,
+      recipeId,
+      recipeType,
+      commentId,
+    });
   }
 };
