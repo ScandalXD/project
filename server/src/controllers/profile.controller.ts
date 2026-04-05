@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { db } from "../config/db";
+import bcrypt from "bcrypt";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { User } from "../models/User.model";
 import { generateToken } from "../services/token.service";
@@ -173,5 +174,87 @@ export const deleteProfile = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("deleteProfile error:", error);
     res.status(500).json({ message: "Failed to delete account" });
+  }
+};
+
+interface ChangePasswordBody {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export const changePassword = async (
+  req: Request<{}, {}, ChangePasswordBody>,
+  res: Response
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const userId = Number(req.user.id);
+
+    if (!Number.isInteger(userId)) {
+      return res.status(401).json({ message: "Invalid user id in token" });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        message: "Current and new password are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: "New password must be at least 6 characters long",
+      });
+    }
+
+    const [rows] = await db.query<RowDataPacket[]>(
+      "SELECT id, password_hash FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = rows[0] as { id: number; password_hash: string };
+
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      user.password_hash
+    );
+
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ message: "Current password is incorrect" });
+    }
+
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      user.password_hash
+    );
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        message:
+          "New password must be different from current password",
+      });
+    }
+
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    await db.query<ResultSetHeader>(
+      "UPDATE users SET password_hash = ? WHERE id = ?",
+      [newPasswordHash, userId]
+    );
+
+    res.json({ message: "Password updated" });
+  } catch (error) {
+    console.error("changePassword error:", error);
+    res.status(500).json({ message: "Failed to update password" });
   }
 };
