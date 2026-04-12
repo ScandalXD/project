@@ -12,6 +12,7 @@ CREATE TABLE users (
   name VARCHAR(100) NOT NULL,
   nickname VARCHAR(50) NOT NULL UNIQUE,
   role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -126,7 +127,8 @@ CREATE TABLE comment_mentions (
 CREATE TABLE notifications (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   user_id BIGINT NOT NULL,
-  type ENUM('mention', 'cocktail_like', 'cocktail_comment', 'comment_like', 'comment_reply') NOT NULL,
+  type ENUM('mention', 'cocktail_like', 'cocktail_comment', 'comment_like', 'comment_reply', 'report_public_cocktail_removed', 'report_comment_deleted') NOT NULL,
+  admin_reason TEXT NULL,
   actor_user_id BIGINT NOT NULL,
   recipe_id VARCHAR(100) NOT NULL,
   recipe_type ENUM('catalog', 'public') NOT NULL,
@@ -139,4 +141,22 @@ CREATE TABLE notifications (
     FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_notifications_comment
     FOREIGN KEY (comment_id) REFERENCES cocktail_comments(id) ON DELETE CASCADE
+);
+
+CREATE TABLE reports (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  reporter_user_id BIGINT NOT NULL,
+  target_type ENUM('public_cocktail', 'comment') NOT NULL,
+  target_id BIGINT NOT NULL,
+  reason VARCHAR(255) NOT NULL,
+  admin_reason TEXT NULL,
+  details TEXT NULL,
+  status ENUM('open', 'reviewed') NOT NULL DEFAULT 'open',
+  reviewed_by BIGINT NULL,
+  reviewed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_reports_reporter
+    FOREIGN KEY (reporter_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_reports_reviewed_by
+    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 );

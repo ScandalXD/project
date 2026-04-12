@@ -20,6 +20,7 @@ export async function resetDatabase() {
   await db.query("DELETE FROM notifications");
   await db.query("DELETE FROM comment_mentions");
   await db.query("DELETE FROM comment_likes");
+  await db.query("DELETE FROM reports");
   await db.query("DELETE FROM cocktail_comments");
   await db.query("DELETE FROM cocktail_likes");
   await db.query("DELETE FROM favorites");

@@ -66,7 +66,7 @@ describe("Comment likes tests", () => {
     expect(countAfterRes.body.count).toBe(0);
   });
 
-  test("user can like чужой comment", async () => {
+  test("user can like other comment", async () => {
     const user1 = makeUser("comment_like_owner");
     const user2 = makeUser("comment_like_other");
 

@@ -8,6 +8,7 @@ import adminRoutes from "./routes/admin.routes";
 import likeRoutes from "./routes/like.routes";
 import commentRoutes from "./routes/comment.routes";
 import notificationRoutes from "./routes/notification.routes";
+import reportRoutes from "./routes/report.routes";
 
 const app = express();
 
@@ -25,5 +26,6 @@ app.use("/api", cocktailRoutes);
 app.use("/api", likeRoutes);
 app.use("/api", commentRoutes);
 app.use("/api", notificationRoutes);
+app.use("/api", reportRoutes);
 
 export default app;

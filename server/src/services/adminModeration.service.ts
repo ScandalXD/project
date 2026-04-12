@@ -1,5 +1,5 @@
 import { db } from "../config/db";
-import { RowDataPacket } from "mysql2";
+import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { UserCocktail } from "../models/UserCocktail.model";
 import { PublicCocktail } from "../models/PublicCocktail.model";
 import { ServiceError } from "./cocktail.service";
@@ -229,4 +229,24 @@ export const getPublishedCocktailsForAdmin = async (): Promise<PublicCocktail[]>
   );
 
   return rows as PublicCocktail[];
+};
+
+export const deleteAnyComment = async (commentId: number): Promise<void> => {
+  if (!Number.isInteger(commentId)) {
+    throw new ServiceError("Invalid comment id", 400);
+  }
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT id FROM cocktail_comments WHERE id = ?",
+    [commentId]
+  );
+
+  if (rows.length === 0) {
+    throw new ServiceError("Comment not found", 404);
+  }
+
+  await db.query<ResultSetHeader>(
+    "DELETE FROM cocktail_comments WHERE id = ?",
+    [commentId]
+  );
 };

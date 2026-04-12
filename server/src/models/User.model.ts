@@ -8,4 +8,5 @@ export interface User {
   nickname: string;
   role: UserRole;
   created_at: string;
+  is_active: boolean;
 }

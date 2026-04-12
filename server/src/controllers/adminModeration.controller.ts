@@ -6,6 +6,7 @@ import {
   cancelModeration,
   removePublishedCocktail,
   getPublishedCocktailsForAdmin,
+  deleteAnyComment,
 } from "../services/adminModeration.service";
 import { ServiceError } from "../services/cocktail.service";
 
@@ -110,6 +111,18 @@ export const removePublishedCocktailHandler = async (
       req.body.reason
     );
     res.json({ message: "Published cocktail removed" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const deleteAnyCommentHandler = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
+  try {
+    await deleteAnyComment(Number(req.params.id));
+    res.json({ message: "Comment deleted by admin" });
   } catch (e) {
     handleError(res, e);
   }

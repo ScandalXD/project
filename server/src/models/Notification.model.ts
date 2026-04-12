@@ -3,7 +3,9 @@ export type NotificationType =
   | "cocktail_like"
   | "cocktail_comment"
   | "comment_like"
-  | "comment_reply";
+  | "comment_reply"
+  | "report_public_cocktail_removed"
+  | "report_comment_deleted";
 
 export type RecipeType = "catalog" | "public";
 
@@ -19,4 +21,5 @@ export interface Notification {
   created_at: string;
   actor_nickname?: string;
   comment_content?: string | null;
+  admin_reason?: string | null;
 }

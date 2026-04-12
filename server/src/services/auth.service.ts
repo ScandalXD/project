@@ -33,6 +33,7 @@ export const registerUser = async (
     password_hash: hash,
     role: "user",
     created_at: new Date().toISOString(),
+    is_active: true,
   };
 };
 
@@ -52,6 +53,11 @@ export const loginUser = async (
   }
 
   const user = users[0];
+
+  if (!user.is_active) {
+    throw new Error("ACCOUNT_DEACTIVATED");
+  }
+
   const isValid = await bcrypt.compare(password, user.password_hash);
 
   if (!isValid) {

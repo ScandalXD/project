@@ -9,6 +9,7 @@ interface CreateNotificationInput {
   recipeId: string;
   recipeType: RecipeType;
   commentId?: number | null;
+  adminReason?: string | null;
 }
 
 export const createNotification = async ({
@@ -18,6 +19,7 @@ export const createNotification = async ({
   recipeId,
   recipeType,
   commentId = null,
+  adminReason = null,
 }: CreateNotificationInput): Promise<void> => {
   if (Number(userId) === Number(actorUserId)) {
     return;
@@ -25,8 +27,8 @@ export const createNotification = async ({
 
   await db.query<ResultSetHeader>(
     `INSERT INTO notifications
-      (user_id, type, actor_user_id, recipe_id, recipe_type, comment_id)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [userId, type, actorUserId, recipeId, recipeType, commentId]
+      (user_id, type, actor_user_id, recipe_id, recipe_type, comment_id, admin_reason)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [userId, type, actorUserId, recipeId, recipeType, commentId, adminReason]
   );
 };
