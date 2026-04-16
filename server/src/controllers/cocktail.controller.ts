@@ -64,16 +64,21 @@ export const getMyCocktails = async (req: Request, res: Response) => {
 
 export const createCocktail = async (
   req: Request<{}, {}, CreateCocktailBody>,
-  res: Response
+  res: Response,
 ) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
+    const image = req.file
+      ? `/uploads/user-cocktails/${req.file.filename}`
+      : (req.body.image ?? null);
+
     const cocktailId = await addCocktail({
       owner_id: req.user.id,
       ...req.body,
+      image,
     });
 
     res.status(201).json({
@@ -87,14 +92,21 @@ export const createCocktail = async (
 
 export const editCocktail = async (
   req: Request<{ id: string }, {}, CreateCocktailBody>,
-  res: Response
+  res: Response,
 ) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
-    await updateCocktail(Number(req.params.id), req.user.id, req.body);
+    const image = req.file
+      ? `/uploads/user-cocktails/${req.file.filename}`
+      : (req.body.image ?? null);
+
+    await updateCocktail(Number(req.params.id), req.user.id, {
+      ...req.body,
+      image,
+    });
 
     res.json({ message: "Cocktail updated" });
   } catch (e) {
@@ -104,7 +116,7 @@ export const editCocktail = async (
 
 export const publishUserCocktailHandler = async (
   req: Request<{ id: string }>,
-  res: Response
+  res: Response,
 ) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -121,7 +133,7 @@ export const publishUserCocktailHandler = async (
 
 export const removeCocktail = async (
   req: Request<{ id: string }>,
-  res: Response
+  res: Response,
 ) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -138,7 +150,7 @@ export const removeCocktail = async (
 
 export const removePublicCocktail = async (
   req: Request<{ id: string }>,
-  res: Response
+  res: Response,
 ) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });

@@ -1,15 +1,13 @@
+import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
-import App from "./App";
+import App from "./app/App";
+import { Providers } from "./app/providers";
+import "./styles/globals.css";
 
-const root = document.getElementById("root");
-
-if (!root) {
-  throw new Error("ROOT NOT FOUND");
-}
-
-ReactDOM.createRoot(root).render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <Providers>
+      <App />
+    </Providers>
+  </React.StrictMode>
 );

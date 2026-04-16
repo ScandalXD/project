@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import path from "path";
 import authRoutes from "./routes/auth.routes";
 import profileRoutes from "./routes/profile.routes";
 import cocktailRoutes from "./routes/cocktail.routes";
@@ -27,5 +28,6 @@ app.use("/api", likeRoutes);
 app.use("/api", commentRoutes);
 app.use("/api", notificationRoutes);
 app.use("/api", reportRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 export default app;

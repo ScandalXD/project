@@ -40,7 +40,15 @@ export const addCatalogCocktailHandler = async (
   res: Response
 ) => {
   try {
-    await addCatalogCocktail(req.body);
+    const image = req.file
+      ? `/uploads/catalog/${req.file.filename}`
+      : req.body.image ?? null;
+
+    await addCatalogCocktail({
+      ...req.body,
+      image,
+    });
+
     res.status(201).json({ message: "Catalog cocktail created" });
   } catch (e) {
     handleError(res, e);
@@ -52,7 +60,15 @@ export const updateCatalogCocktailHandler = async (
   res: Response
 ) => {
   try {
-    await updateCatalogCocktail(req.params.id, req.body);
+    const image = req.file
+      ? `/uploads/catalog/${req.file.filename}`
+      : req.body.image ?? null;
+
+    await updateCatalogCocktail(req.params.id, {
+      ...req.body,
+      image,
+    });
+
     res.json({ message: "Catalog cocktail updated" });
   } catch (e) {
     handleError(res, e);

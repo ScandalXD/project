@@ -20,7 +20,7 @@ import {
   getSystemStatsHandler
 } from "../controllers/adminDashboard.controller";
 import { deactivateUserHandler, reactivateUserHandler } from "../controllers/adminUser.controller";
-import { reactivateUser } from "../services/adminUser.service";
+import { uploadCatalogImage } from "../middleware/uploadCatalog.middleware";
 
 const router = Router();
 
@@ -42,8 +42,17 @@ router.delete("/comments/:id", deleteAnyCommentHandler);
 router.patch("/users/:id/deactivate", deactivateUserHandler);
 router.patch("/users/:id/reactivate", reactivateUserHandler);
 
-router.post("/catalog", addCatalogCocktailHandler);
-router.put("/catalog/:id", updateCatalogCocktailHandler);
+router.post(
+  "/catalog",
+  uploadCatalogImage.single("image"),
+  addCatalogCocktailHandler
+);
+
+router.put(
+  "/catalog/:id",
+  uploadCatalogImage.single("image"),
+  updateCatalogCocktailHandler
+);
 router.delete("/catalog/:id", deleteCatalogCocktailHandler);
 
 export default router;
