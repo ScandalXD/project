@@ -3,6 +3,7 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { UserCocktail, PublicationStatus } from "../models/UserCocktail.model";
 import { CatalogCocktail } from "../models/CatalogCocktail.model";
 import { PublicCocktail } from "../models/PublicCocktail.model";
+import { deleteUploadedFile } from "../utils/file.util";
 
 export class ServiceError extends Error {
   status: number;
@@ -131,12 +132,22 @@ export const updateCocktail = async (
     await resetModerationToDraft(cocktailId);
   }
 
+  const shouldDeleteOldImage =
+    cocktail.image &&
+    image &&
+    cocktail.image !== image &&
+    cocktail.image.startsWith("/uploads/");
+
   await db.query(
     `UPDATE user_cocktails
      SET name = ?, category = ?, ingredients = ?, instructions = ?, image = ?
      WHERE id = ?`,
     [name, category, ingredients, instructions, image, cocktailId]
   );
+
+  if (shouldDeleteOldImage) {
+    await deleteUploadedFile(cocktail.image);
+  }
 };
 
 export const deleteCocktail = async (
@@ -167,6 +178,8 @@ export const deleteCocktail = async (
   ]);
 
   await db.query("DELETE FROM user_cocktails WHERE id = ?", [cocktailId]);
+
+  await deleteUploadedFile(cocktail.image);
 };
 
 export const publishUserCocktail = async (

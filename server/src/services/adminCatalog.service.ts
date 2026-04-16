@@ -1,6 +1,7 @@
 import { db } from "../config/db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { ServiceError } from "./cocktail.service";
+import { deleteUploadedFile } from "../utils/file.util";
 
 export interface AdminCatalogData {
   id: string;
@@ -56,7 +57,7 @@ export const updateCatalogCocktail = async (
   }
 
   const [existing] = await db.query<RowDataPacket[]>(
-    "SELECT id FROM catalog_cocktails WHERE id = ?",
+    "SELECT * FROM catalog_cocktails WHERE id = ?",
     [id]
   );
 
@@ -64,12 +65,24 @@ export const updateCatalogCocktail = async (
     throw new ServiceError("Catalog cocktail not found", 404);
   }
 
+  const cocktail = existing[0] as AdminCatalogData;
+
+  const shouldDeleteOldImage =
+    cocktail.image &&
+    image &&
+    cocktail.image !== image &&
+    cocktail.image.startsWith("/uploads/");
+
   await db.query(
     `UPDATE catalog_cocktails
      SET name = ?, category = ?, ingredients = ?, instructions = ?, image = ?
      WHERE id = ?`,
     [name, category, ingredients, instructions, image, id]
   );
+
+  if (shouldDeleteOldImage) {
+    await deleteUploadedFile(cocktail.image);
+  }
 };
 
 export const deleteCatalogCocktail = async (id: string): Promise<void> => {
@@ -78,7 +91,7 @@ export const deleteCatalogCocktail = async (id: string): Promise<void> => {
   }
 
   const [existing] = await db.query<RowDataPacket[]>(
-    "SELECT id FROM catalog_cocktails WHERE id = ?",
+    "SELECT * FROM catalog_cocktails WHERE id = ?",
     [id]
   );
 
@@ -86,5 +99,9 @@ export const deleteCatalogCocktail = async (id: string): Promise<void> => {
     throw new ServiceError("Catalog cocktail not found", 404);
   }
 
+  const cocktail = existing[0] as AdminCatalogData;
+
   await db.query("DELETE FROM catalog_cocktails WHERE id = ?", [id]);
+
+  await deleteUploadedFile(cocktail.image);
 };
