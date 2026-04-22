@@ -9,6 +9,7 @@ import {
   publishUserCocktailHandler,
   removeCocktail,
   removePublicCocktail,
+  getPublicCocktailsByAuthorHandler,
 } from "../controllers/cocktail.controller";
 import { uploadUserCocktailImage } from "../middleware/uploadUserCocktail.middleware";
 
@@ -16,6 +17,7 @@ const router = Router();
 
 router.get("/catalog", getCatalog);
 router.get("/public", getPublic);
+router.get("/public/authors/:authorId", getPublicCocktailsByAuthorHandler);
 
 router.get("/my", authMiddleware, getMyCocktails);
 router.post(

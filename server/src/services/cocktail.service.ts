@@ -254,3 +254,22 @@ export const deletePublicCocktail = async (
 
   await resetModerationToDraft(cocktail.source_cocktail_id);
 };
+
+export const getPublicCocktailsByAuthor = async (
+  authorId: number
+): Promise<PublicCocktail[]> => {
+  if (!Number.isInteger(authorId)) {
+    throw new ServiceError("Invalid author id", 400);
+  }
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT pc.*, u.nickname AS author_nickname
+     FROM public_cocktails pc
+     JOIN users u ON pc.author_id = u.id
+     WHERE pc.author_id = ?
+     ORDER BY pc.created_at DESC`,
+    [authorId]
+  );
+
+  return rows as PublicCocktail[];
+};

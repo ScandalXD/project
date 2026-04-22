@@ -9,6 +9,7 @@ import {
   deleteCocktail,
   deletePublicCocktail,
   ServiceError,
+  getPublicCocktailsByAuthor,
 } from "../services/cocktail.service";
 
 const handleError = (res: Response, err: unknown) => {
@@ -160,6 +161,20 @@ export const removePublicCocktail = async (
     await deletePublicCocktail(Number(req.params.id), req.user.id);
 
     res.json({ message: "Publication removed" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const getPublicCocktailsByAuthorHandler = async (
+  req: Request<{ authorId: string }>,
+  res: Response,
+) => {
+  try {
+    const cocktails = await getPublicCocktailsByAuthor(
+      Number(req.params.authorId)
+    );
+    res.json(cocktails);
   } catch (e) {
     handleError(res, e);
   }

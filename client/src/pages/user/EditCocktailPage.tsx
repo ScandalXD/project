@@ -68,11 +68,13 @@ export default function EditCocktailPage() {
       <CocktailForm
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
+        mode="edit"
         initialData={{
           name: cocktail.name,
           category: cocktail.category as any,
           ingredients: cocktail.ingredients,
           instructions: cocktail.instructions,
+          currentImage: cocktail.image ?? null,
         }}
       />
     </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import CocktailCard from "../../components/cocktails/CocktailCard";
 import type { CatalogCocktail, CocktailCardData } from "../../types/cocktail";
@@ -56,7 +57,15 @@ export default function CatalogPage() {
               type: "catalog",
             };
 
-            return <CocktailCard key={cocktail.id} cocktail={cardData} />;
+            return (
+              <Link
+                key={cocktail.id}
+                to={`/catalog/${cocktail.id}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <CocktailCard cocktail={cardData} />
+              </Link>
+            );
           })}
         </div>
       )}

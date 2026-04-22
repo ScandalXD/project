@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import CocktailCard from "../../components/cocktails/CocktailCard";
 import type { CocktailCardData, PublicCocktail } from "../../types/cocktail";
@@ -46,7 +47,7 @@ export default function PublicCocktailsPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
             gap: "20px",
           }}
         >
@@ -56,7 +57,15 @@ export default function PublicCocktailsPage() {
               type: "public",
             };
 
-            return <CocktailCard key={cocktail.id} cocktail={cardData} />;
+            return (
+              <Link
+                key={cocktail.id}
+                to={`/public-cocktails/${cocktail.id}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <CocktailCard cocktail={cardData} />
+              </Link>
+            );
           })}
         </div>
       )}

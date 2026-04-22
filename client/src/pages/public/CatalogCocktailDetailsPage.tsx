@@ -6,22 +6,21 @@ import { getImageUrl } from "../../utils/getImageUrl";
 import { useAuth } from "../../hooks/useAuth";
 import CommentList from "../../components/comments/CommentList";
 import FavoriteButton from "../../components/favorites/FavoriteButton";
-import type { PublicCocktail } from "../../types/cocktail";
-import { Link } from "react-router-dom";
+import type { CatalogCocktail } from "../../types/cocktail";
 
-export default function PublicCocktailDetailsPage() {
+export default function CatalogCocktailDetailsPage() {
   const { id } = useParams();
   const { isAuthenticated } = useAuth();
 
-  const [cocktail, setCocktail] = useState<PublicCocktail | null>(null);
+  const [cocktail, setCocktail] = useState<CatalogCocktail | null>(null);
   const [likesCount, setLikesCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [error, setError] = useState("");
 
   const loadCocktail = async () => {
     try {
-      const list = await cocktailsApi.getPublicCocktails();
-      const found = list.find((item) => String(item.id) === String(id));
+      const list = await cocktailsApi.getCatalogCocktails();
+      const found = list.find((item) => item.id === id);
 
       if (!found) {
         setError("Cocktail not found.");
@@ -40,11 +39,11 @@ export default function PublicCocktailDetailsPage() {
     }
 
     try {
-      const count = await likesApi.getLikesCount("public", id);
+      const count = await likesApi.getLikesCount("catalog", id);
       setLikesCount(count);
 
       if (isAuthenticated) {
-        const liked = await likesApi.isLikedByUser("public", id);
+        const liked = await likesApi.isLikedByUser("catalog", id);
         setIsLiked(liked);
       } else {
         setIsLiked(false);
@@ -66,9 +65,9 @@ export default function PublicCocktailDetailsPage() {
     }
 
     if (isLiked) {
-      await likesApi.removeLike("public", id);
+      await likesApi.removeLike("catalog", id);
     } else {
-      await likesApi.addLike("public", id);
+      await likesApi.addLike("catalog", id);
     }
 
     await loadLikes();
@@ -113,12 +112,6 @@ export default function PublicCocktailDetailsPage() {
 
       <h1>{cocktail.name}</h1>
       <p>
-        <strong>Author:</strong>{" "}
-        <Link to={`/authors/${cocktail.author_id}`}>
-          {cocktail.author_nickname}
-        </Link>
-      </p>
-      <p>
         <strong>Category:</strong> {cocktail.category}
       </p>
       <p>
@@ -142,9 +135,9 @@ export default function PublicCocktailDetailsPage() {
       >
         ❤️ {likesCount}
       </button>
-      <FavoriteButton cocktailId={cocktail.id} type="public" />
+      <FavoriteButton cocktailId={cocktail.id} type="catalog" />
 
-      <CommentList cocktailId={cocktail.id} type="public" />
+      <CommentList cocktailId={cocktail.id} type="catalog" />
     </div>
   );
 }

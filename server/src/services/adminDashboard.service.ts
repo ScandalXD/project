@@ -3,7 +3,7 @@ import { RowDataPacket } from "mysql2";
 
 export const getAllUsers = async () => {
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT id, name, nickname, email, role, created_at
+    `SELECT id, name, nickname, email, role, is_active, created_at
      FROM users
      ORDER BY created_at DESC, id DESC`
   );

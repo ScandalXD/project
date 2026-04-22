@@ -78,6 +78,18 @@ export default function MainLayout() {
               >
                 My Cocktails
               </Link>
+              <Link
+                to="/favorites"
+                style={{ textDecoration: "none", color: "#374151" }}
+              >
+                Favorites
+              </Link>
+              <Link
+                to="/notifications"
+                style={{ textDecoration: "none", color: "#374151" }}
+              >
+                Notifications
+              </Link>
               <span style={{ color: "#374151" }}>{user?.nickname}</span>
               <button
                 onClick={logout}

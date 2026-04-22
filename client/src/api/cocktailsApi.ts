@@ -68,6 +68,8 @@ export const cocktailsApi = {
 
     if (data.image) {
       formData.append("image", data.image);
+    } else if (data.currentImage) {
+      formData.append("image", data.currentImage);
     }
 
     const response = await api.put(`/${id}`, formData, {

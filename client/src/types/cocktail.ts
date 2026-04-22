@@ -44,4 +44,5 @@ export interface CreateCocktailRequest {
   ingredients: string;
   instructions: string;
   image?: File | null;
+  currentImage?: string | null;
 }

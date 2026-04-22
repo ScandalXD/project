@@ -1,28 +1,40 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import type {
-  CocktailCategory,
-  CreateCocktailRequest,
-} from "../../types/cocktail";
 import { getImageUrl } from "../../utils/getImageUrl";
 
-interface CocktailFormProps {
-  onSubmit: (data: CreateCocktailRequest) => Promise<void>;
+interface AdminCatalogFormProps {
+  mode: "create" | "edit";
+  initialData?: {
+    id?: string;
+    name?: string;
+    category?: "Alkoholowy" | "Bezalkoholowy";
+    ingredients?: string;
+    instructions?: string;
+    currentImage?: string | null;
+  };
+  onSubmit: (data: {
+    id?: string;
+    name: string;
+    category: "Alkoholowy" | "Bezalkoholowy";
+    ingredients: string;
+    instructions: string;
+    image?: File | null;
+    currentImage?: string | null;
+  }) => Promise<void>;
   isSubmitting?: boolean;
-  initialData?: Partial<CreateCocktailRequest>;
-  mode?: "create" | "edit";
 }
 
-export default function CocktailForm({
+export default function AdminCatalogForm({
+  mode,
+  initialData,
   onSubmit,
   isSubmitting = false,
-  initialData,
-  mode = "create",
-}: CocktailFormProps) {
+}: AdminCatalogFormProps) {
   const initialForm = useMemo(
     () => ({
+      id: initialData?.id ?? "",
       name: initialData?.name ?? "",
       category:
-        (initialData?.category as CocktailCategory | undefined) ?? "Alkoholowy",
+        initialData?.category ?? ("Alkoholowy" as "Alkoholowy" | "Bezalkoholowy"),
       ingredients: initialData?.ingredients ?? "",
       instructions: initialData?.instructions ?? "",
       currentImage: initialData?.currentImage ?? "",
@@ -35,9 +47,9 @@ export default function CocktailForm({
   const [error, setError] = useState("");
 
   const handleChange = (
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value } = event.target;
+    const { name, value } = e.target;
 
     setForm((prev) => ({
       ...prev,
@@ -45,23 +57,29 @@ export default function CocktailForm({
     }));
   };
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
-    setImage(file);
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setImage(e.target.files?.[0] ?? null);
   };
 
   const isChanged =
+    form.id !== initialForm.id ||
     form.name !== initialForm.name ||
     form.category !== initialForm.category ||
     form.ingredients !== initialForm.ingredients ||
     form.instructions !== initialForm.instructions ||
     image !== null;
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     setError("");
 
-    if (!form.name || !form.category || !form.ingredients || !form.instructions) {
+    if (
+      !form.name.trim() ||
+      !form.category ||
+      !form.ingredients.trim() ||
+      !form.instructions.trim() ||
+      (mode === "create" && !form.id.trim())
+    ) {
       setError("Wypełnij wszystkie wymagane pola.");
       return;
     }
@@ -72,20 +90,37 @@ export default function CocktailForm({
 
     try {
       await onSubmit({
-        name: form.name,
+        ...(mode === "create" ? { id: form.id.trim() } : {}),
+        name: form.name.trim(),
         category: form.category,
-        ingredients: form.ingredients,
-        instructions: form.instructions,
+        ingredients: form.ingredients.trim(),
+        instructions: form.instructions.trim(),
         image,
         currentImage: form.currentImage || null,
       });
     } catch {
-      setError("Nie udało się zapisać koktajlu.");
+      setError("Nie udało się zapisać koktajlu katalogowego.");
     }
   };
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
+      {mode === "create" && (
+        <input
+          type="text"
+          name="id"
+          placeholder="id, np. mojito"
+          value={form.id}
+          onChange={handleChange}
+          required
+          style={{
+            padding: "12px",
+            borderRadius: "10px",
+            border: "1px solid #d1d5db",
+          }}
+        />
+      )}
+
       <input
         type="text"
         name="name"
@@ -93,14 +128,22 @@ export default function CocktailForm({
         value={form.name}
         onChange={handleChange}
         required
-        style={{ padding: "12px", borderRadius: "10px", border: "1px solid #d1d5db" }}
+        style={{
+          padding: "12px",
+          borderRadius: "10px",
+          border: "1px solid #d1d5db",
+        }}
       />
 
       <select
         name="category"
         value={form.category}
         onChange={handleChange}
-        style={{ padding: "12px", borderRadius: "10px", border: "1px solid #d1d5db" }}
+        style={{
+          padding: "12px",
+          borderRadius: "10px",
+          border: "1px solid #d1d5db",
+        }}
       >
         <option value="Alkoholowy">Alkoholowy</option>
         <option value="Bezalkoholowy">Bezalkoholowy</option>
@@ -162,7 +205,7 @@ export default function CocktailForm({
             >
               <img
                 src={getImageUrl(form.currentImage)}
-                alt="Current cocktail"
+                alt="Current catalog cocktail"
                 style={{
                   maxWidth: "100%",
                   maxHeight: "100%",
@@ -208,7 +251,7 @@ export default function CocktailForm({
           opacity: isSubmitting || (mode === "edit" && !isChanged) ? 0.6 : 1,
         }}
       >
-        {isSubmitting ? "Saving..." : mode === "edit" ? "Save changes" : "Create cocktail"}
+        {isSubmitting ? "Saving..." : mode === "edit" ? "Save changes" : "Create catalog cocktail"}
       </button>
     </form>
   );
