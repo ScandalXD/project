@@ -5,6 +5,7 @@ import {
   deleteCatalogCocktail,
 } from "../services/adminCatalog.service";
 import { ServiceError } from "../services/cocktail.service";
+import { deleteUploadedFile } from "../utils/file.util";
 
 const handleError = (res: Response, err: unknown) => {
   if (err instanceof ServiceError) {
@@ -51,6 +52,10 @@ export const addCatalogCocktailHandler = async (
 
     res.status(201).json({ message: "Catalog cocktail created" });
   } catch (e) {
+    if (req.file) {
+      await deleteUploadedFile(`/uploads/catalog/${req.file.filename}`);
+    }
+
     handleError(res, e);
   }
 };
@@ -71,6 +76,10 @@ export const updateCatalogCocktailHandler = async (
 
     res.json({ message: "Catalog cocktail updated" });
   } catch (e) {
+    if (req.file) {
+      await deleteUploadedFile(`/uploads/catalog/${req.file.filename}`);
+    }
+
     handleError(res, e);
   }
 };

@@ -40,13 +40,13 @@ const resetModerationToDraft = async (cocktailId: number) => {
          moderated_at = NULL,
          moderated_by = NULL
      WHERE id = ?`,
-    [cocktailId]
+    [cocktailId],
   );
 };
 
 export const getCatalogCocktails = async (): Promise<CatalogCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT * FROM catalog_cocktails ORDER BY created_at DESC"
+    "SELECT * FROM catalog_cocktails ORDER BY created_at DESC",
   );
 
   return rows as CatalogCocktail[];
@@ -57,24 +57,26 @@ export const getPublicCocktails = async (): Promise<PublicCocktail[]> => {
     `SELECT pc.*, u.nickname AS author_nickname
      FROM public_cocktails pc
      JOIN users u ON pc.author_id = u.id
-     ORDER BY pc.created_at DESC`
+     ORDER BY pc.created_at DESC`,
   );
 
   return rows as PublicCocktail[];
 };
 
 export const getUserCocktails = async (
-  userId: number
+  userId: number,
 ): Promise<UserCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT * FROM user_cocktails WHERE owner_id = ? ORDER BY created_at DESC",
-    [userId]
+    [userId],
   );
 
   return rows as UserCocktail[];
 };
 
-export const addCocktail = async (data: CreateCocktailData): Promise<number> => {
+export const addCocktail = async (
+  data: CreateCocktailData,
+): Promise<number> => {
   const { owner_id, name, category, ingredients, instructions, image } = data;
 
   if (!name || !category || !ingredients || !instructions) {
@@ -85,7 +87,7 @@ export const addCocktail = async (data: CreateCocktailData): Promise<number> => 
     `INSERT INTO user_cocktails
       (owner_id, name, category, ingredients, instructions, image, publication_status)
      VALUES (?, ?, ?, ?, ?, ?, 'draft')`,
-    [owner_id, name, category, ingredients, instructions, image]
+    [owner_id, name, category, ingredients, instructions, image],
   );
 
   return result.insertId;
@@ -94,7 +96,7 @@ export const addCocktail = async (data: CreateCocktailData): Promise<number> => 
 export const updateCocktail = async (
   cocktailId: number,
   userId: number,
-  data: UpdateCocktailData
+  data: UpdateCocktailData,
 ): Promise<void> => {
   if (!Number.isInteger(cocktailId)) {
     throw new ServiceError("Invalid cocktail id", 400);
@@ -102,7 +104,7 @@ export const updateCocktail = async (
 
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT * FROM user_cocktails WHERE id = ?",
-    [cocktailId]
+    [cocktailId],
   );
 
   if (rows.length === 0) {
@@ -116,7 +118,10 @@ export const updateCocktail = async (
   }
 
   if (cocktail.publication_status === "pending") {
-    throw new ServiceError("Cocktail is under moderation and cannot be edited", 409);
+    throw new ServiceError(
+      "Cocktail is under moderation and cannot be edited",
+      409,
+    );
   }
 
   const { name, category, ingredients, instructions, image } = data;
@@ -126,9 +131,10 @@ export const updateCocktail = async (
   }
 
   if (cocktail.publication_status === "approved") {
-    await db.query("DELETE FROM public_cocktails WHERE source_cocktail_id = ?", [
-      cocktailId,
-    ]);
+    await db.query(
+      "DELETE FROM public_cocktails WHERE source_cocktail_id = ?",
+      [cocktailId],
+    );
     await resetModerationToDraft(cocktailId);
   }
 
@@ -142,7 +148,7 @@ export const updateCocktail = async (
     `UPDATE user_cocktails
      SET name = ?, category = ?, ingredients = ?, instructions = ?, image = ?
      WHERE id = ?`,
-    [name, category, ingredients, instructions, image, cocktailId]
+    [name, category, ingredients, instructions, image, cocktailId],
   );
 
   if (shouldDeleteOldImage) {
@@ -173,6 +179,11 @@ export const deleteCocktail = async (
     throw new ServiceError("Forbidden", 403);
   }
 
+  await db.query(
+    "DELETE FROM favorites WHERE cocktail_id = ? AND cocktail_type = 'public'",
+    [String(cocktailId)]
+  );
+
   await db.query("DELETE FROM public_cocktails WHERE source_cocktail_id = ?", [
     cocktailId,
   ]);
@@ -184,7 +195,7 @@ export const deleteCocktail = async (
 
 export const publishUserCocktail = async (
   cocktailId: number,
-  userId: number
+  userId: number,
 ): Promise<void> => {
   if (!Number.isInteger(cocktailId)) {
     throw new ServiceError("Invalid cocktail id", 400);
@@ -192,7 +203,7 @@ export const publishUserCocktail = async (
 
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT * FROM user_cocktails WHERE id = ?",
-    [cocktailId]
+    [cocktailId],
   );
 
   if (rows.length === 0) {
@@ -221,7 +232,7 @@ export const publishUserCocktail = async (
          moderated_at = NULL,
          moderated_by = NULL
      WHERE id = ?`,
-    [cocktailId]
+    [cocktailId],
   );
 };
 
@@ -248,6 +259,11 @@ export const deletePublicCocktail = async (
     throw new ServiceError("Forbidden", 403);
   }
 
+  await db.query(
+    "DELETE FROM favorites WHERE cocktail_id = ? AND cocktail_type = 'public'",
+    [String(publicCocktailId)]
+  );
+
   await db.query("DELETE FROM public_cocktails WHERE id = ?", [
     publicCocktailId,
   ]);
@@ -256,7 +272,7 @@ export const deletePublicCocktail = async (
 };
 
 export const getPublicCocktailsByAuthor = async (
-  authorId: number
+  authorId: number,
 ): Promise<PublicCocktail[]> => {
   if (!Number.isInteger(authorId)) {
     throw new ServiceError("Invalid author id", 400);
@@ -268,7 +284,7 @@ export const getPublicCocktailsByAuthor = async (
      JOIN users u ON pc.author_id = u.id
      WHERE pc.author_id = ?
      ORDER BY pc.created_at DESC`,
-    [authorId]
+    [authorId],
   );
 
   return rows as PublicCocktail[];

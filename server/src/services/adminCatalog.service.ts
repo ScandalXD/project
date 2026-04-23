@@ -101,6 +101,11 @@ export const deleteCatalogCocktail = async (id: string): Promise<void> => {
 
   const cocktail = existing[0] as AdminCatalogData;
 
+  await db.query(
+    "DELETE FROM favorites WHERE cocktail_id = ? AND cocktail_type = 'catalog'",
+    [id]
+  );
+
   await db.query("DELETE FROM catalog_cocktails WHERE id = ?", [id]);
 
   await deleteUploadedFile(cocktail.image);

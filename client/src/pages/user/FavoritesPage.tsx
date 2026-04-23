@@ -15,7 +15,8 @@ export default function FavoritesPage() {
       const mapped = favorites.map((item: any) => ({
         ...item,
         type: item.cocktail_type,
-      }));
+      }))
+        .filter((item: any) => item.id && item.name);
 
       setItems(mapped);
     } catch {

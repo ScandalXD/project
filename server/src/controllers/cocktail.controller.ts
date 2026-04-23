@@ -11,6 +11,7 @@ import {
   ServiceError,
   getPublicCocktailsByAuthor,
 } from "../services/cocktail.service";
+import { deleteUploadedFile } from "../utils/file.util";
 
 const handleError = (res: Response, err: unknown) => {
   if (err instanceof ServiceError) {
@@ -87,6 +88,10 @@ export const createCocktail = async (
       cocktailId,
     });
   } catch (e) {
+    if (req.file) {
+      await deleteUploadedFile(`/uploads/user-cocktails/${req.file.filename}`);
+    }
+
     handleError(res, e);
   }
 };
@@ -111,6 +116,10 @@ export const editCocktail = async (
 
     res.json({ message: "Cocktail updated" });
   } catch (e) {
+    if (req.file) {
+      await deleteUploadedFile(`/uploads/user-cocktails/${req.file.filename}`);
+    }
+
     handleError(res, e);
   }
 };

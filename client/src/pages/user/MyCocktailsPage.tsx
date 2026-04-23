@@ -182,7 +182,9 @@ export default function MyCocktailsPage() {
                     {cocktail.name}
                   </h3>
 
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  <div
+                    style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
+                  >
                     <span
                       style={{
                         fontSize: "12px",
@@ -261,20 +263,21 @@ export default function MyCocktailsPage() {
                   >
                     Delete
                   </button>
-
-                  <Link
-                    to={`/my-cocktails/${cocktail.id}/edit`}
-                    onClick={(e) => e.stopPropagation()}
-                    style={{
-                      textDecoration: "none",
-                      background: "#f59e0b",
-                      color: "#ffffff",
-                      padding: "10px 14px",
-                      borderRadius: "10px",
-                    }}
-                  >
-                    Edit
-                  </Link>
+                  {cocktail.publication_status !== "pending" && (
+                    <Link
+                      to={`/my-cocktails/${cocktail.id}/edit`}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        textDecoration: "none",
+                        background: "#f59e0b",
+                        color: "#ffffff",
+                        padding: "10px 14px",
+                        borderRadius: "10px",
+                      }}
+                    >
+                      Edit
+                    </Link>
+                  )}
                 </div>
               </div>
             </article>

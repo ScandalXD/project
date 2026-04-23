@@ -1,5 +1,6 @@
 import { db } from "../config/db";
 import { Favorite } from "../models/Favorite.model";
+import { RowDataPacket } from "mysql2";
 
 export const addFavorite = async (
   userId: number,
@@ -29,10 +30,8 @@ export const removeFavorite = async (
   }
 };
 
-export const getFavorites = async (
-  userId: number
-): Promise<Favorite[]> => {
-  const [rows] = await db.query(
+export const getFavorites = async (userId: number): Promise<Favorite[]> => {
+  const [rows] = await db.query<RowDataPacket[]>(
     `
     SELECT
       f.cocktail_type,
@@ -48,6 +47,12 @@ export const getFavorites = async (
     LEFT JOIN public_cocktails p
       ON f.cocktail_type = 'public' AND f.cocktail_id = p.id
     WHERE f.user_id = ?
+      AND (
+        (f.cocktail_type = 'catalog' AND c.id IS NOT NULL)
+        OR
+        (f.cocktail_type = 'public' AND p.id IS NOT NULL)
+      )
+    ORDER BY f.created_at DESC
     `,
     [userId]
   );
