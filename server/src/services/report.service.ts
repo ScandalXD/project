@@ -96,13 +96,17 @@ export const createReport = async ({
 export const getAllReports = async (): Promise<Report[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT
-        r.*,
-        reporter.nickname AS reporter_nickname,
-        reviewer.nickname AS reviewed_by_nickname
+       r.*,
+       reporter.nickname AS reporter_nickname,
+       reviewer.nickname AS reviewed_by_nickname,
+       cc.content AS comment_content,
+       cc.cocktail_id AS comment_cocktail_id,
+       cc.cocktail_type AS comment_cocktail_type
      FROM reports r
      JOIN users reporter ON r.reporter_user_id = reporter.id
      LEFT JOIN users reviewer ON r.reviewed_by = reviewer.id
-     ORDER BY r.status ASC, r.created_at DESC, r.id DESC`,
+     LEFT JOIN cocktail_comments cc ON r.target_type = 'comment' AND r.target_id = cc.id
+     ORDER BY r.created_at DESC, r.id DESC`
   );
 
   return rows as Report[];
@@ -266,4 +270,69 @@ export const deleteCommentFromReport = async (
      WHERE id = ?`,
     [adminUserId, adminReason.trim(), reportId]
   );
+};
+
+export const rejectReport = async (
+  adminUserId: number,
+  reportId: number,
+  adminReason: string
+): Promise<void> => {
+  if (!Number.isInteger(reportId)) {
+    throw new ServiceError("Invalid report id", 400);
+  }
+
+  if (!adminReason || !adminReason.trim()) {
+    throw new ServiceError("Admin reason is required", 400);
+  }
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT * FROM reports WHERE id = ?",
+    [reportId]
+  );
+
+  if (rows.length === 0) {
+    throw new ServiceError("Report not found", 404);
+  }
+
+  const report = rows[0] as Report;
+
+  if (report.status !== "open") {
+    throw new ServiceError("Report is already reviewed", 409);
+  }
+
+  await createNotification({
+    userId: Number(report.reporter_user_id),
+    type: "report_rejected",
+    actorUserId: adminUserId,
+    recipeId: String(report.target_id),
+    recipeType: "public",
+    commentId: null,
+    adminReason: adminReason.trim(),
+  });
+
+  await db.query<ResultSetHeader>(
+    `UPDATE reports
+     SET status = 'reviewed',
+         reviewed_by = ?,
+         reviewed_at = NOW(),
+         admin_reason = ?
+     WHERE id = ?`,
+    [adminUserId, adminReason.trim(), reportId]
+  );
+};
+
+export const deleteReviewedReport = async (reportId: number): Promise<void> => {
+  if (!Number.isInteger(reportId)) {
+    throw new ServiceError("Invalid report id", 400);
+  }
+
+  const [result] = await db.query<ResultSetHeader>(
+    `DELETE FROM reports
+     WHERE id = ? AND status = 'reviewed'`,
+    [reportId]
+  );
+
+  if (result.affectedRows === 0) {
+    throw new ServiceError("Only reviewed reports can be deleted", 409);
+  }
 };

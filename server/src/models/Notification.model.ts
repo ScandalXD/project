@@ -5,7 +5,8 @@ export type NotificationType =
   | "comment_like"
   | "comment_reply"
   | "report_public_cocktail_removed"
-  | "report_comment_deleted";
+  | "report_comment_deleted"
+  | "report_rejected";
 
 export type RecipeType = "catalog" | "public";
 

@@ -5,6 +5,8 @@ import {
   markReportReviewed,
   hidePublicCocktailFromReport,
   deleteCommentFromReport,
+  rejectReport,
+  deleteReviewedReport,
 } from "../services/report.service";
 import { ServiceError } from "../services/cocktail.service";
 import { ReportTargetType } from "../models/Report.model";
@@ -118,6 +120,34 @@ export const deleteCommentFromReportHandler = async (
       req.body.adminReason
     );
     res.json({ message: "Comment deleted from report" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const rejectReportHandler = async (
+  req: Request<{ id: string }, {}, AdminModerationFromReportBody>,
+  res: Response
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    await rejectReport(req.user.id, Number(req.params.id), req.body.adminReason);
+    res.json({ message: "Report rejected" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const deleteReviewedReportHandler = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
+  try {
+    await deleteReviewedReport(Number(req.params.id));
+    res.json({ message: "Report deleted" });
   } catch (e) {
     handleError(res, e);
   }

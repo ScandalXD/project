@@ -3,6 +3,7 @@ import { commentsApi } from "../../api/commentsApi";
 import { useAuth } from "../../hooks/useAuth";
 import type { CommentItemData } from "../../types/comment";
 import ReplyForm from "./ReplyForm";
+import ReportButton from "../reports/ReportButton";
 
 interface CommentItemProps {
   comment: CommentItemData;
@@ -64,6 +65,7 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
 
   return (
     <div
+      id={`comment-${comment.id}`}
       style={{
         marginTop: "14px",
         paddingLeft: comment.parent_comment_id ? "22px" : "0",
@@ -133,6 +135,7 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
               {isDeleting ? "Deleting..." : "Delete"}
             </button>
           )}
+          <ReportButton type="comment" id={comment.id} />
         </div>
 
         {showReplyForm && isAuthenticated && (

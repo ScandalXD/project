@@ -4,6 +4,7 @@ import {
   getNotificationsHandler,
   markNotificationAsReadHandler,
   markAllNotificationsAsReadHandler,
+  clearAllNotificationsHandler
 } from "../controllers/notification.controller";
 
 const router = Router();
@@ -19,5 +20,6 @@ router.patch(
   authMiddleware,
   markAllNotificationsAsReadHandler
 );
+router.delete("/notifications/clear-all", authMiddleware, clearAllNotificationsHandler);
 
 export default router;

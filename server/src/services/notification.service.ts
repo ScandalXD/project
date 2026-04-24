@@ -7,17 +7,18 @@ export const getUserNotifications = async (
   userId: number
 ): Promise<Notification[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-  `SELECT
-      n.*,
-      u.nickname AS actor_nickname,
-      cc.content AS comment_content
-   FROM notifications n
-   JOIN users u ON n.actor_user_id = u.id
-   LEFT JOIN cocktail_comments cc ON n.comment_id = cc.id
-   WHERE n.user_id = ?
-   ORDER BY n.created_at DESC, n.id DESC`,
-  [userId]
-);
+    `SELECT
+        n.*,
+        u.nickname AS actor_nickname,
+        cc.content AS comment_content
+     FROM notifications n
+     JOIN users u ON n.actor_user_id = u.id
+     LEFT JOIN cocktail_comments cc ON n.comment_id = cc.id
+     WHERE n.user_id = ?
+     ORDER BY n.created_at DESC, n.id DESC
+     LIMIT 20`,
+    [userId]
+  );
 
   return rows as Notification[];
 };
@@ -51,4 +52,10 @@ export const markAllNotificationsAsRead = async (
      WHERE user_id = ? AND is_read = FALSE`,
     [userId]
   );
+};
+
+export const clearAllNotifications = async (
+  userId: number
+): Promise<void> => {
+  await db.query("DELETE FROM notifications WHERE user_id = ?", [userId]);
 };

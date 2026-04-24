@@ -127,7 +127,7 @@ CREATE TABLE comment_mentions (
 CREATE TABLE notifications (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   user_id BIGINT NOT NULL,
-  type ENUM('mention', 'cocktail_like', 'cocktail_comment', 'comment_like', 'comment_reply', 'report_public_cocktail_removed', 'report_comment_deleted') NOT NULL,
+   MODIFY type ENUM('mention', 'cocktail_like', 'cocktail_comment', 'comment_like', 'comment_reply', 'report_public_cocktail_removed', 'report_comment_deleted', 'report_rejected') NOT NULL,
   admin_reason TEXT NULL,
   actor_user_id BIGINT NOT NULL,
   recipe_id VARCHAR(100) NOT NULL,

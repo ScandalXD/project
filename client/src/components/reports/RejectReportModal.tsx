@@ -1,5 +1,4 @@
-interface ReportModalProps {
-  type: "cocktail" | "comment";
+interface RejectReportModalProps {
   reason: string;
   isLoading: boolean;
   onReasonChange: (value: string) => void;
@@ -7,14 +6,13 @@ interface ReportModalProps {
   onSubmit: () => void;
 }
 
-export default function ReportModal({
-  type,
+export default function RejectReportModal({
   reason,
   isLoading,
   onReasonChange,
   onClose,
   onSubmit,
-}: ReportModalProps) {
+}: RejectReportModalProps) {
   return (
     <div
       style={{
@@ -37,16 +35,16 @@ export default function ReportModal({
           boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
         }}
       >
-        <h2 style={{ marginTop: 0 }}>Report {type}</h2>
+        <h2 style={{ marginTop: 0 }}>Reject report</h2>
 
         <p style={{ color: "#6b7280" }}>
-          Describe why you want to report this {type}.
+          Write why this report was rejected.
         </p>
 
         <textarea
           value={reason}
           onChange={(e) => onReasonChange(e.target.value)}
-          placeholder="Enter report reason..."
+          placeholder="Example: No violation found..."
           rows={5}
           style={{
             width: "100%",
@@ -92,7 +90,7 @@ export default function ReportModal({
               opacity: isLoading || !reason.trim() ? 0.6 : 1,
             }}
           >
-            {isLoading ? "Sending..." : "Send report"}
+            {isLoading ? "Rejecting..." : "Reject report"}
           </button>
         </div>
       </div>

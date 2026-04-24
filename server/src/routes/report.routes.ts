@@ -7,6 +7,8 @@ import {
   markReportReviewedHandler,
   hidePublicCocktailFromReportHandler,
   deleteCommentFromReportHandler,
+  rejectReportHandler,
+  deleteReviewedReportHandler,
 } from "../controllers/report.controller";
 
 const router = Router();
@@ -31,5 +33,17 @@ router.patch(
     requireAdmin,
     deleteCommentFromReportHandler
 )
+router.patch(
+  "/admin/reports/:id/reject",
+  authMiddleware,
+  requireAdmin,
+  rejectReportHandler
+);
+router.delete(
+  "/admin/reports/:id",
+  authMiddleware,
+  requireAdmin,
+  deleteReviewedReportHandler
+);
 
 export default router;

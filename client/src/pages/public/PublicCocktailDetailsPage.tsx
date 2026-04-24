@@ -8,6 +8,7 @@ import CommentList from "../../components/comments/CommentList";
 import FavoriteButton from "../../components/favorites/FavoriteButton";
 import type { PublicCocktail } from "../../types/cocktail";
 import { Link } from "react-router-dom";
+import ReportButton from "../../components/reports/ReportButton";
 
 export default function PublicCocktailDetailsPage() {
   const { id } = useParams();
@@ -73,6 +74,17 @@ export default function PublicCocktailDetailsPage() {
 
     await loadLikes();
   };
+
+  useEffect(() => {
+    const hash = window.location.hash;
+
+    if (!hash) return;
+
+    setTimeout(() => {
+      const element = document.querySelector(hash);
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 500);
+  }, []);
 
   if (error) {
     return <div style={{ color: "#dc2626" }}>{error}</div>;
@@ -143,7 +155,7 @@ export default function PublicCocktailDetailsPage() {
         ❤️ {likesCount}
       </button>
       <FavoriteButton cocktailId={cocktail.id} type="public" />
-
+      <ReportButton type="cocktail" id={cocktail.id} />
       <CommentList cocktailId={cocktail.id} type="public" />
     </div>
   );

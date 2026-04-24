@@ -3,6 +3,7 @@ import {
   getUserNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  clearAllNotifications,
 } from "../services/notification.service";
 import { ServiceError } from "../services/cocktail.service";
 
@@ -61,6 +62,22 @@ export const markAllNotificationsAsReadHandler = async (
   try {
     await markAllNotificationsAsRead(req.user.id);
     res.json({ message: "All notifications marked as read" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const clearAllNotificationsHandler = async (
+  req: Request,
+  res: Response
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    await clearAllNotifications(req.user.id);
+    res.json({ message: "Notifications cleared" });
   } catch (e) {
     handleError(res, e);
   }
