@@ -1,52 +1,85 @@
 import { useEffect, useState } from "react";
 import { adminApi } from "../../api/adminApi";
+import { useAuth } from "../../hooks/useAuth";
+
+type UserRole = "user" | "admin" | "superadmin";
 
 export default function AdminUsersPage() {
-    const [users, setUsers] = useState<any[]>([]);
-    const [error, setError] = useState("");
+  const { user: currentUser } = useAuth();
 
-    const loadUsers = async () => {
-        try {
-            const data = await adminApi.getUsers();
-            setUsers(data);
-        } catch {
-            setError("Failed to fetch users.");
-        }
-    };
+  const [users, setUsers] = useState<any[]>([]);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState<"all" | "users" | "admins">("all");
 
-    useEffect(() => {
-        loadUsers();
-    }, []);
+  const loadUsers = async () => {
+    try {
+      const data = await adminApi.getUsers();
+      setUsers(data);
+    } catch {
+      setError("Failed to fetch users.");
+    }
+  };
 
-    const handleDeactivate = async (id: number) => {
-        try {
-            await adminApi.deactivateUser(id);
-            await loadUsers();
-        } catch {
-            setError("Failed to deactivate user.");
-        }
-    };
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
-    const handleReactivate = async (id: number) => {
-        try {
-            await adminApi.reactivateUser(id);
-            await loadUsers();
-        } catch {
-            setError("Failed to reactivate user.");
-        }
-    };
+  const handleDeactivate = async (id: number) => {
+    try {
+      await adminApi.deactivateUser(id);
+      await loadUsers();
+    } catch {
+      setError("Failed to deactivate user.");
+    }
+  };
 
-    return (
+  const handleReactivate = async (id: number) => {
+    try {
+      await adminApi.reactivateUser(id);
+      await loadUsers();
+    } catch {
+      setError("Failed to reactivate user.");
+    }
+  };
+
+  const handleRoleChange = async (userId: number, role: UserRole) => {
+    const confirmed = window.confirm(`Change user role to ${role}?`);
+    if (!confirmed) return;
+
+    try {
+      await adminApi.updateUserRole(userId, role);
+      await loadUsers();
+    } catch {
+      setError("Failed to update user role.");
+    }
+  };
+
+  const filteredUsers = users.filter((u) => {
+    if (filter === "users") return u.role === "user";
+    if (filter === "admins") {
+      return u.role === "admin" || u.role === "superadmin";
+    }
+
+    return true;
+  });
+
+  return (
     <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
       <h1>Admin Users</h1>
 
       {error && <p style={{ color: "#dc2626" }}>{error}</p>}
 
-      {users.length === 0 ? (
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+        <button onClick={() => setFilter("all")}>All</button>
+        <button onClick={() => setFilter("users")}>Users</button>
+        <button onClick={() => setFilter("admins")}>Admins</button>
+      </div>
+
+      {filteredUsers.length === 0 ? (
         <p>No users found</p>
       ) : (
         <div style={{ display: "grid", gap: "16px" }}>
-          {users.map((user) => (
+          {filteredUsers.map((user) => (
             <div
               key={user.id}
               style={{
@@ -56,17 +89,34 @@ export default function AdminUsersPage() {
                 padding: "16px",
               }}
             >
-              <p><strong>ID:</strong> {user.id}</p>
-              <p><strong>Name:</strong> {user.name}</p>
-              <p><strong>Nickname:</strong> {user.nickname}</p>
-              <p><strong>Email:</strong> {user.email}</p>
-              <p><strong>Role:</strong> {user.role}</p>
+              <p>
+                <strong>ID:</strong> {user.id}
+              </p>
+              <p>
+                <strong>Name:</strong> {user.name}
+              </p>
+              <p>
+                <strong>Nickname:</strong> {user.nickname}
+              </p>
+              <p>
+                <strong>Email:</strong> {user.email}
+              </p>
+              <p>
+                <strong>Role:</strong> {user.role}
+              </p>
               <p>
                 <strong>Status:</strong>{" "}
                 {user.is_active ? "Active" : "Inactive"}
               </p>
 
-              <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  marginTop: "12px",
+                  flexWrap: "wrap",
+                }}
+              >
                 {user.is_active ? (
                   <button onClick={() => handleDeactivate(user.id)}>
                     Deactivate
@@ -76,6 +126,27 @@ export default function AdminUsersPage() {
                     Reactivate
                   </button>
                 )}
+
+                {currentUser?.role === "superadmin" &&
+                  user.role !== "superadmin" && (
+                    <>
+                      {user.role !== "admin" && (
+                        <button
+                          onClick={() => handleRoleChange(user.id, "admin")}
+                        >
+                          Make admin
+                        </button>
+                      )}
+
+                      {user.role !== "user" && (
+                        <button
+                          onClick={() => handleRoleChange(user.id, "user")}
+                        >
+                          Make user
+                        </button>
+                      )}
+                    </>
+                  )}
               </div>
             </div>
           ))}

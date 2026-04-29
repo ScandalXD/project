@@ -15,6 +15,7 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
 
   const handleReply = async (content: string) => {
     await commentsApi.addComment({
@@ -143,9 +144,30 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
         )}
       </div>
 
-      {comment.replies?.map((reply) => (
-        <CommentItem key={reply.id} comment={reply} onReload={onReload} />
-      ))}
+      {comment.replies && comment.replies.length > 0 && (
+        <button
+          onClick={() => setShowReplies((prev) => !prev)}
+          style={{
+            marginTop: "8px",
+            border: "none",
+            background: "transparent",
+            color: "#2563eb",
+            cursor: "pointer",
+            fontWeight: 600,
+          }}
+        >
+          {showReplies
+            ? "▲ Hide replies"
+            : `▼ ${comment.replies.length} ${
+                comment.replies.length === 1 ? "reply" : "replies"
+              }`}
+        </button>
+      )}
+
+      {showReplies &&
+        comment.replies?.map((reply) => (
+          <CommentItem key={reply.id} comment={reply} onReload={onReload} />
+        ))}
     </div>
   );
 }

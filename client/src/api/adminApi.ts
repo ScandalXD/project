@@ -31,6 +31,15 @@ export const adminApi = {
     return res.data;
   },
 
+  async updateUserRole(userId: number, role: "user" | "admin" | "superadmin") {
+    return api.patch(`/admin/users/${userId}/role`, { role });
+  },
+
+  async deleteCatalogCocktail(id: string) {
+    const res = await api.delete(`/admin/catalog/${id}`);
+    return res.data;
+  },
+
   async getStats() {
     const res = await api.get("/admin/stats");
     return res.data;
@@ -40,6 +49,11 @@ export const adminApi = {
     const res = await api.get(`/catalog`);
     const items = res.data;
     return items.find((item: any) => item.id === id);
+  },
+
+  async getComments() {
+    const res = await api.get("/admin/comments");
+    return res.data;
   },
 
   async createCatalogCocktail(data: {
@@ -101,11 +115,6 @@ async updateCatalogCocktail(
     },
   });
 
-  return res.data;
-},
-
-async deleteCatalogCocktail(id: string) {
-  const res = await api.delete(`/admin/catalog/${id}`);
   return res.data;
 },
 };

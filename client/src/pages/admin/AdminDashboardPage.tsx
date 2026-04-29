@@ -103,18 +103,11 @@ export default function AdminDashboardPage() {
           to="/admin/reports"
         />
 
-        <div
-          style={{
-            background: "#ffffff",
-            border: "1px solid #ddd",
-            borderRadius: "12px",
-            padding: "20px",
-            minHeight: "110px",
-          }}
-        >
-          <h3>Comments</h3>
-          <p style={{ fontSize: "28px", margin: 0 }}>{stats.commentsCount}</p>
-        </div>
+        <DashboardCard
+          title="Comments"
+          value={stats.commentsCount}
+          to="/admin/comments"
+        />
       </div>
     </div>
   );

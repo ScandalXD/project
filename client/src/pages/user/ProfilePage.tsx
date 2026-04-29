@@ -93,7 +93,7 @@ export default function ProfilePage() {
           <strong>Email:</strong> {user?.email}
         </p>
 
-        {user?.role === "admin" && (
+        {(user?.role === "admin" || user?.role === "superadmin") && (
           <p>
             <strong>Role:</strong> {user.role}
           </p>

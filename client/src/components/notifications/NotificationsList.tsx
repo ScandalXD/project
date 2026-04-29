@@ -73,8 +73,6 @@ export default function NotificationsList() {
 
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-      <h1>Notifications</h1>
-
       <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
         <button
           onClick={handleMarkAllRead}

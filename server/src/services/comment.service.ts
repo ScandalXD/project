@@ -234,6 +234,22 @@ export const getComments = async (
   return buildCommentTree(normalizedComments);
 };
 
+export const getAllCommentsForAdmin = async () => {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT
+       cc.*,
+       u.nickname AS author_nickname,
+       COUNT(cl.comment_id) AS likes_count
+     FROM cocktail_comments cc
+     JOIN users u ON cc.user_id = u.id
+     LEFT JOIN comment_likes cl ON cc.id = cl.comment_id
+     GROUP BY cc.id, u.nickname
+     ORDER BY cc.created_at DESC, cc.id DESC`
+  );
+
+  return rows;
+};
+
 export const deleteComment = async (
   userId: number,
   commentId: number

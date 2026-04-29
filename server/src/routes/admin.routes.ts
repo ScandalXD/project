@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth.middleware";
-import { requireAdmin } from "../middleware/admin.middleware";
+import {
+  requireAdmin,
+  requireSuperadmin,
+} from "../middleware/admin.middleware";
 import {
   getPendingCocktailsHandler,
   getPublishedCocktailsHandler,
@@ -17,10 +20,15 @@ import {
 } from "../controllers/adminCatalog.controller";
 import {
   getAllUsersHandler,
-  getSystemStatsHandler
+  getSystemStatsHandler,
 } from "../controllers/adminDashboard.controller";
-import { deactivateUserHandler, reactivateUserHandler } from "../controllers/adminUser.controller";
+import {
+  deactivateUserHandler,
+  reactivateUserHandler,
+  updateUserRoleHandler,
+} from "../controllers/adminUser.controller";
 import { uploadCatalogImage } from "../middleware/uploadCatalog.middleware";
+import { getAllCommentsForAdminHandler } from "../controllers/comment.controller";
 
 const router = Router();
 
@@ -38,20 +46,22 @@ router.post("/moderation/:id/cancel", cancelModerationHandler);
 router.post("/moderation/:id/remove", removePublishedCocktailHandler);
 
 router.delete("/comments/:id", deleteAnyCommentHandler);
+router.get("/comments", getAllCommentsForAdminHandler);
 
 router.patch("/users/:id/deactivate", deactivateUserHandler);
 router.patch("/users/:id/reactivate", reactivateUserHandler);
+router.patch("/users/:id/role", requireSuperadmin, updateUserRoleHandler);
 
 router.post(
   "/catalog",
   uploadCatalogImage.single("image"),
-  addCatalogCocktailHandler
+  addCatalogCocktailHandler,
 );
 
 router.put(
   "/catalog/:id",
   uploadCatalogImage.single("image"),
-  updateCatalogCocktailHandler
+  updateCatalogCocktailHandler,
 );
 router.delete("/catalog/:id", deleteCatalogCocktailHandler);
 

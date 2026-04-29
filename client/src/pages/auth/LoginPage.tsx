@@ -30,7 +30,7 @@ export default function LoginPage() {
 
     try {
       await login(form);
-      navigate("/");
+      navigate("/catalog");
     } catch {
       setError("Nie udało się zalogować.");
     } finally {

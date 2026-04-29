@@ -48,6 +48,10 @@ export const getSystemStats = async () => {
     "SELECT COUNT(*) AS count FROM reports WHERE status = 'open'"
   );
 
+  const [pendingCocktailsRows] = await db.query<RowDataPacket[]>(
+    "SELECT COUNT(*) AS count FROM user_cocktails WHERE publication_status = 'pending'"
+  );
+
   return {
     usersCount: Number(usersRows[0].count),
     publicCocktailsCount: Number(publicCocktailsRows[0].count),
@@ -58,5 +62,6 @@ export const getSystemStats = async () => {
     commentLikesCount: Number(commentLikesRows[0].count),
     reportsCount: Number(reportsRows[0].count),
     openReportsCount: Number(openReportsRows[0].count),
+    pendingCocktailsCount: Number(pendingCocktailsRows[0].count),
   };
 };

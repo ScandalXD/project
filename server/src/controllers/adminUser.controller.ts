@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { deactivateUser, reactivateUser } from "../services/adminUser.service";
+import { deactivateUser, reactivateUser, updateUserRole } from "../services/adminUser.service";
 import { ServiceError } from "../services/cocktail.service";
 
 const handleError = (res: Response, err: unknown) => {
@@ -33,6 +33,18 @@ export const reactivateUserHandler = async (
   try {
     await reactivateUser(Number(req.params.id));
     res.json({ message: "User reactivated" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const updateUserRoleHandler = async (
+  req: Request<{ id: string }, {}, { role: "user" | "admin" | "superadmin" }>,
+  res: Response
+) => {
+  try {
+    await updateUserRole(Number(req.params.id), req.body.role);
+    res.json({ message: "User role updated" });
   } catch (e) {
     handleError(res, e);
   }

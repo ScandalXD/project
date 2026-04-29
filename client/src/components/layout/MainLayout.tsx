@@ -1,98 +1,64 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function MainLayout() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
-    <div
-      style={{ minHeight: "100vh", background: "#f5f7fb", color: "#1f2937" }}
-    >
+    <>
       <header
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "16px 24px",
-          background: "#ffffff",
+          height: "64px",
           borderBottom: "1px solid #e5e7eb",
+          background: "#ffffff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 32px",
         }}
       >
         <Link
-          to="/"
+          to={isAuthenticated ? "/catalog" : "/login"}
           style={{
             textDecoration: "none",
+            color: "#111827",
             fontWeight: 700,
             fontSize: "20px",
-            color: "#111827",
           }}
         >
           CocktailApp
         </Link>
 
-        <nav style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-          <Link to="/" style={{ textDecoration: "none", color: "#374151" }}>
-            Home
-          </Link>
-
-          <Link
-            to="/catalog"
-            style={{ textDecoration: "none", color: "#374151" }}
-          >
-            Catalog
-          </Link>
-
-          <Link
-            to="/public-cocktails"
-            style={{ textDecoration: "none", color: "#374151" }}
-          >
-            Public
-          </Link>
-
-          {!isAuthenticated ? (
+        <nav
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
+          {isAuthenticated ? (
             <>
-              <Link
-                to="/login"
-                style={{ textDecoration: "none", color: "#374151" }}
-              >
-                Login
-              </Link>
-              <Link
-                to="/register"
-                style={{ textDecoration: "none", color: "#374151" }}
-              >
-                Register
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/profile"
-                style={{ textDecoration: "none", color: "#374151" }}
-              >
-                Profile
-              </Link>
-              <Link
-                to="/my-cocktails"
-                style={{ textDecoration: "none", color: "#374151" }}
-              >
-                My Cocktails
-              </Link>
-              <Link
-                to="/favorites"
-                style={{ textDecoration: "none", color: "#374151" }}
-              >
-                Favorites
-              </Link>
-              <Link
-                to="/notifications"
-                style={{ textDecoration: "none", color: "#374151" }}
-              >
-                Notifications
-              </Link>
-              <span style={{ color: "#374151" }}>{user?.nickname}</span>
+              <Link to="/catalog">Catalog</Link>
+              <Link to="/public-cocktails">Public</Link>
+              <Link to="/profile">Profile</Link>
+              <Link to="/my-cocktails">My Cocktails</Link>
+              <Link to="/favorites">Favorites</Link>
+              <Link to="/notifications">Notifications</Link>
+
+              {(user?.role === "admin" || user?.role === "superadmin") && (
+                <Link to="/admin">Dashboard</Link>
+              )}
+
+              <span>{user?.nickname}</span>
+
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 style={{
                   border: "none",
                   background: "#111827",
@@ -105,13 +71,22 @@ export default function MainLayout() {
                 Logout
               </button>
             </>
+          ) : (
+            <>
+            </>
           )}
         </nav>
       </header>
 
-      <main style={{ maxWidth: "1000px", margin: "0 auto", padding: "24px" }}>
+      <main
+        style={{
+          minHeight: "calc(100vh - 64px)",
+          background: "#f3f6fb",
+          padding: "40px 24px",
+        }}
+      >
         <Outlet />
       </main>
-    </div>
+    </>
   );
 }

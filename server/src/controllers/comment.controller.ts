@@ -3,6 +3,7 @@ import {
   addComment,
   getComments,
   deleteComment,
+  getAllCommentsForAdmin
 } from "../services/comment.service";
 import { ServiceError } from "../services/cocktail.service";
 import { CocktailType } from "../models/Comment.model";
@@ -84,6 +85,18 @@ export const deleteCommentHandler = async (
   try {
     await deleteComment(req.user.id, Number(req.params.id));
     res.json({ message: "Comment deleted" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const getAllCommentsForAdminHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const comments = await getAllCommentsForAdmin();
+    res.json(comments);
   } catch (e) {
     handleError(res, e);
   }
