@@ -27,7 +27,7 @@ const getPendingCocktailById = async (
 
 export const getPendingCocktails = async (): Promise<PendingCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT uc.*, u.nickname AS owner_nickname, u.name AS owner_name, u.email AS owner_email
+    `SELECT uc.*, u.nickname AS owner_nickname, u.email AS owner_email
      FROM user_cocktails uc
      JOIN users u ON uc.owner_id = u.id
      WHERE uc.publication_status = 'pending'

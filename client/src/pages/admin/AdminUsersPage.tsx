@@ -28,8 +28,8 @@ export default function AdminUsersPage() {
     try {
       await adminApi.deactivateUser(id);
       await loadUsers();
-    } catch {
-      setError("Failed to deactivate user.");
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Failed to deactivate user.");
     }
   };
 
@@ -37,8 +37,8 @@ export default function AdminUsersPage() {
     try {
       await adminApi.reactivateUser(id);
       await loadUsers();
-    } catch {
-      setError("Failed to reactivate user.");
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Failed to update user role.");
     }
   };
 
@@ -49,8 +49,8 @@ export default function AdminUsersPage() {
     try {
       await adminApi.updateUserRole(userId, role);
       await loadUsers();
-    } catch {
-      setError("Failed to update user role.");
+    } catch (error: any) {
+      setError(error.response?.data?.message || "Failed to update user role.");
     }
   };
 
@@ -91,9 +91,6 @@ export default function AdminUsersPage() {
             >
               <p>
                 <strong>ID:</strong> {user.id}
-              </p>
-              <p>
-                <strong>Name:</strong> {user.name}
               </p>
               <p>
                 <strong>Nickname:</strong> {user.nickname}

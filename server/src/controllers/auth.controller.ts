@@ -5,7 +5,6 @@ import { generateToken } from "../services/token.service";
 interface RegisterBody {
   email: string;
   password: string;
-  name: string;
   nickname: string;
 }
 
@@ -18,14 +17,14 @@ export const register = async (
   req: Request<{}, {}, RegisterBody>,
   res: Response
 ) => {
-  const { email, password, name, nickname } = req.body;
+  const { email, password, nickname } = req.body;
 
-  if (!email || !password || !name || !nickname) {
+  if (!email || !password || !nickname) {
     return res.status(400).json({ message: "Missing fields" });
   }
 
   try {
-    const user = await registerUser(email, password, name, nickname);
+    const user = await registerUser(email, password, nickname);
 
     const token = generateToken({
       id: user.id,
@@ -38,7 +37,6 @@ export const register = async (
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
         nickname: user.nickname,
         role: user.role,
       },
@@ -76,7 +74,6 @@ export const login = async (
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
         nickname: user.nickname,
         role: user.role,
       },

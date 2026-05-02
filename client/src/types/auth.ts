@@ -1,7 +1,6 @@
 import type { User } from "./user";
 
 export interface RegisterRequest {
-    name: string;
     nickname: string;
     email: string;
     password: string;

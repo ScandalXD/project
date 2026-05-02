@@ -7,7 +7,6 @@ export default function RegisterPage() {
   const { register } = useAuth();
 
   const [form, setForm] = useState({
-    name: "",
     nickname: "",
     email: "",
     password: "",
@@ -32,7 +31,7 @@ export default function RegisterPage() {
 
     try {
       await register(form);
-      navigate("/");
+      navigate("/catalog");
     } catch {
       setError("Nie udało się utworzyć konta.");
     } finally {
@@ -54,16 +53,6 @@ export default function RegisterPage() {
       <h1 style={{ marginBottom: "20px" }}>Register</h1>
 
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          value={form.name}
-          onChange={handleChange}
-          required
-          style={{ padding: "12px", borderRadius: "10px", border: "1px solid #d1d5db" }}
-        />
-
         <input
           type="text"
           name="nickname"

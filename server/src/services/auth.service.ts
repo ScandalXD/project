@@ -6,7 +6,6 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 export const registerUser = async (
   email: string,
   password: string,
-  name: string,
   nickname: string
 ): Promise<User> => {
   const [existingUsers] = await db.query<RowDataPacket[]>(
@@ -21,14 +20,13 @@ export const registerUser = async (
   const hash = await bcrypt.hash(password, 10);
 
   const [result] = await db.query<ResultSetHeader>(
-    "INSERT INTO users (email, password_hash, name, nickname, role) VALUES (?, ?, ?, ?, ?)",
-    [email, hash, name, nickname, "user"]
+    "INSERT INTO users (email, password_hash, nickname, role) VALUES (?, ?, ?, ?)",
+    [email, hash, nickname, "user"]
   );
 
   return {
     id: result.insertId,
     email,
-    name,
     nickname,
     password_hash: hash,
     role: "user",

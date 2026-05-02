@@ -6,8 +6,13 @@ import { User } from "../models/User.model";
 import { generateToken } from "../services/token.service";
 
 interface UpdateProfileBody {
-  name?: string;
   nickname?: string;
+  email?: string;
+}
+
+interface ChangePasswordBody {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export const getProfile = async (req: Request, res: Response) => {
@@ -18,12 +23,8 @@ export const getProfile = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.user.id);
 
-    if (!Number.isInteger(userId)) {
-      return res.status(401).json({ message: "Invalid user id in token" });
-    }
-
     const [rows] = await db.query<RowDataPacket[]>(
-      "SELECT id, email, name, nickname, role, created_at FROM users WHERE id = ?",
+      "SELECT id, email, nickname, role, created_at, is_active FROM users WHERE id = ?",
       [userId]
     );
 
@@ -48,62 +49,59 @@ export const updateProfile = async (
   }
 
   try {
-    const user = req.user;
-    const userId = Number(user.id);
+    const userId = Number(req.user.id);
+    const { nickname, email } = req.body;
 
-    if (!Number.isInteger(userId)) {
-      return res.status(401).json({ message: "Invalid user id in token" });
-    }
-
-    const { name, nickname } = req.body;
-
-    if (name === undefined && nickname === undefined) {
+    if (nickname === undefined && email === undefined) {
       return res.status(400).json({ message: "Nothing to update" });
     }
 
     if (nickname !== undefined) {
-      const [existing] = await db.query<RowDataPacket[]>(
+      const [existingNickname] = await db.query<RowDataPacket[]>(
         "SELECT id FROM users WHERE nickname = ? AND id != ?",
         [nickname, userId]
       );
 
-      if (existing.length > 0) {
+      if (existingNickname.length > 0) {
         return res.status(400).json({ message: "Nickname already taken" });
+      }
+    }
+
+    if (email !== undefined) {
+      const [existingEmail] = await db.query<RowDataPacket[]>(
+        "SELECT id FROM users WHERE email = ? AND id != ?",
+        [email, userId]
+      );
+
+      if (existingEmail.length > 0) {
+        return res.status(400).json({ message: "Email already taken" });
       }
     }
 
     const fields: string[] = [];
     const values: Array<string | number> = [];
 
-    if (name !== undefined) {
-      fields.push("name = ?");
-      values.push(name);
-    }
-
     if (nickname !== undefined) {
       fields.push("nickname = ?");
       values.push(nickname);
     }
 
+    if (email !== undefined) {
+      fields.push("email = ?");
+      values.push(email);
+    }
+
     values.push(userId);
 
-    const [result] = await db.query<ResultSetHeader>(
+    await db.query<ResultSetHeader>(
       `UPDATE users SET ${fields.join(", ")} WHERE id = ?`,
       values
     );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
     const [rows] = await db.query<RowDataPacket[]>(
-      "SELECT id, email, name, nickname, role, created_at FROM users WHERE id = ?",
+      "SELECT id, email, nickname, role, created_at, is_active FROM users WHERE id = ?",
       [userId]
     );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
 
     const updatedUser = rows[0] as Omit<User, "password_hash">;
 
@@ -124,64 +122,6 @@ export const updateProfile = async (
   }
 };
 
-export const deleteProfile = async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  try {
-    const userId = Number(req.user.id);
-
-    if (!Number.isInteger(userId)) {
-      return res.status(401).json({ message: "Invalid user id in token" });
-    }
-
-    const [userRows] = await db.query<RowDataPacket[]>(
-      "SELECT id, role FROM users WHERE id = ?",
-      [userId]
-    );
-
-    if (userRows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const currentUser = userRows[0] as { id: number; role: "user" | "admin" };
-
-    if (currentUser.role === "admin") {
-      const [adminRows] = await db.query<RowDataPacket[]>(
-        "SELECT COUNT(*) AS count FROM users WHERE role = 'admin'"
-      );
-
-      const adminCount = Number(adminRows[0].count);
-
-      if (adminCount === 1) {
-        return res.status(409).json({
-          message: "You cannot delete the last admin account",
-        });
-      }
-    }
-
-    const [result] = await db.query<ResultSetHeader>(
-      "DELETE FROM users WHERE id = ?",
-      [userId]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json({ message: "Account deleted" });
-  } catch (error) {
-    console.error("deleteProfile error:", error);
-    res.status(500).json({ message: "Failed to delete account" });
-  }
-};
-
-interface ChangePasswordBody {
-  currentPassword: string;
-  newPassword: string;
-}
-
 export const changePassword = async (
   req: Request<{}, {}, ChangePasswordBody>,
   res: Response
@@ -192,11 +132,6 @@ export const changePassword = async (
 
   try {
     const userId = Number(req.user.id);
-
-    if (!Number.isInteger(userId)) {
-      return res.status(401).json({ message: "Invalid user id in token" });
-    }
-
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -222,15 +157,10 @@ export const changePassword = async (
 
     const user = rows[0] as { id: number; password_hash: string };
 
-    const isMatch = await bcrypt.compare(
-      currentPassword,
-      user.password_hash
-    );
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
 
     if (!isMatch) {
-      return res
-        .status(401)
-        .json({ message: "Current password is incorrect" });
+      return res.status(401).json({ message: "Current password is incorrect" });
     }
 
     const isSamePassword = await bcrypt.compare(
@@ -240,8 +170,7 @@ export const changePassword = async (
 
     if (isSamePassword) {
       return res.status(400).json({
-        message:
-          "New password must be different from current password",
+        message: "New password must be different from current password",
       });
     }
 
@@ -256,5 +185,56 @@ export const changePassword = async (
   } catch (error) {
     console.error("changePassword error:", error);
     res.status(500).json({ message: "Failed to update password" });
+  }
+};
+
+export const deleteProfile = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const userId = Number(req.user.id);
+
+    const [userRows] = await db.query<RowDataPacket[]>(
+      "SELECT id, role FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const currentUser = userRows[0] as {
+      id: number;
+      role: "user" | "admin" | "superadmin";
+    };
+
+    if (currentUser.role === "superadmin") {
+      return res.status(409).json({
+        message: "Superadmin account cannot be deleted from profile",
+      });
+    }
+
+    if (currentUser.role === "admin") {
+      const [adminRows] = await db.query<RowDataPacket[]>(
+        "SELECT COUNT(*) AS count FROM users WHERE role IN ('admin', 'superadmin')"
+      );
+
+      const adminCount = Number(adminRows[0].count);
+
+      if (adminCount === 1) {
+        return res.status(409).json({
+          message: "You cannot delete the last admin account",
+        });
+      }
+    }
+
+    await db.query<ResultSetHeader>("DELETE FROM users WHERE id = ?", [userId]);
+
+    res.json({ message: "Account deleted" });
+  } catch (error) {
+    console.error("deleteProfile error:", error);
+    res.status(500).json({ message: "Failed to delete account" });
   }
 };

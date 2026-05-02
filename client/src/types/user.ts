@@ -2,7 +2,6 @@ export type UserRole = "user" | "admin" | "superadmin";
 
 export interface User {
     id: number;
-    name: string;
     nickname: string;
     email: string;
     role: UserRole;
@@ -11,7 +10,11 @@ export interface User {
 }
 
 export interface UpdateProfileRequest {
-    name: string;
-    nickname: string;
+    nickname?: string;
     email?: string
+}
+
+export interface ChangePasswordRequest {
+    currentPassword: string;
+    newPassword: string;
 }
