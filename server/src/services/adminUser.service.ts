@@ -1,6 +1,7 @@
 import { db } from "../config/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { ServiceError } from "./cocktail.service";
+import { createNotification } from "./notificationEvent.service";
 
 type UserRole = "user" | "admin" | "superadmin";
 
@@ -11,7 +12,7 @@ export const deactivateUser = async (userId: number): Promise<void> => {
 
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT id, role, is_active FROM users WHERE id = ?",
-    [userId]
+    [userId],
   );
 
   if (rows.length === 0) {
@@ -30,7 +31,7 @@ export const deactivateUser = async (userId: number): Promise<void> => {
 
   if (user.role === "superadmin") {
     const [superadminRows] = await db.query<RowDataPacket[]>(
-      "SELECT COUNT(*) AS count FROM users WHERE role = 'superadmin' AND is_active = TRUE"
+      "SELECT COUNT(*) AS count FROM users WHERE role = 'superadmin' AND is_active = TRUE",
     );
 
     const activeSuperadminsCount = Number(superadminRows[0].count);
@@ -38,26 +39,29 @@ export const deactivateUser = async (userId: number): Promise<void> => {
     if (activeSuperadminsCount === 1) {
       throw new ServiceError(
         "You cannot deactivate the last active superadmin",
-        409
+        409,
       );
     }
   }
 
   if (user.role === "admin") {
     const [adminRows] = await db.query<RowDataPacket[]>(
-      "SELECT COUNT(*) AS count FROM users WHERE role IN ('admin', 'superadmin') AND is_active = TRUE"
+      "SELECT COUNT(*) AS count FROM users WHERE role IN ('admin', 'superadmin') AND is_active = TRUE",
     );
 
     const activeAdminsCount = Number(adminRows[0].count);
 
     if (activeAdminsCount === 1) {
-      throw new ServiceError("You cannot deactivate the last active admin", 409);
+      throw new ServiceError(
+        "You cannot deactivate the last active admin",
+        409,
+      );
     }
   }
 
   await db.query<ResultSetHeader>(
     "UPDATE users SET is_active = FALSE WHERE id = ?",
-    [userId]
+    [userId],
   );
 };
 
@@ -68,7 +72,7 @@ export const reactivateUser = async (userId: number): Promise<void> => {
 
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT id, is_active FROM users WHERE id = ?",
-    [userId]
+    [userId],
   );
 
   if (rows.length === 0) {
@@ -86,13 +90,14 @@ export const reactivateUser = async (userId: number): Promise<void> => {
 
   await db.query<ResultSetHeader>(
     "UPDATE users SET is_active = TRUE WHERE id = ?",
-    [userId]
+    [userId],
   );
 };
 
 export const updateUserRole = async (
+  adminId: number,
   userId: number,
-  role: UserRole
+  role: UserRole,
 ): Promise<void> => {
   if (!Number.isInteger(userId)) {
     throw new ServiceError("Invalid user id", 400);
@@ -104,7 +109,7 @@ export const updateUserRole = async (
 
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT id, role FROM users WHERE id = ?",
-    [userId]
+    [userId],
   );
 
   if (rows.length === 0) {
@@ -115,7 +120,7 @@ export const updateUserRole = async (
 
   if (currentUser.role === "superadmin" && role !== "superadmin") {
     const [superadminRows] = await db.query<RowDataPacket[]>(
-      "SELECT COUNT(*) AS count FROM users WHERE role = 'superadmin' AND is_active = TRUE"
+      "SELECT COUNT(*) AS count FROM users WHERE role = 'superadmin' AND is_active = TRUE",
     );
 
     const activeSuperadminsCount = Number(superadminRows[0].count);
@@ -123,17 +128,24 @@ export const updateUserRole = async (
     if (activeSuperadminsCount === 1) {
       throw new ServiceError(
         "You cannot remove the last active superadmin",
-        409
+        409,
       );
     }
   }
 
   if (role === "superadmin") {
-    throw new ServiceError("Superadmin role cannot be assigned from UI", 403)
+    throw new ServiceError("Superadmin role cannot be assigned from UI", 403);
   }
 
   await db.query<ResultSetHeader>("UPDATE users SET role = ? WHERE id = ?", [
     role,
     userId,
   ]);
+
+  await createNotification({
+    userId,
+    type: "role_changed",
+    actorUserId: adminId,
+    adminReason: `Your role was changed to ${role}`,
+  });
 };

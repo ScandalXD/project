@@ -16,4 +16,9 @@ export const profileApi = {
     const response = await api.put<{ message: string }>("/profile/password", data);
     return response.data
   },
+
+  async deleteProfile() {
+    const response = await api.delete("/profile");
+    return response.data;
+  },
 };

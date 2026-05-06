@@ -6,8 +6,8 @@ interface CreateNotificationInput {
   userId: number;
   type: NotificationType;
   actorUserId: number;
-  recipeId: string;
-  recipeType: RecipeType;
+  recipeId?: string;
+  recipeType?: RecipeType;
   commentId?: number | null;
   adminReason?: string | null;
 }

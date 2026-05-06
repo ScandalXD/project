@@ -219,23 +219,43 @@ export const getPublishedCocktailsForAdmin = async (): Promise<
   return rows as PublicCocktail[];
 };
 
-export const deleteAnyComment = async (commentId: number): Promise<void> => {
+export const deleteAnyComment = async (
+  adminId: number,
+  commentId: number
+): Promise<void> => {
   if (!Number.isInteger(commentId)) {
     throw new ServiceError("Invalid comment id", 400);
   }
 
   const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT id FROM cocktail_comments WHERE id = ?",
-    [commentId],
+    "SELECT id, user_id, cocktail_id, cocktail_type FROM cocktail_comments WHERE id = ?",
+    [commentId]
   );
 
   if (rows.length === 0) {
     throw new ServiceError("Comment not found", 404);
   }
 
+  const comment = rows[0] as {
+    id: number;
+    user_id: number;
+    cocktail_id: number;
+    cocktail_type: "catalog" | "public";
+  };
+
+  await createNotification({
+    userId: comment.user_id,
+    type: "admin_comment_deleted",
+    actorUserId: adminId,
+    recipeId: String(comment.cocktail_id),
+    recipeType: comment.cocktail_type,
+    commentId: comment.id,
+    adminReason: "Your comment was deleted by admin",
+  });
+
   await db.query<ResultSetHeader>(
     "DELETE FROM cocktail_comments WHERE id = ?",
-    [commentId],
+    [commentId]
   );
 };
 
@@ -261,6 +281,16 @@ export const deletePublicCocktailById = async (
   await db.query("START TRANSACTION");
 
   try {
+    await createNotification({
+      userId: publicCocktail.author_id,
+      type: "public_cocktail_deleted",
+      actorUserId: adminId,
+      recipeId: String(publicCocktail.id),
+      recipeType: "public",
+      commentId: null,
+      adminReason: "Your public cocktail was removed by admin",
+    });
+
     await db.query(
       "DELETE FROM favorites WHERE cocktail_id = ? AND cocktail_type = 'public'",
       [String(publicCocktailId)]

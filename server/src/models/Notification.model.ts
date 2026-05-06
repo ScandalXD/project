@@ -6,6 +6,9 @@ export type NotificationType =
   | "comment_reply"
   | "cocktail_approved"
   | "cocktail_rejected"
+  | "role_changed"
+  | "public_cocktail_deleted"
+  | "admin_comment_deleted"
   | "report_public_cocktail_removed"
   | "report_comment_deleted"
   | "report_rejected";

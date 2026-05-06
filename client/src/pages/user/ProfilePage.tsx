@@ -9,7 +9,7 @@ import { useAuth } from "../../hooks/useAuth";
 import type { UpdateProfileRequest } from "../../types/user";
 
 export default function ProfilePage() {
-  const { user, setAuthData } = useAuth();
+  const { user, setAuthData, logout } = useAuth();
 
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
@@ -86,6 +86,27 @@ export default function ProfilePage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setMessage("");
+    setError("");
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your account?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await profileApi.deleteProfile();
+
+      logout();
+
+      window.location.href = "/login";
+    } catch {
+      setError("Failed to delete account.");
+    }
+  };
+
   const inputStyle: CSSProperties = {
     width: "100%",
     padding: "12px",
@@ -111,6 +132,16 @@ export default function ProfilePage() {
     background: "#ffffff",
     color: "#111827",
     padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: 600,
+  };
+
+  const dangerButtonStyle: CSSProperties = {
+    border: "none",
+    background: "#dc2626",
+    color: "#ffffff",
+    padding: "12px 16px",
     borderRadius: "10px",
     cursor: "pointer",
     fontWeight: 600,
@@ -321,6 +352,25 @@ export default function ProfilePage() {
           </form>
         )}
       </div>
+
+      {user?.role !== "superadmin" && (
+        <>
+          <hr style={hrStyle} />
+
+          <div>
+            <h3 style={sectionTitleStyle}>Danger zone</h3>
+
+            <p style={{ color: "#6b7280" }}>
+              This action will delete your account. You will be logged out
+              immediately.
+            </p>
+
+            <button onClick={handleDeleteAccount} style={dangerButtonStyle}>
+              Delete account
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

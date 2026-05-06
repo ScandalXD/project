@@ -6,20 +6,17 @@ import type { Notification } from "../../types/notification";
 function getNotificationText(n: Notification) {
   if (n.type === "cocktail_approved") return "Your cocktail was approved";
   if (n.type === "cocktail_rejected") return "Your cocktail was rejected";
-  if (n.type === "cocktail_like")
-    return `${n.actor_nickname} liked your cocktail`;
-  if (n.type === "cocktail_comment")
-    return `${n.actor_nickname} commented on your cocktail`;
-  if (n.type === "comment_like")
-    return `${n.actor_nickname} liked your comment`;
-  if (n.type === "comment_reply")
-    return `${n.actor_nickname} replied to your comment`;
+  if (n.type === "cocktail_like") return `${n.actor_nickname} liked your cocktail`;
+  if (n.type === "cocktail_comment") return `${n.actor_nickname} commented on your cocktail`;
+  if (n.type === "comment_like") return `${n.actor_nickname} liked your comment`;
+  if (n.type === "comment_reply") return `${n.actor_nickname} replied to your comment`;
   if (n.type === "mention") return `${n.actor_nickname} mentioned you`;
-  if (n.type === "report_public_cocktail_removed")
-    return "Your cocktail was removed by admin";
-  if (n.type === "report_comment_deleted")
-    return "Your comment was deleted by admin";
+  if (n.type === "report_public_cocktail_removed") return "Your cocktail was removed by admin";
+  if (n.type === "report_comment_deleted") return "Your comment was deleted by admin";
   if (n.type === "report_rejected") return "Your report was rejected by admin";
+  if (n.type === "role_changed") return "Your role was changed";
+  if (n.type === "public_cocktail_deleted")  return "Your public cocktail was deleted by admin"; 
+  if (n.type === "admin_comment_deleted")  return "Your comment was deleted by admin";
 
   return n.type;
 }
@@ -31,6 +28,9 @@ function getNotificationIcon(n: Notification) {
   if (n.type === "cocktail_comment" || n.type === "comment_reply") return "💬";
   if (n.type === "mention") return "👤";
   if (n.type.includes("report")) return "⚠️";
+  if (n.type === "role_changed") return "🛡️";
+  if (n.type === "public_cocktail_deleted") return "🗑️";
+  if (n.type === "admin_comment_deleted") return "🧹";
 
   return "🔔";
 }
@@ -42,9 +42,10 @@ function getNotificationBackground(n: Notification) {
   if (n.type === "cocktail_rejected") return "#fee2e2";
   if (n.type.includes("report")) return "#fef3c7";
   if (n.type === "cocktail_like" || n.type === "comment_like") return "#ffe4e6";
-  if (n.type === "cocktail_comment" || n.type === "comment_reply")
-    return "#dbeafe";
+  if (n.type === "cocktail_comment" || n.type === "comment_reply") return "#dbeafe";
   if (n.type === "mention") return "#ede9fe";
+  if (n.type === "public_cocktail_deleted" || n.type === "admin_comment_deleted")  return "#fee2e2";
+  if (n.type === "role_changed") return "#dbeafe";
 
   return "#dbeafe";
 }
