@@ -26,6 +26,7 @@ import AdminReportsPage from "../pages/admin/AdminReportsPage";
 import AdminCatalogCreatePage from "../pages/admin/AdminCatalogCreatePage";
 import AdminCatalogEditPage from "../pages/admin/AdminCatalogEditPage";
 import AdminCommentsPage from "../pages/admin/AdminCommentsPage";
+import AdminPublicPage from "../pages/admin/AdminPublicPage";
 
 export const router = createBrowserRouter([
   {
@@ -66,6 +67,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "admin", element: <AdminDashboardPage /> },
           { path: "admin/moderation", element: <AdminModerationPage /> },
+          { path: "admin/public", element: <AdminPublicPage /> },
           { path: "admin/catalog", element: <AdminCatalogPage /> },
           { path: "admin/catalog/create", element: <AdminCatalogCreatePage /> },
           { path: "admin/catalog/:id/edit", element: <AdminCatalogEditPage /> },

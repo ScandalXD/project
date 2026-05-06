@@ -40,12 +40,17 @@ export const adminApi = {
     return res.data;
   },
 
+  async deletePublicCocktail(id: number) {
+    const res = await api.delete(`/admin/public-cocktails/${id}`);
+    return res.data;
+  },
+
   async getStats() {
     const res = await api.get("/admin/stats");
     return res.data;
   },
 
-  async getCatalogCocktailById(id: string)  {
+  async getCatalogCocktailById(id: string) {
     const res = await api.get(`/catalog`);
     const items = res.data;
     return items.find((item: any) => item.id === id);
@@ -56,65 +61,70 @@ export const adminApi = {
     return res.data;
   },
 
+  async deleteAnyComment(id: number) {
+    const res = await api.delete(`/admin/comments/${id}`);
+    return res.data;
+  },
+
   async createCatalogCocktail(data: {
-  id: string;
-  name: string;
-  category: "Alkoholowy" | "Bezalkoholowy";
-  ingredients: string;
-  instructions: string;
-  image?: File | null;
-}) {
-  const formData = new FormData();
-
-  formData.append("id", data.id);
-  formData.append("name", data.name);
-  formData.append("category", data.category);
-  formData.append("ingredients", data.ingredients);
-  formData.append("instructions", data.instructions);
-
-  if (data.image) {
-    formData.append("image", data.image);
-  }
-
-  const res = await api.post("/admin/catalog", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-
-  return res.data;
-},
-
-async updateCatalogCocktail(
-  id: string,
-  data: {
+    id: string;
     name: string;
     category: "Alkoholowy" | "Bezalkoholowy";
     ingredients: string;
     instructions: string;
     image?: File | null;
-    currentImage?: string | null;
-  }
-) {
-  const formData = new FormData();
+  }) {
+    const formData = new FormData();
 
-  formData.append("name", data.name);
-  formData.append("category", data.category);
-  formData.append("ingredients", data.ingredients);
-  formData.append("instructions", data.instructions);
+    formData.append("id", data.id);
+    formData.append("name", data.name);
+    formData.append("category", data.category);
+    formData.append("ingredients", data.ingredients);
+    formData.append("instructions", data.instructions);
 
-  if (data.image) {
-    formData.append("image", data.image);
-  } else if (data.currentImage) {
-    formData.append("image", data.currentImage);
-  }
+    if (data.image) {
+      formData.append("image", data.image);
+    }
 
-  const res = await api.put(`/admin/catalog/${id}`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
+    const res = await api.post("/admin/catalog", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return res.data;
+  },
+
+  async updateCatalogCocktail(
+    id: string,
+    data: {
+      name: string;
+      category: "Alkoholowy" | "Bezalkoholowy";
+      ingredients: string;
+      instructions: string;
+      image?: File | null;
+      currentImage?: string | null;
     },
-  });
+  ) {
+    const formData = new FormData();
 
-  return res.data;
-},
+    formData.append("name", data.name);
+    formData.append("category", data.category);
+    formData.append("ingredients", data.ingredients);
+    formData.append("instructions", data.instructions);
+
+    if (data.image) {
+      formData.append("image", data.image);
+    } else if (data.currentImage) {
+      formData.append("image", data.currentImage);
+    }
+
+    const res = await api.put(`/admin/catalog/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return res.data;
+  },
 };

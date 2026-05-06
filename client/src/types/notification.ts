@@ -6,7 +6,9 @@ export type NotificationType =
   | "comment_reply"
   | "report_public_cocktail_removed"
   | "report_comment_deleted"
-  | "report_rejected";
+  | "report_rejected"
+  | "cocktail_approved"
+  | "cocktail_rejected";
 
 export interface Notification {
   id: number;

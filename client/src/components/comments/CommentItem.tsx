@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { commentsApi } from "../../api/commentsApi";
+import { adminApi } from "../../api/adminApi";
 import { useAuth } from "../../hooks/useAuth";
 import type { CommentItemData } from "../../types/comment";
 import ReplyForm from "./ReplyForm";
@@ -12,10 +13,13 @@ interface CommentItemProps {
 
 export default function CommentItem({ comment, onReload }: CommentItemProps) {
   const { isAuthenticated, user } = useAuth();
+
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
+
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
   const handleReply = async (content: string) => {
     await commentsApi.addComment({
@@ -30,9 +34,7 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
   };
 
   const handleToggleLike = async () => {
-    if (!isAuthenticated || isLiking) {
-      return;
-    }
+    if (!isAuthenticated || isLiking) return;
 
     setIsLiking(true);
 
@@ -50,14 +52,17 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Delete this comment?")) {
-      return;
-    }
+    if (!window.confirm("Delete this comment?")) return;
 
     setIsDeleting(true);
 
     try {
-      await commentsApi.deleteComment(comment.id);
+      if (isAdmin && user?.id !== comment.user_id) {
+        await adminApi.deleteAnyComment(comment.id);
+      } else {
+        await commentsApi.deleteComment(comment.id);
+      }
+
       await onReload();
     } finally {
       setIsDeleting(false);
@@ -120,7 +125,7 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
             </button>
           )}
 
-          {isAuthenticated && user?.id === comment.user_id && (
+          {isAuthenticated && (user?.id === comment.user_id || isAdmin) && (
             <button
               onClick={handleDelete}
               disabled={isDeleting}
@@ -136,6 +141,7 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
               {isDeleting ? "Deleting..." : "Delete"}
             </button>
           )}
+
           <ReportButton type="comment" id={comment.id} />
         </div>
 

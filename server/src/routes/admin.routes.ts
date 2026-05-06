@@ -9,9 +9,9 @@ import {
   getPublishedCocktailsHandler,
   approveCocktailHandler,
   rejectCocktailHandler,
-  cancelModerationHandler,
   removePublishedCocktailHandler,
   deleteAnyCommentHandler,
+  deletePublicCocktailHandler,
 } from "../controllers/adminModeration.controller";
 import {
   addCatalogCocktailHandler,
@@ -42,7 +42,6 @@ router.get("/moderation/published", getPublishedCocktailsHandler);
 
 router.post("/moderation/:id/approve", approveCocktailHandler);
 router.post("/moderation/:id/reject", rejectCocktailHandler);
-router.post("/moderation/:id/cancel", cancelModerationHandler);
 router.post("/moderation/:id/remove", removePublishedCocktailHandler);
 
 router.delete("/comments/:id", deleteAnyCommentHandler);
@@ -64,5 +63,6 @@ router.put(
   updateCatalogCocktailHandler,
 );
 router.delete("/catalog/:id", deleteCatalogCocktailHandler);
+router.delete("/public-cocktails/:id", deletePublicCocktailHandler)
 
 export default router;

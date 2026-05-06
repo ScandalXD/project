@@ -4,11 +4,13 @@ export type NotificationType =
   | "cocktail_comment"
   | "comment_like"
   | "comment_reply"
+  | "cocktail_approved"
+  | "cocktail_rejected"
   | "report_public_cocktail_removed"
   | "report_comment_deleted"
   | "report_rejected";
 
-export type RecipeType = "catalog" | "public";
+export type RecipeType = "catalog" | "public" | "user";
 
 export interface Notification {
   id: number;

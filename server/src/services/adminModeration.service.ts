@@ -3,6 +3,7 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { UserCocktail } from "../models/UserCocktail.model";
 import { PublicCocktail } from "../models/PublicCocktail.model";
 import { ServiceError } from "./cocktail.service";
+import { createNotification } from "./notificationEvent.service";
 
 interface PendingCocktail extends UserCocktail {
   owner_nickname: string;
@@ -39,7 +40,7 @@ export const getPendingCocktails = async (): Promise<PendingCocktail[]> => {
 
 export const approveCocktail = async (
   adminId: number,
-  cocktailId: number,
+  cocktailId: number
 ): Promise<void> => {
   if (!Number.isInteger(cocktailId)) {
     throw new ServiceError("Invalid cocktail id", 400);
@@ -51,44 +52,44 @@ export const approveCocktail = async (
     throw new ServiceError("Only pending cocktails can be approved", 409);
   }
 
-  const [existingPublic] = await db.query<RowDataPacket[]>(
-    "SELECT id FROM public_cocktails WHERE source_cocktail_id = ?",
-    [cocktailId],
-  );
-
-  if (existingPublic.length > 0) {
-    throw new ServiceError("Public version already exists", 409);
-  }
-
   await db.query("START TRANSACTION");
 
   try {
     await db.query(
-      `INSERT INTO public_cocktails
-        (source_cocktail_id, author_id, name, category, ingredients, instructions, image)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        cocktail.id,
-        cocktail.owner_id,
-        cocktail.name,
-        cocktail.category,
-        cocktail.ingredients,
-        cocktail.instructions,
-        cocktail.image,
-      ],
-    );
-
-    await db.query(
       `UPDATE user_cocktails
        SET publication_status = 'approved',
-           moderation_reason = NULL,
            moderated_at = NOW(),
            moderated_by = ?
        WHERE id = ?`,
-      [adminId, cocktailId],
+      [adminId, cocktailId]
     );
 
+    const [publicResult] = await db.query<ResultSetHeader>(
+  `INSERT INTO public_cocktails
+   (source_cocktail_id, author_id, name, category, ingredients, instructions, image)
+   VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  [
+    cocktail.id,
+    cocktail.owner_id,
+    cocktail.name,
+    cocktail.category,
+    cocktail.ingredients,
+    cocktail.instructions,
+    cocktail.image,
+  ]
+);
+
     await db.query("COMMIT");
+
+    await createNotification({
+      userId: cocktail.owner_id,
+      type: "cocktail_approved",
+      actorUserId: adminId,
+      recipeId: String(publicResult.insertId),
+      recipeType: "public",
+      commentId: null,
+      adminReason: null,
+    });
   } catch (error) {
     await db.query("ROLLBACK");
     throw error;
@@ -98,7 +99,7 @@ export const approveCocktail = async (
 export const rejectCocktail = async (
   adminId: number,
   cocktailId: number,
-  reason: string,
+  reason: string
 ): Promise<void> => {
   if (!Number.isInteger(cocktailId)) {
     throw new ServiceError("Invalid cocktail id", 400);
@@ -121,42 +122,18 @@ export const rejectCocktail = async (
          moderated_at = NOW(),
          moderated_by = ?
      WHERE id = ?`,
-    [reason.trim(), adminId, cocktailId],
+    [reason.trim(), adminId, cocktailId]
   );
-};
 
-export const cancelModeration = async (
-  adminId: number,
-  cocktailId: number,
-  reason: string,
-): Promise<void> => {
-  if (!Number.isInteger(cocktailId)) {
-    throw new ServiceError("Invalid cocktail id", 400);
-  }
-
-  if (!reason || !reason.trim()) {
-    throw new ServiceError("Return reason is required", 400);
-  }
-
-  const cocktail = await getPendingCocktailById(cocktailId);
-
-  if (cocktail.publication_status !== "pending") {
-    throw new ServiceError(
-      "Only pending cocktails can have moderation cancelled",
-      409,
-    );
-  }
-
-  await db.query(
-    `UPDATE user_cocktails
-     SET publication_status = 'draft',
-         moderation_reason = ?,
-         submitted_at = NULL,
-         moderated_at = NOW(),
-         moderated_by = ?
-     WHERE id = ?`,
-    [reason.trim(), adminId, cocktailId],
-  );
+  await createNotification({
+    userId: cocktail.owner_id,
+    type: "cocktail_rejected",
+    actorUserId: adminId,
+    recipeId: String(cocktail.id),
+    recipeType: "user",
+    commentId: null,
+    adminReason: reason.trim(),
+  });
 };
 
 export const removePublishedCocktail = async (
@@ -260,4 +237,52 @@ export const deleteAnyComment = async (commentId: number): Promise<void> => {
     "DELETE FROM cocktail_comments WHERE id = ?",
     [commentId],
   );
+};
+
+export const deletePublicCocktailById = async (
+  adminId: number,
+  publicCocktailId: number
+): Promise<void> => {
+  if (!Number.isInteger(publicCocktailId)) {
+    throw new ServiceError("Invalid public cocktail id", 400);
+  }
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT * FROM public_cocktails WHERE id = ?",
+    [publicCocktailId]
+  );
+
+  if (rows.length === 0) {
+    throw new ServiceError("Public cocktail not found", 404);
+  }
+
+  const publicCocktail = rows[0] as PublicCocktail;
+
+  await db.query("START TRANSACTION");
+
+  try {
+    await db.query(
+      "DELETE FROM favorites WHERE cocktail_id = ? AND cocktail_type = 'public'",
+      [String(publicCocktailId)]
+    );
+
+    await db.query("DELETE FROM public_cocktails WHERE id = ?", [
+      publicCocktailId,
+    ]);
+
+    await db.query(
+      `UPDATE user_cocktails
+       SET publication_status = 'rejected',
+           moderation_reason = ?,
+           moderated_at = NOW(),
+           moderated_by = ?
+       WHERE id = ?`,
+      ["Removed by admin", adminId, publicCocktail.source_cocktail_id]
+    );
+
+    await db.query("COMMIT");
+  } catch (error) {
+    await db.query("ROLLBACK");
+    throw error;
+  }
 };

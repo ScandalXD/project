@@ -88,7 +88,7 @@ export default function AdminDashboardPage() {
         <DashboardCard
           title="Public cocktails"
           value={stats.publicCocktailsCount}
-          to="/public-cocktails"
+          to="/admin/public"
         />
 
         <DashboardCard

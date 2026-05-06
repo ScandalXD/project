@@ -3,10 +3,10 @@ import {
   getPendingCocktails,
   approveCocktail,
   rejectCocktail,
-  cancelModeration,
   removePublishedCocktail,
   getPublishedCocktailsForAdmin,
   deleteAnyComment,
+  deletePublicCocktailById
 } from "../services/adminModeration.service";
 import { ServiceError } from "../services/cocktail.service";
 
@@ -76,26 +76,6 @@ export const rejectCocktailHandler = async (
   }
 };
 
-export const cancelModerationHandler = async (
-  req: Request<{ id: string }, {}, ReasonBody>,
-  res: Response
-) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  try {
-    await cancelModeration(
-      req.user.id,
-      Number(req.params.id),
-      req.body.reason
-    );
-    res.json({ message: "Moderation cancelled and returned for editing" });
-  } catch (e) {
-    handleError(res, e);
-  }
-};
-
 export const removePublishedCocktailHandler = async (
   req: Request<{ id: string }, {}, ReasonBody>,
   res: Response
@@ -123,6 +103,22 @@ export const deleteAnyCommentHandler = async (
   try {
     await deleteAnyComment(Number(req.params.id));
     res.json({ message: "Comment deleted by admin" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const deletePublicCocktailHandler = async (
+  req: Request<{ id: string }>,
+  res: Response
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    await deletePublicCocktailById(req.user.id, Number(req.params.id));
+    res.json({ message: "Public cocktail deleted" });
   } catch (e) {
     handleError(res, e);
   }
