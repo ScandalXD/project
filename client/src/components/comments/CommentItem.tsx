@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { commentsApi } from "../../api/commentsApi";
 import { adminApi } from "../../api/adminApi";
+import { reportApi } from "../../api/reportApi";
 import { useAuth } from "../../hooks/useAuth";
 import type { CommentItemData } from "../../types/comment";
-import ReplyForm from "./ReplyForm";
-import ReportButton from "../reports/ReportButton";
+
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import Modal from "../ui/Modal";
 
 interface CommentItemProps {
   comment: CommentItemData;
@@ -14,24 +17,22 @@ interface CommentItemProps {
 export default function CommentItem({ comment, onReload }: CommentItemProps) {
   const { isAuthenticated, user } = useAuth();
 
-  const [showReplyForm, setShowReplyForm] = useState(false);
-  const [isLiking, setIsLiking] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [showReply, setShowReply] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
 
+  const [isLiking, setIsLiking] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [deleteReason, setDeleteReason] = useState("");
+
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
-
-  const handleReply = async (content: string) => {
-    await commentsApi.addComment({
-      cocktailId: comment.cocktail_id,
-      cocktailType: comment.cocktail_type,
-      content,
-      parentCommentId: comment.id,
-    });
-
-    setShowReplyForm(false);
-    await onReload();
-  };
+  const canDelete =
+    isAuthenticated && (user?.id === comment.user_id || isAdmin);
+  const canReport = isAuthenticated && user?.id !== comment.user_id;
 
   const handleToggleLike = async () => {
     if (!isAuthenticated || isLiking) return;
@@ -51,116 +52,125 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Delete this comment?")) return;
+  const handleReply = async () => {
+    if (!replyText.trim()) return;
 
+    await commentsApi.addComment({
+      cocktailId: String(comment.cocktail_id),
+      cocktailType: comment.cocktail_type,
+      content: replyText.trim(),
+      parentCommentId: comment.id,
+    });
+
+    setReplyText("");
+    setShowReply(false);
+    await onReload();
+  };
+
+  const handleDelete = async () => {
     setIsDeleting(true);
 
     try {
       if (isAdmin && user?.id !== comment.user_id) {
-        await adminApi.deleteAnyComment(comment.id);
+        if (!deleteReason.trim()) return;
+
+        await adminApi.deleteAnyComment(comment.id, deleteReason.trim());
       } else {
         await commentsApi.deleteComment(comment.id);
       }
 
+      setShowDeleteModal(false);
+      setDeleteReason("");
       await onReload();
     } finally {
       setIsDeleting(false);
     }
   };
 
+  const handleReport = async () => {
+    if (!reportReason.trim()) return;
+
+    await reportApi.reportComment(comment.id, reportReason.trim());
+
+    setReportReason("");
+    setShowReportModal(false);
+  };
+
   return (
     <div
       id={`comment-${comment.id}`}
+      className="comment-card"
       style={{
-        marginTop: "14px",
-        paddingLeft: comment.parent_comment_id ? "22px" : "0",
+        marginLeft: comment.parent_comment_id ? "32px" : "0",
       }}
     >
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "12px",
-          padding: "12px",
-        }}
-      >
-        <div style={{ marginBottom: "6px", fontWeight: 600 }}>
-          {comment.author_nickname}
-        </div>
+      <div className="comment-header">
+        <strong>{comment.author_nickname}</strong>
 
-        <div style={{ color: "#374151", marginBottom: "10px" }}>
-          {comment.content}
-        </div>
+        <span className="muted-text">
+          {new Date(comment.created_at).toLocaleString("pl-PL")}
+        </span>
+      </div>
 
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <button
-            onClick={handleToggleLike}
-            disabled={!isAuthenticated || isLiking}
-            style={{
-              border: "none",
-              background: comment.is_liked_by_user ? "#dc2626" : "#e5e7eb",
-              color: comment.is_liked_by_user ? "#ffffff" : "#111827",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              cursor: isAuthenticated ? "pointer" : "not-allowed",
+      <p>{comment.content}</p>
+
+      <div className="comment-actions">
+        <Button
+          variant={comment.is_liked_by_user ? "danger" : "secondary"}
+          disabled={!isAuthenticated || isLiking}
+          onClick={handleToggleLike}
+        >
+          ❤️ {comment.likes_count}
+        </Button>
+
+        {isAuthenticated && (
+          <Button variant="info" onClick={() => setShowReply((prev) => !prev)}>
+            Reply
+          </Button>
+        )}
+
+        {canDelete && (
+          <Button
+            variant="danger"
+            disabled={isDeleting}
+            onClick={() => {
+              setShowDeleteModal(true);
+              setDeleteReason("");
             }}
           >
-            ❤️ {comment.likes_count}
-          </button>
+            {isDeleting ? "Deleting..." : "Delete"}
+          </Button>
+        )}
 
-          {isAuthenticated && (
-            <button
-              onClick={() => setShowReplyForm((prev) => !prev)}
-              style={{
-                border: "none",
-                background: "#2563eb",
-                color: "#ffffff",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                cursor: "pointer",
-              }}
-            >
-              Reply
-            </button>
-          )}
-
-          {isAuthenticated && (user?.id === comment.user_id || isAdmin) && (
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              style={{
-                border: "none",
-                background: "#111827",
-                color: "#ffffff",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                cursor: "pointer",
-              }}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </button>
-          )}
-
-          <ReportButton type="comment" id={comment.id} />
-        </div>
-
-        {showReplyForm && isAuthenticated && (
-          <ReplyForm onSubmit={handleReply} />
+        {canReport && (
+          <Button variant="warning" onClick={() => setShowReportModal(true)}>
+            Report
+          </Button>
         )}
       </div>
 
+      {showReply && (
+        <div className="comment-reply-box">
+          <Input
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            placeholder="Write reply..."
+          />
+
+          <div className="comment-actions">
+            <Button onClick={handleReply}>Send</Button>
+
+            <Button variant="secondary" onClick={() => setShowReply(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
       {comment.replies && comment.replies.length > 0 && (
         <button
+          className="comment-replies-toggle"
           onClick={() => setShowReplies((prev) => !prev)}
-          style={{
-            marginTop: "8px",
-            border: "none",
-            background: "transparent",
-            color: "#2563eb",
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
         >
           {showReplies
             ? "▲ Hide replies"
@@ -174,6 +184,91 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
         comment.replies?.map((reply) => (
           <CommentItem key={reply.id} comment={reply} onReload={onReload} />
         ))}
+
+      {showDeleteModal && (
+        <Modal
+          title="Delete comment"
+          onClose={() => {
+            setShowDeleteModal(false);
+            setDeleteReason("");
+          }}
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteReason("");
+                }}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                variant="danger"
+                disabled={
+                  isDeleting ||
+                  (isAdmin &&
+                    user?.id !== comment.user_id &&
+                    !deleteReason.trim())
+                }
+                onClick={handleDelete}
+              >
+                Delete
+              </Button>
+            </>
+          }
+        >
+          <p className="muted-text">
+            Are you sure you want to delete this comment?
+          </p>
+
+          {isAdmin && user?.id !== comment.user_id && (
+            <Input
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              placeholder="Admin reason"
+            />
+          )}
+        </Modal>
+      )}
+
+      {showReportModal && (
+        <Modal
+          title="Report comment"
+          onClose={() => {
+            setShowReportModal(false);
+            setReportReason("");
+          }}
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowReportModal(false);
+                  setReportReason("");
+                }}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                variant="warning"
+                disabled={!reportReason.trim()}
+                onClick={handleReport}
+              >
+                Report
+              </Button>
+            </>
+          }
+        >
+          <Input
+            value={reportReason}
+            onChange={(e) => setReportReason(e.target.value)}
+            placeholder="Reason"
+          />
+        </Modal>
+      )}
     </div>
   );
 }

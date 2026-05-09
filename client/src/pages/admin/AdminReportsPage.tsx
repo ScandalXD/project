@@ -2,7 +2,22 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { reportApi } from "../../api/reportApi";
 import type { ReportItem } from "../../types/report";
+import Button from "../../components/ui/Button";
+import EmptyState from "../../components/ui/EmptyState";
+import Modal from "../../components/ui/Modal";
+import Input from "../../components/ui/Input";
 import RejectReportModal from "../../components/reports/RejectReportModal";
+
+type AdminAction =
+  | null
+  | {
+      type: "hideCocktail";
+      reportId: number;
+    }
+  | {
+      type: "deleteComment";
+      reportId: number;
+    };
 
 function getTargetLabel(report: ReportItem) {
   if (report.target_type === "public_cocktail") return "Public cocktail";
@@ -15,9 +30,10 @@ export default function AdminReportsPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteReportId, setDeleteReportId] = useState<number | null>(null);
   const [rejectReportId, setRejectReportId] = useState<number | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
-  const [isRejecting, setIsRejecting] = useState(false);
+  const [adminAction, setAdminAction] = useState<AdminAction>(null);
+  const [adminReason, setAdminReason] = useState("");
 
   const loadReports = async () => {
     try {
@@ -34,107 +50,93 @@ export default function AdminReportsPage() {
     loadReports();
   }, []);
 
-  const handleMarkReviewed = async (id: number) => {
+  const handleRejectReport = async (reason: string) => {
+    if (!rejectReportId) return;
+
     setError("");
     setMessage("");
 
     try {
-      await reportApi.markReportReviewed(id);
-      setMessage("Report marked as reviewed.");
-      await loadReports();
-    } catch {
-      setError("Nie udało się oznaczyć zgłoszenia jako sprawdzone.");
-    }
-  };
-
-  const handleRejectReport = async () => {
-    if (!rejectReportId || !rejectReason.trim()) return;
-
-    setError("");
-    setMessage("");
-    setIsRejecting(true);
-
-    try {
-      await reportApi.rejectReport(rejectReportId, rejectReason.trim());
+      await reportApi.rejectReport(rejectReportId, reason);
       setMessage("Report rejected.");
       setRejectReportId(null);
-      setRejectReason("");
       await loadReports();
     } catch {
       setError("Nie udało się odrzucić zgłoszenia.");
-    } finally {
-      setIsRejecting(false);
     }
   };
 
-  const handleDeleteReport = async (id: number) => {
-    if (!window.confirm("Delete this reviewed report?")) return;
+  const handleDeleteReport = async () => {
+    if (!deleteReportId) return;
 
     setError("");
     setMessage("");
 
     try {
-      await reportApi.deleteReviewedReport(id);
+      await reportApi.deleteReviewedReport(deleteReportId);
       setMessage("Report deleted.");
+      setDeleteReportId(null);
       await loadReports();
     } catch {
       setError("Nie udało się usunąć zgłoszenia.");
     }
   };
 
-  const handleHideCocktail = async (id: number) => {
-    const reason = window.prompt("Admin reason for hiding cocktail:");
-    if (!reason?.trim()) return;
+  const handleAdminActionSubmit = async () => {
+    if (!adminAction || !adminReason.trim()) return;
 
     setError("");
     setMessage("");
 
     try {
-      await reportApi.hidePublicCocktailFromReport(id, reason.trim());
-      setMessage("Public cocktail hidden.");
+      if (adminAction.type === "hideCocktail") {
+        await reportApi.hidePublicCocktailFromReport(
+          adminAction.reportId,
+          adminReason.trim(),
+        );
+
+        setMessage("Public cocktail hidden.");
+      }
+
+      if (adminAction.type === "deleteComment") {
+        await reportApi.deleteCommentFromReport(
+          adminAction.reportId,
+          adminReason.trim(),
+        );
+
+        setMessage("Comment deleted.");
+      }
+
+      setAdminAction(null);
+      setAdminReason("");
       await loadReports();
     } catch {
-      setError("Nie udało się ukryć koktajlu.");
+      setError("Action failed.");
     }
   };
 
-  const handleDeleteComment = async (id: number) => {
-    const reason = window.prompt("Admin reason for deleting comment:");
-    if (!reason?.trim()) return;
-
-    setError("");
-    setMessage("");
-
-    try {
-      await reportApi.deleteCommentFromReport(id, reason.trim());
-      setMessage("Comment deleted.");
-      await loadReports();
-    } catch {
-      setError("Nie udało się usunąć komentarza.");
-    }
-  };
-
-  if (isLoading) return <div>Loading reports...</div>;
+  if (isLoading) {
+    return <div>Loading reports...</div>;
+  }
 
   return (
-    <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-      <h1>Admin Reports</h1>
+    <div className="page-container">
+      <div className="admin-page-header">
+        <h1>Admin Reports</h1>
+      </div>
 
-      {message && <p style={{ color: "#059669" }}>{message}</p>}
-      {error && <p style={{ color: "#dc2626" }}>{error}</p>}
+      {message && <p className="success-text">{message}</p>}
+      {error && <p className="error-text">{error}</p>}
 
       {reports.length === 0 ? (
-        <p>No reports found.</p>
+        <EmptyState text="No reports found" />
       ) : (
-        <div style={{ display: "grid", gap: "16px" }}>
+        <div className="admin-grid">
           {reports.map((report) => (
             <div
               key={report.id}
+              className="admin-card"
               style={{
-                background: "#ffffff",
-                border: "1px solid #ddd",
-                borderRadius: "12px",
-                padding: "16px",
                 opacity: report.status === "reviewed" ? 0.7 : 1,
               }}
             >
@@ -189,29 +191,16 @@ export default function AdminReportsPage() {
               )}
 
               {report.admin_reason && (
-                <p style={{ color: "#b91c1c" }}>
+                <p className="error-text">
                   <strong>Admin reason:</strong> {report.admin_reason}
                 </p>
               )}
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  marginTop: "12px",
-                  flexWrap: "wrap",
-                }}
-              >
+              <div className="report-actions">
                 {report.target_type === "public_cocktail" && (
                   <Link
                     to={`/public-cocktails/${report.target_id}`}
-                    style={{
-                      textDecoration: "none",
-                      background: "#111827",
-                      color: "#ffffff",
-                      padding: "10px 14px",
-                      borderRadius: "10px",
-                    }}
+                    className="admin-create-link"
                   >
                     View cocktail
                   </Link>
@@ -221,13 +210,7 @@ export default function AdminReportsPage() {
                   report.comment_cocktail_type === "public" && (
                     <Link
                       to={`/public-cocktails/${report.comment_cocktail_id}#comment-${report.target_id}`}
-                      style={{
-                        textDecoration: "none",
-                        background: "#111827",
-                        color: "#ffffff",
-                        padding: "10px 14px",
-                        borderRadius: "10px",
-                      }}
+                      className="admin-create-link"
                     >
                       View comment
                     </Link>
@@ -235,54 +218,130 @@ export default function AdminReportsPage() {
 
                 {report.status === "open" && (
                   <>
-                    <button onClick={() => handleMarkReviewed(report.id)}>
-                      Mark reviewed
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setRejectReportId(report.id);
-                        setRejectReason("");
-                      }}
+                    <Button
+                      variant="warning"
+                      onClick={() => setRejectReportId(report.id)}
                     >
                       Reject report
-                    </button>
+                    </Button>
 
                     {report.target_type === "public_cocktail" && (
-                      <button onClick={() => handleHideCocktail(report.id)}>
+                      <Button
+                        variant="danger"
+                        onClick={() => {
+                          setAdminAction({
+                            type: "hideCocktail",
+                            reportId: report.id,
+                          });
+                          setAdminReason("");
+                        }}
+                      >
                         Hide cocktail
-                      </button>
+                      </Button>
                     )}
 
                     {report.target_type === "comment" && (
-                      <button onClick={() => handleDeleteComment(report.id)}>
+                      <Button
+                        variant="danger"
+                        onClick={() => {
+                          setAdminAction({
+                            type: "deleteComment",
+                            reportId: report.id,
+                          });
+                          setAdminReason("");
+                        }}
+                      >
                         Delete comment
-                      </button>
+                      </Button>
                     )}
                   </>
                 )}
 
                 {report.status === "reviewed" && (
-                  <button onClick={() => handleDeleteReport(report.id)}>
+                  <Button
+                    variant="danger"
+                    onClick={() => setDeleteReportId(report.id)}
+                  >
                     Delete report
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
           ))}
         </div>
       )}
-      {rejectReportId && (
-        <RejectReportModal
-          reason={rejectReason}
-          isLoading={isRejecting}
-          onReasonChange={setRejectReason}
+
+      <RejectReportModal
+        isOpen={rejectReportId !== null}
+        onClose={() => setRejectReportId(null)}
+        onReject={handleRejectReport}
+      />
+
+      {adminAction && (
+        <Modal
+          title={
+            adminAction.type === "hideCocktail"
+              ? "Hide public cocktail"
+              : "Delete comment"
+          }
           onClose={() => {
-            setRejectReportId(null);
-            setRejectReason("");
+            setAdminAction(null);
+            setAdminReason("");
           }}
-          onSubmit={handleRejectReport}
-        />
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setAdminAction(null);
+                  setAdminReason("");
+                }}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                variant="danger"
+                disabled={!adminReason.trim()}
+                onClick={handleAdminActionSubmit}
+              >
+                Confirm
+              </Button>
+            </>
+          }
+        >
+          <p className="muted-text">Provide admin reason:</p>
+
+          <Input
+            value={adminReason}
+            onChange={(e) => setAdminReason(e.target.value)}
+            placeholder="Admin reason"
+          />
+        </Modal>
+      )}
+      {deleteReportId && (
+        <Modal
+          title="Delete report"
+          onClose={() => setDeleteReportId(null)}
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => setDeleteReportId(null)}
+              >
+                Cancel
+              </Button>
+
+              <Button variant="danger" onClick={handleDeleteReport}>
+                Delete
+              </Button>
+            </>
+          }
+        >
+          <p className="muted-text">
+            Are you sure you want to delete this reviewed report?
+          </p>
+        </Modal>
       )}
     </div>
   );

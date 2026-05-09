@@ -40,7 +40,7 @@ export const getPendingCocktails = async (): Promise<PendingCocktail[]> => {
 
 export const approveCocktail = async (
   adminId: number,
-  cocktailId: number
+  cocktailId: number,
 ): Promise<void> => {
   if (!Number.isInteger(cocktailId)) {
     throw new ServiceError("Invalid cocktail id", 400);
@@ -61,23 +61,23 @@ export const approveCocktail = async (
            moderated_at = NOW(),
            moderated_by = ?
        WHERE id = ?`,
-      [adminId, cocktailId]
+      [adminId, cocktailId],
     );
 
     const [publicResult] = await db.query<ResultSetHeader>(
-  `INSERT INTO public_cocktails
-   (source_cocktail_id, author_id, name, category, ingredients, instructions, image)
-   VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  [
-    cocktail.id,
-    cocktail.owner_id,
-    cocktail.name,
-    cocktail.category,
-    cocktail.ingredients,
-    cocktail.instructions,
-    cocktail.image,
-  ]
-);
+      `INSERT INTO public_cocktails
+       (source_cocktail_id, author_id, name, category, ingredients, instructions, image)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        cocktail.id,
+        cocktail.owner_id,
+        cocktail.name,
+        cocktail.category,
+        cocktail.ingredients,
+        cocktail.instructions,
+        cocktail.image,
+      ],
+    );
 
     await db.query("COMMIT");
 
@@ -99,7 +99,7 @@ export const approveCocktail = async (
 export const rejectCocktail = async (
   adminId: number,
   cocktailId: number,
-  reason: string
+  reason: string,
 ): Promise<void> => {
   if (!Number.isInteger(cocktailId)) {
     throw new ServiceError("Invalid cocktail id", 400);
@@ -122,7 +122,7 @@ export const rejectCocktail = async (
          moderated_at = NOW(),
          moderated_by = ?
      WHERE id = ?`,
-    [reason.trim(), adminId, cocktailId]
+    [reason.trim(), adminId, cocktailId],
   );
 
   await createNotification({
@@ -191,11 +191,11 @@ export const removePublishedCocktail = async (
 
     await db.query(
       `UPDATE user_cocktails
-     SET publication_status = 'rejected',
-         moderation_reason = ?,
-         moderated_at = NOW(),
-         moderated_by = ?
-     WHERE id = ?`,
+       SET publication_status = 'rejected',
+           moderation_reason = ?,
+           moderated_at = NOW(),
+           moderated_by = ?
+       WHERE id = ?`,
       [reason.trim(), adminId, cocktailId],
     );
 
@@ -221,15 +221,20 @@ export const getPublishedCocktailsForAdmin = async (): Promise<
 
 export const deleteAnyComment = async (
   adminId: number,
-  commentId: number
+  commentId: number,
+  reason: string,
 ): Promise<void> => {
   if (!Number.isInteger(commentId)) {
     throw new ServiceError("Invalid comment id", 400);
   }
 
+  if (!reason || !reason.trim()) {
+    throw new ServiceError("Admin reason is required", 400);
+  }
+
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT id, user_id, cocktail_id, cocktail_type FROM cocktail_comments WHERE id = ?",
-    [commentId]
+    [commentId],
   );
 
   if (rows.length === 0) {
@@ -244,32 +249,43 @@ export const deleteAnyComment = async (
   };
 
   await createNotification({
-    userId: comment.user_id,
+    userId: Number(comment.user_id),
     type: "admin_comment_deleted",
     actorUserId: adminId,
     recipeId: String(comment.cocktail_id),
     recipeType: comment.cocktail_type,
-    commentId: comment.id,
-    adminReason: "Your comment was deleted by admin",
+    commentId: null,
+    adminReason: reason.trim(),
   });
+
+  await db.query("DELETE FROM comment_likes WHERE comment_id = ?", [commentId]);
+
+  await db.query("DELETE FROM comment_mentions WHERE comment_id = ?", [
+    commentId,
+  ]);
 
   await db.query<ResultSetHeader>(
     "DELETE FROM cocktail_comments WHERE id = ?",
-    [commentId]
+    [commentId],
   );
 };
 
 export const deletePublicCocktailById = async (
   adminId: number,
-  publicCocktailId: number
+  publicCocktailId: number,
+  reason: string,
 ): Promise<void> => {
   if (!Number.isInteger(publicCocktailId)) {
     throw new ServiceError("Invalid public cocktail id", 400);
   }
 
+  if (!reason || !reason.trim()) {
+    throw new ServiceError("Admin reason is required", 400);
+  }
+
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT * FROM public_cocktails WHERE id = ?",
-    [publicCocktailId]
+    [publicCocktailId],
   );
 
   if (rows.length === 0) {
@@ -282,18 +298,38 @@ export const deletePublicCocktailById = async (
 
   try {
     await createNotification({
-      userId: publicCocktail.author_id,
+      userId: Number(publicCocktail.author_id),
       type: "public_cocktail_deleted",
       actorUserId: adminId,
       recipeId: String(publicCocktail.id),
       recipeType: "public",
       commentId: null,
-      adminReason: "Your public cocktail was removed by admin",
+      adminReason: reason.trim(),
     });
 
     await db.query(
+      "DELETE FROM comment_likes WHERE comment_id IN (SELECT id FROM cocktail_comments WHERE cocktail_id = ? AND cocktail_type = 'public')",
+      [publicCocktailId],
+    );
+
+    await db.query(
+      "DELETE FROM comment_mentions WHERE comment_id IN (SELECT id FROM cocktail_comments WHERE cocktail_id = ? AND cocktail_type = 'public')",
+      [publicCocktailId],
+    );
+
+    await db.query(
+      "DELETE FROM cocktail_comments WHERE cocktail_id = ? AND cocktail_type = 'public'",
+      [publicCocktailId],
+    );
+
+    await db.query(
+      "DELETE FROM cocktail_likes WHERE cocktail_id = ? AND cocktail_type = 'public'",
+      [String(publicCocktailId)],
+    );
+
+    await db.query(
       "DELETE FROM favorites WHERE cocktail_id = ? AND cocktail_type = 'public'",
-      [String(publicCocktailId)]
+      [String(publicCocktailId)],
     );
 
     await db.query("DELETE FROM public_cocktails WHERE id = ?", [
@@ -307,7 +343,7 @@ export const deletePublicCocktailById = async (
            moderated_at = NOW(),
            moderated_by = ?
        WHERE id = ?`,
-      ["Removed by admin", adminId, publicCocktail.source_cocktail_id]
+      [reason.trim(), adminId, publicCocktail.source_cocktail_id],
     );
 
     await db.query("COMMIT");

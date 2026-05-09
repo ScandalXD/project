@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import {
   createReport,
   getAllReports,
-  markReportReviewed,
   hidePublicCocktailFromReport,
   deleteCommentFromReport,
   rejectReport,
@@ -64,22 +63,6 @@ export const getReportsHandler = async (_req: Request, res: Response) => {
   try {
     const reports = await getAllReports();
     res.json(reports);
-  } catch (e) {
-    handleError(res, e);
-  }
-};
-
-export const markReportReviewedHandler = async (
-  req: Request<{ id: string }>,
-  res: Response
-) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  try {
-    await markReportReviewed(req.user.id, Number(req.params.id));
-    res.json({ message: "Report marked as reviewed" });
   } catch (e) {
     handleError(res, e);
   }

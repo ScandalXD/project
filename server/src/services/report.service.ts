@@ -112,28 +112,6 @@ export const getAllReports = async (): Promise<Report[]> => {
   return rows as Report[];
 };
 
-export const markReportReviewed = async (
-  adminUserId: number,
-  reportId: number,
-): Promise<void> => {
-  if (!Number.isInteger(reportId)) {
-    throw new ServiceError("Invalid report id", 400);
-  }
-
-  const [result] = await db.query<ResultSetHeader>(
-    `UPDATE reports
-     SET status = 'reviewed',
-         reviewed_by = ?,
-         reviewed_at = NOW()
-     WHERE id = ?`,
-    [adminUserId, reportId],
-  );
-
-  if (result.affectedRows === 0) {
-    throw new ServiceError("Report not found", 404);
-  }
-};
-
 export const hidePublicCocktailFromReport = async (
   adminUserId: number,
   reportId: number,
@@ -259,7 +237,7 @@ export const deleteCommentFromReport = async (
     adminReason: adminReason.trim(),
   });
 
-  await deleteAnyComment(Number(report.target_id));
+  await deleteAnyComment(adminUserId, Number(report.target_id), adminReason.trim());
 
   await db.query<ResultSetHeader>(
     `UPDATE reports

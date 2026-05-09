@@ -40,8 +40,10 @@ export const adminApi = {
     return res.data;
   },
 
-  async deletePublicCocktail(id: number) {
-    const res = await api.delete(`/admin/public-cocktails/${id}`);
+  async deletePublicCocktail(id: number, reason: string) {
+    const res = await api.delete(`/admin/public-cocktails/${id}`, {
+      data: { reason },
+    });
     return res.data;
   },
 
@@ -61,9 +63,11 @@ export const adminApi = {
     return res.data;
   },
 
-  async deleteAnyComment(id: number) {
-    const res = await api.delete(`/admin/comments/${id}`);
-    return res.data;
+  async deleteAnyComment(id: number, reason: string) {
+    const res = await api.delete(`/admin/comments/${id}`, {
+      data: { reason },
+    });
+    return res.data
   },
 
   async createCatalogCocktail(data: {

@@ -27,11 +27,6 @@ export const reportApi = {
     return res.data;
   },
 
-  async markReportReviewed(reportId: number) {
-    const res = await api.patch(`/admin/reports/${reportId}/review`);
-    return res.data;
-  },
-
   async rejectReport(reportId: number, adminReason: string) {
     const res = await api.patch(`/admin/reports/${reportId}/reject`, {
       adminReason,

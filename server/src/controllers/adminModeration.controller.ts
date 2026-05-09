@@ -97,19 +97,7 @@ export const removePublishedCocktailHandler = async (
 };
 
 export const deleteAnyCommentHandler = async (
-  req: Request<{ id: string }>,
-  res: Response
-) => {
-  try {
-    await deleteAnyComment(Number(req.params.id));
-    res.json({ message: "Comment deleted by admin" });
-  } catch (e) {
-    handleError(res, e);
-  }
-};
-
-export const deletePublicCocktailHandler = async (
-  req: Request<{ id: string }>,
+  req: Request<{ id: string }, {}, ReasonBody>,
   res: Response
 ) => {
   if (!req.user) {
@@ -117,8 +105,29 @@ export const deletePublicCocktailHandler = async (
   }
 
   try {
-    await deletePublicCocktailById(req.user.id, Number(req.params.id));
-    res.json({ message: "Public cocktail deleted" });
+    await deleteAnyComment(req.user.id, Number(req.params.id), req.body.reason);
+    res.json({ message: "Comment deleted" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const deletePublicCocktailHandler = async (
+  req: Request<{ id: string }, {}, ReasonBody>,
+  res: Response
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    await deletePublicCocktailById(
+      req.user.id,
+      Number(req.params.id),
+      req.body.reason
+    );
+
+    res.json({ message: "Public cocktail deleted"});
   } catch (e) {
     handleError(res, e);
   }

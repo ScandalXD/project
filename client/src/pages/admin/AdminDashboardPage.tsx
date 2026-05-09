@@ -2,6 +2,15 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
 
+type DashboardStats = {
+  usersCount: number;
+  catalogCocktailsCount: number;
+  publicCocktailsCount: number;
+  pendingCocktailsCount: number;
+  openReportsCount: number;
+  commentsCount: number;
+};
+
 function DashboardCard({
   title,
   value,
@@ -12,32 +21,15 @@ function DashboardCard({
   to: string;
 }) {
   return (
-    <Link
-      to={to}
-      style={{
-        textDecoration: "none",
-        color: "inherit",
-      }}
-    >
-      <div
-        style={{
-          background: "#ffffff",
-          border: "1px solid #ddd",
-          borderRadius: "12px",
-          padding: "20px",
-          minHeight: "110px",
-          cursor: "pointer",
-        }}
-      >
-        <h3>{title}</h3>
-        <p style={{ fontSize: "28px", margin: 0 }}>{value}</p>
-      </div>
+    <Link to={to} className="dashboard-card">
+      <h3>{title}</h3>
+      <p>{value}</p>
     </Link>
   );
 }
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState("");
 
   const loadStats = async () => {
@@ -54,30 +46,21 @@ export default function AdminDashboardPage() {
   }, []);
 
   if (error) {
-    return <p style={{ color: "#dc2626" }}>{error}</p>;
+    return <p className="error-text">{error}</p>;
   }
 
   if (!stats) {
-    return <p>Loading stats...</p>;
+    return <p className="muted-text">Loading stats...</p>;
   }
 
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-      <h1>Admin Dashboard</h1>
+    <div className="page-container">
+      <div className="admin-page-header">
+        <h1>Admin Dashboard</h1>
+      </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
-          marginTop: "20px",
-        }}
-      >
-        <DashboardCard
-          title="Users"
-          value={stats.usersCount}
-          to="/admin/users"
-        />
+      <div className="dashboard-grid">
+        <DashboardCard title="Users" value={stats.usersCount} to="/admin/users" />
 
         <DashboardCard
           title="Catalog cocktails"

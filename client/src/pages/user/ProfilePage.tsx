@@ -1,12 +1,9 @@
-import {
-  useEffect,
-  useState,
-  type SyntheticEvent,
-  type CSSProperties,
-} from "react";
+import {  useEffect, useState, type SyntheticEvent } from "react";
 import { profileApi } from "../../api/profileApi";
 import { useAuth } from "../../hooks/useAuth";
 import type { UpdateProfileRequest } from "../../types/user";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
 
 export default function ProfilePage() {
   const { user, setAuthData, logout } = useAuth();
@@ -66,7 +63,9 @@ export default function ProfilePage() {
     }
   };
 
-  const handlePasswordSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
+  const handlePasswordSubmit = async (
+    e: SyntheticEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
     setMessage("");
     setError("");
@@ -86,291 +85,270 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    setMessage("");
-    setError("");
-
-    const confirmed = window.confirm(
-      "Are you sure you want to delete your account?"
-    );
-
-    if (!confirmed) return;
-
-    try {
-      await profileApi.deleteProfile();
-
-      logout();
-
-      window.location.href = "/login";
-    } catch {
-      setError("Failed to delete account.");
-    }
-  };
-
-  const inputStyle: CSSProperties = {
-    width: "100%",
-    padding: "12px",
-    borderRadius: "10px",
-    border: "1px solid #d1d5db",
-    boxSizing: "border-box",
-    fontSize: "15px",
-    outline: "none",
-  };
-
-  const buttonStyle: CSSProperties = {
-    border: "none",
-    background: "#111827",
-    color: "#ffffff",
-    padding: "10px 14px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: 600,
-  };
-
-  const secondaryButtonStyle: CSSProperties = {
-    border: "1px solid #d1d5db",
-    background: "#ffffff",
-    color: "#111827",
-    padding: "10px 14px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: 600,
-  };
-
-  const dangerButtonStyle: CSSProperties = {
-    border: "none",
-    background: "#dc2626",
-    color: "#ffffff",
-    padding: "12px 16px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: 600,
-  };
-
-  const sectionHeaderStyle: CSSProperties = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "16px",
-    marginBottom: "12px",
-  };
-
-  const sectionTitleStyle: CSSProperties = {
-    margin: 0,
-    fontSize: "20px",
-  };
-
-  const hrStyle: CSSProperties = {
-    margin: "28px 0",
-    border: "none",
-    borderTop: "1px solid #e5e7eb",
-  };
-
   return (
     <div
+      className="page-container"
       style={{
-        maxWidth: "620px",
-        margin: "0 auto",
-        background: "#ffffff",
-        padding: "28px",
-        borderRadius: "16px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+        maxWidth: "700px",
       }}
     >
-      <h1 style={{ marginTop: 0 }}>My Profile</h1>
+      <div
+        className="card"
+        style={{
+          padding: "28px",
+        }}
+      >
+        <h1 style={{ marginTop: 0 }}>My Profile</h1>
 
-      <p>
-        <strong>Role:</strong> {user?.role}
-      </p>
+        {(message || error) && (
+          <div style={{ marginBottom: "20px" }}>
+            {message && (
+              <p className="success-text" style={{ margin: 0 }}>
+                {message}
+              </p>
+            )}
 
-      {message && <p style={{ color: "#059669" }}>{message}</p>}
-      {error && <p style={{ color: "#dc2626" }}>{error}</p>}
+            {error && (
+              <p className="error-text" style={{ margin: 0 }}>
+                {error}
+              </p>
+            )}
+          </div>
+        )}
 
-      <div style={{ marginTop: "24px" }}>
-        <div style={sectionHeaderStyle}>
-          <h3 style={sectionTitleStyle}>Nickname</h3>
+        <div
+          style={{
+            display: "grid",
+            gap: "24px",
+          }}
+        >
+          <section>
+            <div className="section-header">
+              <div>
+                <h3 style={{ margin: 0 }}>Nickname</h3>
 
-          {!editingNickname && (
-            <button
-              style={buttonStyle}
-              onClick={() => {
-                setNicknameDraft(nickname);
-                setEditingNickname(true);
-              }}
-            >
-              Change nickname
-            </button>
-          )}
-        </div>
+                {!editingNickname && (
+                  <p className="muted-text" style={{ margin: "4px 0 0" }}>
+                    {nickname}
+                  </p>
+                )}
+              </div>
 
-        {!editingNickname ? (
-          <p>{nickname}</p>
-        ) : (
-          <div style={{ display: "grid", gap: "12px" }}>
-            <input
-              value={nicknameDraft}
-              onChange={(e) => setNicknameDraft(e.target.value)}
-              style={inputStyle}
-            />
+              {!editingNickname && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setEditingNickname(true)}
+                >
+                  Change
+                </Button>
+              )}
+            </div>
 
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                style={buttonStyle}
+            {editingNickname && (
+              <div
+                style={{
+                  display: "grid",
+                  gap: "12px",
+                }}
+              >
+                <Input
+                  value={nicknameDraft}
+                  onChange={(e) => setNicknameDraft(e.target.value)}
+                />
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <Button
+                    onClick={() => {
+                      updateProfile({
+                        nickname: nicknameDraft,
+                      });
+
+                      setEditingNickname(false);
+                    }}
+                  >
+                    Save
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setNicknameDraft(nickname);
+                      setEditingNickname(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section>
+            <div className="section-header">
+              <div>
+                <h3 style={{ margin: 0 }}>Email</h3>
+
+                {!editingEmail && (
+                  <p className="muted-text" style={{ margin: "4px 0 0" }}>
+                    {email}
+                  </p>
+                )}
+              </div>
+
+              {!editingEmail && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setEditingEmail(true)}
+                >
+                  Change
+                </Button>
+              )}
+            </div>
+
+            {editingEmail && (
+              <div
+                style={{
+                  display: "grid",
+                  gap: "12px",
+                }}
+              >
+                <Input
+                  type="email"
+                  value={emailDraft}
+                  onChange={(e) => setEmailDraft(e.target.value)}
+                />
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <Button
+                    onClick={() => {
+                      updateProfile({
+                        email: emailDraft,
+                      });
+
+                      setEditingEmail(false);
+                    }}
+                  >
+                    Save
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setEmailDraft(email);
+                      setEditingEmail(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section>
+            <div className="section-header">
+              <div>
+                <h3 style={{ margin: 0 }}>Password</h3>
+
+                {!editingPassword && (
+                  <p className="muted-text" style={{ margin: "4px 0 0" }}>
+                    ••••••••
+                  </p>
+                )}
+              </div>
+
+              {!editingPassword && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setEditingPassword(true)}
+                >
+                  Change
+                </Button>
+              )}
+            </div>
+
+            {editingPassword && (
+              <form
+                onSubmit={handlePasswordSubmit}
+                style={{
+                  display: "grid",
+                  gap: "12px",
+                }}
+              >
+                <Input
+                  type="password"
+                  placeholder="Current password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+
+                <Input
+                  type="password"
+                  placeholder="New password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <Button type="submit">Save</Button>
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setEditingPassword(false);
+
+                      setCurrentPassword("");
+                      setNewPassword("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            )}
+          </section>
+
+          {user?.role !== "superadmin" && (
+            <section>
+              <hr
+                style={{
+                  border: "none",
+                  borderTop: "1px solid var(--color-border)",
+                  marginBottom: "24px",
+                }}
+              />
+
+              <h3 style={{ color: "var(--color-danger)" }}>
+                Danger Zone
+              </h3>
+
+              <Button
+                variant="danger"
                 onClick={async () => {
-                  await updateProfile({ nickname: nicknameDraft });
-                  setEditingNickname(false);
+                  const confirmed = window.confirm(
+                    "Are you sure you want to delete your account?"
+                  );
+
+                  if (!confirmed) return;
+
+                  try {
+                    await profileApi.deleteProfile();
+
+                    logout();
+
+                    window.location.href = "/login";
+                  } catch {
+                    setError("Failed to delete account.");
+                  }
                 }}
               >
-                Save
-              </button>
-
-              <button
-                style={secondaryButtonStyle}
-                onClick={() => {
-                  setNicknameDraft(nickname);
-                  setEditingNickname(false);
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <hr style={hrStyle} />
-
-      <div>
-        <div style={sectionHeaderStyle}>
-          <h3 style={sectionTitleStyle}>Email</h3>
-
-          {!editingEmail && (
-            <button
-              style={buttonStyle}
-              onClick={() => {
-                setEmailDraft(email);
-                setEditingEmail(true);
-              }}
-            >
-              Change email
-            </button>
+                Delete Account
+              </Button>
+            </section>
           )}
         </div>
-
-        {!editingEmail ? (
-          <p>{email}</p>
-        ) : (
-          <div style={{ display: "grid", gap: "12px" }}>
-            <input
-              type="email"
-              value={emailDraft}
-              onChange={(e) => setEmailDraft(e.target.value)}
-              style={inputStyle}
-            />
-
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                style={buttonStyle}
-                onClick={async () => {
-                  await updateProfile({ email: emailDraft });
-                  setEditingEmail(false);
-                }}
-              >
-                Save
-              </button>
-
-              <button
-                style={secondaryButtonStyle}
-                onClick={() => {
-                  setEmailDraft(email);
-                  setEditingEmail(false);
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
       </div>
-
-      <hr style={hrStyle} />
-
-      <div>
-        <div style={sectionHeaderStyle}>
-          <h3 style={sectionTitleStyle}>Password</h3>
-
-          {!editingPassword && (
-            <button
-              style={buttonStyle}
-              onClick={() => setEditingPassword(true)}
-            >
-              Change password
-            </button>
-          )}
-        </div>
-
-        {editingPassword && (
-          <form
-            onSubmit={handlePasswordSubmit}
-            style={{ display: "grid", gap: "12px" }}
-          >
-            <input
-              type="password"
-              placeholder="Current password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-              style={inputStyle}
-            />
-
-            <input
-              type="password"
-              placeholder="New password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              style={inputStyle}
-            />
-
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button type="submit" style={buttonStyle}>
-                Save password
-              </button>
-
-              <button
-                type="button"
-                style={secondaryButtonStyle}
-                onClick={() => {
-                  setCurrentPassword("");
-                  setNewPassword("");
-                  setEditingPassword(false);
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-
-      {user?.role !== "superadmin" && (
-        <>
-          <hr style={hrStyle} />
-
-          <div>
-            <h3 style={sectionTitleStyle}>Danger zone</h3>
-
-            <p style={{ color: "#6b7280" }}>
-              This action will delete your account. You will be logged out
-              immediately.
-            </p>
-
-            <button onClick={handleDeleteAccount} style={dangerButtonStyle}>
-              Delete account
-            </button>
-          </div>
-        </>
-      )}
     </div>
   );
 }

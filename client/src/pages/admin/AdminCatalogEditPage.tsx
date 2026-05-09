@@ -37,6 +37,7 @@ export default function AdminCatalogEditPage() {
     ingredients: string;
     instructions: string;
     image?: File | null;
+    currentImage?: string | null;
   }) => {
     if (!id) return;
 
@@ -51,41 +52,35 @@ export default function AdminCatalogEditPage() {
   };
 
   if (error) {
-    return <div style={{ color: "#dc2626" }}>{error}</div>;
+    return <p className="error-text">{error}</p>;
   }
 
   if (!item) {
-    return <div>Loading...</div>;
+    return <p className="muted-text">Loading...</p>;
   }
 
   return (
-    <div
-      style={{
-        maxWidth: "720px",
-        margin: "0 auto",
-        background: "#ffffff",
-        padding: "24px",
-        borderRadius: "16px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-      }}
-    >
-      <h1 style={{ marginBottom: "8px" }}>Edit Catalog Cocktail</h1>
-      <p style={{ color: "#6b7280", marginBottom: "20px" }}>
-        Zaktualizuj dane koktajlu katalogowego.
-      </p>
+    <div className="page-container catalog-form-page">
+      <div className="card catalog-form-card">
+        <h1>Edit Catalog Cocktail</h1>
 
-      <AdminCatalogForm
-        mode="edit"
-        initialData={{
-          name: item.name,
-          category: item.category as "Alkoholowy" | "Bezalkoholowy",
-          ingredients: item.ingredients,
-          instructions: item.instructions,
-          currentImage: item.image ?? null,
-        }}
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-      />
+        <p className="muted-text">
+          Zaktualizuj dane koktajlu katalogowego.
+        </p>
+
+        <AdminCatalogForm
+          mode="edit"
+          initialData={{
+            name: item.name,
+            category: item.category as "Alkoholowy" | "Bezalkoholowy",
+            ingredients: item.ingredients,
+            instructions: item.instructions,
+            currentImage: item.image ?? null,
+          }}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+        />
+      </div>
     </div>
   );
 }

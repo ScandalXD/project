@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
 import { getImageUrl } from "../../utils/getImageUrl";
-import { Link } from "react-router-dom";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
+import Modal from "../../components/ui/Modal";
+import EmptyState from "../../components/ui/EmptyState";
 
 export default function AdminModerationPage() {
   const [items, setItems] = useState<any[]>([]);
   const [error, setError] = useState("");
+  const [rejectId, setRejectId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const load = async () => {
     try {
@@ -21,6 +27,7 @@ export default function AdminModerationPage() {
   }, []);
 
   const handleApprove = async (id: number) => {
+    setError("");
     try {
       await adminApi.approveCocktail(id);
       await load();
@@ -29,48 +36,40 @@ export default function AdminModerationPage() {
     }
   };
 
-  const handleReject = async (id: number) => {
-    const reason = window.prompt("Provide a reason for rejection:");
-    if (!reason) return;
+  const handleReject = async () => {
+    if (!rejectId || !rejectReason.trim()) return;
+
+    setError("");
 
     try {
-      await adminApi.rejectCocktail(id, reason);
+      await adminApi.rejectCocktail(rejectId, rejectReason.trim());
+      setRejectId(null);
+      setRejectReason("");
       await load();
     } catch {
-      setError("Couldn't turn down the cocktail.");
+      setError("Couldn't reject the cocktail.");
     }
   };
 
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-      <h1>Admin Moderation</h1>
+    <div className="page-container">
+      <div className="admin-page-header">
+        <h1>Admin Moderation</h1>
+      </div>
 
-      {error && <p style={{ color: "#dc2626" }}>{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
       {items.length === 0 ? (
-        <p>No pending cocktails</p>
+        <EmptyState text="No pending cocktails" />
       ) : (
-        <div style={{ display: "grid", gap: "20px" }}>
+        <div className="admin-grid">
           {items.map((c) => (
-            <div
-              key={c.id}
-              style={{
-                background: "#fff",
-                border: "1px solid #ddd",
-                borderRadius: "12px",
-                padding: "16px",
-              }}
-            >
+            <div key={c.id} className="admin-card">
               {c.image && (
                 <img
                   src={getImageUrl(c.image)}
                   alt={c.name}
-                  style={{
-                    width: "100%",
-                    maxHeight: "220px",
-                    objectFit: "cover",
-                    marginBottom: "12px",
-                  }}
+                  className="admin-card-image"
                 />
               )}
 
@@ -82,7 +81,7 @@ export default function AdminModerationPage() {
               <p>
                 <strong>Submitted:</strong>{" "}
                 {c.submitted_at
-                  ? new Date(c.submitted_at).toLocaleString()
+                  ? new Date(c.submitted_at).toLocaleString("pl-PL")
                   : "—"}
               </p>
               <p>
@@ -95,13 +94,61 @@ export default function AdminModerationPage() {
                 <strong>Instructions:</strong> {c.instructions}
               </p>
 
-              <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
-                <button onClick={() => handleApprove(c.id)}>Approve</button>
-                <button onClick={() => handleReject(c.id)}>Reject</button>
+              <div className="admin-card-actions">
+                <Button onClick={() => handleApprove(c.id)}>Approve</Button>
+
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    setRejectId(c.id);
+                    setRejectReason("");
+                  }}
+                >
+                  Reject
+                </Button>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {rejectId && (
+        <Modal
+          title="Reject cocktail"
+          onClose={() => {
+            setRejectId(null);
+            setRejectReason("");
+          }}
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setRejectId(null);
+                  setRejectReason("");
+                }}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                variant="danger"
+                disabled={!rejectReason.trim()}
+                onClick={handleReject}
+              >
+                Reject
+              </Button>
+            </>
+          }
+        >
+          <p className="muted-text">Provide a reason for rejection:</p>
+
+          <Input
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Rejection reason"
+          />
+        </Modal>
       )}
     </div>
   );

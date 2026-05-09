@@ -4,7 +4,6 @@ import { requireAdmin } from "../middleware/admin.middleware";
 import {
   createReportHandler,
   getReportsHandler,
-  markReportReviewedHandler,
   hidePublicCocktailFromReportHandler,
   deleteCommentFromReportHandler,
   rejectReportHandler,
@@ -15,12 +14,7 @@ const router = Router();
 
 router.post("/reports", authMiddleware, createReportHandler);
 router.get("/admin/reports", authMiddleware, requireAdmin, getReportsHandler);
-router.patch(
-  "/admin/reports/:id/review",
-  authMiddleware,
-  requireAdmin,
-  markReportReviewedHandler
-);
+
 router.patch(
   "/admin/reports/:id/hide-public-cocktail",
   authMiddleware,

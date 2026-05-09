@@ -5,6 +5,7 @@ import AdminCatalogForm from "../../components/cocktails/AdminCatalogForm";
 
 export default function AdminCatalogCreatePage() {
   const navigate = useNavigate();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -30,6 +31,7 @@ export default function AdminCatalogCreatePage() {
       });
 
       setMessage("Catalog cocktail created.");
+
       setTimeout(() => {
         navigate("/admin/catalog");
       }, 700);
@@ -39,28 +41,22 @@ export default function AdminCatalogCreatePage() {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: "720px",
-        margin: "0 auto",
-        background: "#ffffff",
-        padding: "24px",
-        borderRadius: "16px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-      }}
-    >
-      <h1 style={{ marginBottom: "8px" }}>Create Catalog Cocktail</h1>
-      <p style={{ color: "#6b7280", marginBottom: "20px" }}>
-        Dodaj nowy koktajl do katalogu.
-      </p>
+    <div className="page-container catalog-form-page">
+      <div className="card catalog-form-card">
+        <h1>Create Catalog Cocktail</h1>
 
-      {message && <p style={{ color: "#059669" }}>{message}</p>}
+        <p className="muted-text">
+          Dodaj nowy koktajl do katalogu.
+        </p>
 
-      <AdminCatalogForm
-        mode="create"
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-      />
+        {message && <p className="success-text">{message}</p>}
+
+        <AdminCatalogForm
+          mode="create"
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+        />
+      </div>
     </div>
   );
 }

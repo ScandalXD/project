@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { notificationsApi } from "../../api/notificationsApi";
+import Button from "../ui/Button";
+import EmptyState from "../ui/EmptyState";
+import { ConfirmModal } from "../ui/Modal";
 import type { Notification } from "../../types/notification";
 
 function getNotificationText(n: Notification) {
@@ -15,8 +18,8 @@ function getNotificationText(n: Notification) {
   if (n.type === "report_comment_deleted") return "Your comment was deleted by admin";
   if (n.type === "report_rejected") return "Your report was rejected by admin";
   if (n.type === "role_changed") return "Your role was changed";
-  if (n.type === "public_cocktail_deleted")  return "Your public cocktail was deleted by admin"; 
-  if (n.type === "admin_comment_deleted")  return "Your comment was deleted by admin";
+  if (n.type === "public_cocktail_deleted") return "Your public cocktail was deleted by admin";
+  if (n.type === "admin_comment_deleted") return "Your comment was deleted by admin";
 
   return n.type;
 }
@@ -29,46 +32,35 @@ function getNotificationIcon(n: Notification) {
   if (n.type === "mention") return "👤";
   if (n.type.includes("report")) return "⚠️";
   if (n.type === "role_changed") return "🛡️";
-  if (n.type === "public_cocktail_deleted") return "🗑️";
-  if (n.type === "admin_comment_deleted") return "🧹";
+  if (n.type === "public_cocktail_deleted" || n.type === "admin_comment_deleted") return "🗑️";
 
   return "🔔";
 }
 
 function getNotificationBackground(n: Notification) {
   if (n.is_read) return "#f3f4f6";
-
   if (n.type === "cocktail_approved") return "#dcfce7";
   if (n.type === "cocktail_rejected") return "#fee2e2";
   if (n.type.includes("report")) return "#fef3c7";
   if (n.type === "cocktail_like" || n.type === "comment_like") return "#ffe4e6";
   if (n.type === "cocktail_comment" || n.type === "comment_reply") return "#dbeafe";
   if (n.type === "mention") return "#ede9fe";
-  if (n.type === "public_cocktail_deleted" || n.type === "admin_comment_deleted")  return "#fee2e2";
+  if (n.type === "public_cocktail_deleted" || n.type === "admin_comment_deleted") return "#fee2e2";
   if (n.type === "role_changed") return "#dbeafe";
 
   return "#dbeafe";
 }
 
 function getNotificationPath(n: Notification) {
-  if (n.type === "cocktail_approved") {
-    return `/public-cocktails/${n.recipe_id}`;
-  }
-
-  if (n.type === "cocktail_rejected") {
-    return `/my-cocktails/${n.recipe_id}`;
-  }
-
+  if (n.type === "cocktail_approved") return `/public-cocktails/${n.recipe_id}`;
+  if (n.type === "cocktail_rejected") return `/my-cocktails/${n.recipe_id}`;
   if (n.comment_id) {
     if (n.recipe_type === "public") {
       return `/public-cocktails/${n.recipe_id}#comment-${n.comment_id}`;
     }
-
-    if (n.recipe_type === "catalog") {
+    if (n.recipe_type === "catalog")
       return `/catalog/${n.recipe_id}#comment-${n.comment_id}`;
-    }
   }
-
   if (n.recipe_type === "public") return `/public-cocktails/${n.recipe_id}`;
   if (n.recipe_type === "catalog") return `/catalog/${n.recipe_id}`;
   if (n.recipe_type === "user") return `/my-cocktails/${n.recipe_id}`;
@@ -78,6 +70,8 @@ function getNotificationPath(n: Notification) {
 
 export default function NotificationsList() {
   const navigate = useNavigate();
+
+  const [showClearModal, setShowClearModal] = useState(false);
 
   const [items, setItems] = useState<Notification[]>([]);
   const [error, setError] = useState("");
@@ -101,86 +95,65 @@ export default function NotificationsList() {
   };
 
   const handleClearAll = async () => {
-    if (!window.confirm("Clear all notifications?")) return;
-
     await notificationsApi.clearAll();
+    setShowClearModal(false);
     await load();
   };
 
   if (error) {
-    return <p style={{ color: "#dc2626" }}>{error}</p>;
+    return <p className="text-danger">{error}</p>;
   }
 
   return (
-    <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-      <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
-        <button
-          onClick={handleMarkAllRead}
-          style={{
-            border: "none",
-            background: "#111827",
-            color: "#ffffff",
-            padding: "10px 14px",
-            borderRadius: "10px",
-            cursor: "pointer",
-          }}
-        >
-          Mark all as read
-        </button>
+    <div className="page-container">
+      <div className="actions-row">
+        <Button onClick={handleMarkAllRead}>Mark all as read</Button>
 
-        <button
-          onClick={handleClearAll}
-          style={{
-            border: "none",
-            background: "#dc2626",
-            color: "#ffffff",
-            padding: "10px 14px",
-            borderRadius: "10px",
-            cursor: "pointer",
-          }}
-        >
+        <Button variant="danger" disabled={items.length === 0} onClick={() => setShowClearModal(true)}>
           Clear all
-        </button>
+        </Button>
       </div>
 
       {items.length === 0 ? (
-        <p>No notifications</p>
+        <EmptyState text="No notifications" />
       ) : (
-        <div style={{ display: "grid", gap: "12px" }}>
+        <div className="notifications-grid">
           {items.map((n) => {
             const path = getNotificationPath(n);
 
             return (
               <div
                 key={n.id}
+                className="notification-card"
                 onClick={async () => {
                   if (!n.is_read) {
                     await notificationsApi.markAsRead(n.id);
                   }
 
-                  if (path) navigate(path);
+                  if (path) {
+                    navigate(path);
+                  }
                 }}
                 style={{
-                  padding: "12px",
-                  borderRadius: "10px",
                   background: getNotificationBackground(n),
                   cursor: path ? "pointer" : "default",
                 }}
               >
-                <p style={{ margin: 0, fontWeight: 600 }}>
-                  <span style={{ marginRight: "8px" }}>
+                <p className="notification-title">
+                  <span className="notification-icon">
                     {getNotificationIcon(n)}
                   </span>
+
                   {getNotificationText(n)}
                 </p>
 
                 {n.admin_reason && (
-                  <p style={{ margin: "6px 0 0", color: "#b91c1c" }}>
+                  <p className="notification-reason">
                     <strong>Reason:</strong> {n.admin_reason}
                   </p>
                 )}
 
-                <small style={{ color: "#6b7280" }}>
+                <small className="notification-date">
                   {new Date(n.created_at).toLocaleString("pl-PL")}
                 </small>
               </div>
@@ -188,6 +161,17 @@ export default function NotificationsList() {
           })}
         </div>
       )}
+
+      {showClearModal && (
+        <ConfirmModal
+          title="Clear notifications"
+          text="Are you sure you want to clear all notifications?"
+          confirmText="Clear all"
+          danger
+          onConfirm={handleClearAll}
+          onCancel={() => setShowClearModal(false)}
+  />
+)}
     </div>
   );
 }
