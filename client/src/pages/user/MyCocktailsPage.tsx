@@ -4,6 +4,10 @@ import { cocktailsApi } from "../../api/cocktailsApi";
 import { getImageUrl } from "../../utils/getImageUrl";
 import type { UserCocktail } from "../../types/cocktail";
 
+import Button from "../../components/ui/Button";
+import EmptyState from "../../components/ui/EmptyState";
+import Modal from "../../components/ui/Modal";
+
 function getStatusLabel(status: UserCocktail["publication_status"]) {
   if (status === "draft") return "Draft";
   if (status === "pending") return "Pending moderation";
@@ -12,13 +16,18 @@ function getStatusLabel(status: UserCocktail["publication_status"]) {
   return status;
 }
 
+function getStatusClass(status: UserCocktail["publication_status"]) {
+  return `status-badge status-${status}`;
+}
+
 export default function MyCocktailsPage() {
+  const navigate = useNavigate();
+
   const [cocktails, setCocktails] = useState<UserCocktail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-
-  const navigate = useNavigate();
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const loadCocktails = async () => {
     try {
@@ -48,17 +57,16 @@ export default function MyCocktailsPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    const confirmed = window.confirm("Czy na pewno chcesz usunąć ten koktajl?");
-
-    if (!confirmed) return;
+  const handleDelete = async () => {
+    if (!deleteId) return;
 
     setError("");
     setActionMessage("");
 
     try {
-      await cocktailsApi.deleteCocktail(id);
+      await cocktailsApi.deleteCocktail(deleteId);
       setActionMessage("Cocktail deleted.");
+      setDeleteId(null);
       await loadCocktails();
     } catch {
       setError("Nie udało się usunąć koktajlu.");
@@ -66,224 +74,139 @@ export default function MyCocktailsPage() {
   };
 
   if (isLoading) {
-    return <div>Loading your cocktails...</div>;
+    return <p className="muted-text">Loading your cocktails...</p>;
   }
 
   if (error && cocktails.length === 0) {
-    return <div style={{ color: "#dc2626" }}>{error}</div>;
+    return <p className="error-text">{error}</p>;
   }
 
   return (
-    <section>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: "16px",
-          marginBottom: "24px",
-        }}
-      >
+    <div className="page-container">
+      <div className="admin-page-header">
         <div>
-          <h1 style={{ marginBottom: "8px" }}>My Cocktails</h1>
-          <p style={{ color: "#6b7280", margin: 0 }}>
-            Zarządzaj swoimi własnymi koktajlami.
-          </p>
+          <h1>My Cocktails</h1>
+          <p className="muted-text">Zarządzaj swoimi własnymi koktajlami.</p>
         </div>
 
-        <Link
-          to="/my-cocktails/create"
-          style={{
-            textDecoration: "none",
-            background: "#111827",
-            color: "#ffffff",
-            padding: "12px 16px",
-            borderRadius: "10px",
-          }}
-        >
+        <Link to="/my-cocktails/create" className="admin-create-link">
           + Create
         </Link>
       </div>
 
-      {actionMessage && (
-        <p style={{ color: "#059669", marginBottom: "16px" }}>
-          {actionMessage}
-        </p>
-      )}
-
-      {error && (
-        <p style={{ color: "#dc2626", marginBottom: "16px" }}>{error}</p>
-      )}
+      {actionMessage && <p className="success-text">{actionMessage}</p>}
+      {error && <p className="error-text">{error}</p>}
 
       {cocktails.length === 0 ? (
-        <div
-          style={{
-            background: "#ffffff",
-            padding: "24px",
-            borderRadius: "16px",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
-          }}
-        >
-          Nie masz jeszcze żadnych koktajli.
-        </div>
+        <EmptyState text="Nie masz jeszcze żadnych koktajli." />
       ) : (
-        <div style={{ display: "grid", gap: "18px" }}>
+        <div className="my-cocktails-grid">
           {cocktails.map((cocktail) => (
             <article
               key={cocktail.id}
+              className="my-cocktail-card"
               onClick={() => navigate(`/my-cocktails/${cocktail.id}`)}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "220px 1fr",
-                gap: "18px",
-                background: "#ffffff",
-                borderRadius: "18px",
-                overflow: "hidden",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-                border: "1px solid #e5e7eb",
-                cursor: "pointer",
-              }}
             >
-              <div
-                style={{
-                  minHeight: "180px",
-                  background: "#eef2ff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <div className="my-cocktail-image-wrap">
                 {cocktail.image ? (
                   <img
                     src={getImageUrl(cocktail.image)}
                     alt={cocktail.name}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
+                    className="my-cocktail-image"
                   />
                 ) : (
-                  <span style={{ color: "#6b7280" }}>No image</span>
+                  <span className="muted-text">No image</span>
                 )}
               </div>
 
-              <div style={{ padding: "18px 18px 18px 0" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "start",
-                    gap: "12px",
-                    marginBottom: "10px",
-                  }}
-                >
-                  <h3 style={{ margin: 0, fontSize: "22px", color: "#111827" }}>
-                    {cocktail.name}
-                  </h3>
+              <div className="my-cocktail-content">
+                <div className="my-cocktail-header">
+                  <h3>{cocktail.name}</h3>
 
-                  <div
-                    style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        padding: "6px 10px",
-                        borderRadius: "999px",
-                        background: "#f3f4f6",
-                        color: "#374151",
-                      }}
-                    >
-                      {cocktail.category}
-                    </span>
-
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        padding: "6px 10px",
-                        borderRadius: "999px",
-                        background: "#dbeafe",
-                        color: "#1d4ed8",
-                      }}
-                    >
+                  <div className="badge-row">
+                    <span className="category-badge">{cocktail.category}</span>
+                    <span className={getStatusClass(cocktail.publication_status)}>
                       {getStatusLabel(cocktail.publication_status)}
                     </span>
                   </div>
                 </div>
 
-                <p style={{ margin: "0 0 10px 0", color: "#374151" }}>
+                <p>
                   <strong>Składniki:</strong> {cocktail.ingredients}
                 </p>
 
-                <p style={{ margin: "0 0 10px 0", color: "#4b5563" }}>
+                <p>
                   <strong>Przygotowanie:</strong> {cocktail.instructions}
                 </p>
 
                 {cocktail.moderation_reason && (
-                  <p style={{ margin: "0 0 12px 0", color: "#b91c1c" }}>
+                  <p className="error-text">
                     <strong>Moderation reason:</strong>{" "}
                     {cocktail.moderation_reason}
                   </p>
                 )}
 
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <div className="admin-card-actions">
                   {(cocktail.publication_status === "draft" ||
                     cocktail.publication_status === "rejected") && (
-                    <button
+                    <Button
+                      variant="info"
                       onClick={(e) => {
                         e.stopPropagation();
                         handlePublish(cocktail.id);
                       }}
-                      style={{
-                        border: "none",
-                        background: "#2563eb",
-                        color: "#ffffff",
-                        padding: "10px 14px",
-                        borderRadius: "10px",
-                        cursor: "pointer",
-                      }}
                     >
                       Publish
-                    </button>
+                    </Button>
                   )}
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(cocktail.id);
-                    }}
-                    style={{
-                      border: "none",
-                      background: "#dc2626",
-                      color: "#ffffff",
-                      padding: "10px 14px",
-                      borderRadius: "10px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Delete
-                  </button>
                   {cocktail.publication_status !== "pending" && (
                     <Link
                       to={`/my-cocktails/${cocktail.id}/edit`}
+                      className="admin-edit-link"
                       onClick={(e) => e.stopPropagation()}
-                      style={{
-                        textDecoration: "none",
-                        background: "#f59e0b",
-                        color: "#ffffff",
-                        padding: "10px 14px",
-                        borderRadius: "10px",
-                      }}
                     >
                       Edit
                     </Link>
                   )}
+
+                  <Button
+                    variant="danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteId(cocktail.id);
+                    }}
+                  >
+                    Delete
+                  </Button>
                 </div>
               </div>
             </article>
           ))}
         </div>
       )}
-    </section>
+
+      {deleteId && (
+        <Modal
+          title="Delete cocktail"
+          onClose={() => setDeleteId(null)}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setDeleteId(null)}>
+                Cancel
+              </Button>
+
+              <Button variant="danger" onClick={handleDelete}>
+                Delete
+              </Button>
+            </>
+          }
+        >
+          <p className="muted-text">
+            Are you sure you want to delete this cocktail?
+          </p>
+        </Modal>
+      )}
+    </div>
   );
 }
