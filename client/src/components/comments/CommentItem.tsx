@@ -99,10 +99,9 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
   return (
     <div
       id={`comment-${comment.id}`}
-      className="comment-card"
-      style={{
-        marginLeft: comment.parent_comment_id ? "32px" : "0",
-      }}
+      className={`comment-card ${
+        comment.parent_comment_id ? "comment-card-reply" : ""
+      }`}
     >
       <div className="comment-header">
         <strong>{comment.author_nickname}</strong>
@@ -112,7 +111,7 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
         </span>
       </div>
 
-      <p>{comment.content}</p>
+      <p className="comment-content">{comment.content}</p>
 
       <div className="comment-actions">
         <Button
@@ -169,6 +168,7 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
 
       {comment.replies && comment.replies.length > 0 && (
         <button
+          type="button"
           className="comment-replies-toggle"
           onClick={() => setShowReplies((prev) => !prev)}
         >
@@ -219,17 +219,19 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
             </>
           }
         >
-          <p className="muted-text">
-            Are you sure you want to delete this comment?
-          </p>
+          <div className="modal-form">
+            <p className="muted-text">
+              Are you sure you want to delete this comment?
+            </p>
 
-          {isAdmin && user?.id !== comment.user_id && (
-            <Input
-              value={deleteReason}
-              onChange={(e) => setDeleteReason(e.target.value)}
-              placeholder="Admin reason"
-            />
-          )}
+            {isAdmin && user?.id !== comment.user_id && (
+              <Input
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="Admin reason"
+              />
+            )}
+          </div>
         </Modal>
       )}
 
@@ -262,11 +264,13 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
             </>
           }
         >
-          <Input
-            value={reportReason}
-            onChange={(e) => setReportReason(e.target.value)}
-            placeholder="Reason"
-          />
+          <div className="modal-form">
+            <Input
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              placeholder="Reason"
+            />
+          </div>
         </Modal>
       )}
     </div>

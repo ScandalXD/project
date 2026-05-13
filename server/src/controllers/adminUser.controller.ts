@@ -43,7 +43,11 @@ export const updateUserRoleHandler = async (
   res: Response
 ) => {
   try {
-    await updateUserRole(Number(req.params.id), req.body.role);
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    await updateUserRole(req.user.id, Number(req.params.id), req.body.role);
     res.json({ message: "User role updated" });
   } catch (e) {
     handleError(res, e);

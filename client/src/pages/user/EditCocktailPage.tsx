@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import CocktailForm from "../../components/cocktails/CocktailForm";
 import { cocktailsApi } from "../../api/cocktailsApi";
-import type { UserCocktail, CreateCocktailRequest } from "../../types/cocktail";
+import type {
+  CocktailCategory,
+  CreateCocktailRequest,
+  UserCocktail,
+} from "../../types/cocktail";
 
 export default function EditCocktailPage() {
   const { id } = useParams();
@@ -10,13 +14,16 @@ export default function EditCocktailPage() {
 
   const [cocktail, setCocktail] = useState<UserCocktail | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const load = async () => {
       try {
+        setError("");
+
         const list = await cocktailsApi.getMyCocktails();
-        const found = list.find((c) => c.id === Number(id));
+        const found = list.find((item) => item.id === Number(id));
 
         if (!found) {
           setError("Cocktail not found");
@@ -26,6 +33,8 @@ export default function EditCocktailPage() {
         setCocktail(found);
       } catch {
         setError("Error loading cocktail");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -45,38 +54,46 @@ export default function EditCocktailPage() {
     }
   };
 
-  if (error) {
-    return <div style={{ color: "red" }}>{error}</div>;
+  if (isLoading) {
+    return (
+      <div className="page-container catalog-form-page">
+        <div className="empty-state">Loading cocktail...</div>
+      </div>
+    );
   }
 
-  if (!cocktail) {
-    return <div>Loading...</div>;
+  if (error || !cocktail) {
+    return (
+      <div className="page-container catalog-form-page">
+        <div className="empty-state error-text">
+          {error || "Cocktail not found"}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div
-      style={{
-        maxWidth: "720px",
-        margin: "0 auto",
-        background: "#ffffff",
-        padding: "24px",
-        borderRadius: "16px",
-      }}
-    >
-      <h1>Edit Cocktail</h1>
+    <div className="page-container catalog-form-page">
+      <div className="card catalog-form-card">
+        <h1>Edit Cocktail</h1>
 
-      <CocktailForm
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-        mode="edit"
-        initialData={{
-          name: cocktail.name,
-          category: cocktail.category as any,
-          ingredients: cocktail.ingredients,
-          instructions: cocktail.instructions,
-          currentImage: cocktail.image ?? null,
-        }}
-      />
+        <p className="muted-text">
+          Zmień dane swojego koktajlu i zapisz aktualizację.
+        </p>
+
+        <CocktailForm
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          mode="edit"
+          initialData={{
+            name: cocktail.name,
+            category: cocktail.category as CocktailCategory,
+            ingredients: cocktail.ingredients,
+            instructions: cocktail.instructions,
+            currentImage: cocktail.image ?? null,
+          }}
+        />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,10 @@
+import Button from "../ui/Button";
+import Modal from "../ui/Modal";
+
 interface ReportModalProps {
   type: "cocktail" | "comment";
   reason: string;
+  error?: string;
   isLoading: boolean;
   onReasonChange: (value: string) => void;
   onClose: () => void;
@@ -10,92 +14,47 @@ interface ReportModalProps {
 export default function ReportModal({
   type,
   reason,
+  error = "",
   isLoading,
   onReasonChange,
   onClose,
   onSubmit,
 }: ReportModalProps) {
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.45)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          width: "420px",
-          maxWidth: "90%",
-          background: "#ffffff",
-          borderRadius: "16px",
-          padding: "24px",
-          boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
-        }}
-      >
-        <h2 style={{ marginTop: 0 }}>Report {type}</h2>
+    <Modal
+      title={`Report ${type}`}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
 
-        <p style={{ color: "#6b7280" }}>
+          <Button
+            variant="danger"
+            disabled={isLoading || !reason.trim()}
+            onClick={onSubmit}
+          >
+            {isLoading ? "Sending..." : "Send report"}
+          </Button>
+        </>
+      }
+    >
+      <div className="modal-form">
+        <p className="muted-text">
           Describe why you want to report this {type}.
         </p>
 
         <textarea
           value={reason}
-          onChange={(e) => onReasonChange(e.target.value)}
-          placeholder="Enter report reason..."
-          rows={5}
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #d1d5db",
-            resize: "vertical",
-            boxSizing: "border-box",
-          }}
+          onChange={(event) => onReasonChange(event.target.value)}
+          placeholder="Report reason"
+          rows={4}
+          className="app-textarea"
         />
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "10px",
-            marginTop: "18px",
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              border: "1px solid #d1d5db",
-              background: "#ffffff",
-              padding: "10px 14px",
-              borderRadius: "10px",
-              cursor: "pointer",
-            }}
-          >
-            Cancel
-          </button>
-
-          <button
-            onClick={onSubmit}
-            disabled={isLoading || !reason.trim()}
-            style={{
-              border: "none",
-              background: "#dc2626",
-              color: "#ffffff",
-              padding: "10px 14px",
-              borderRadius: "10px",
-              cursor: isLoading || !reason.trim() ? "not-allowed" : "pointer",
-              opacity: isLoading || !reason.trim() ? 0.6 : 1,
-            }}
-          >
-            {isLoading ? "Sending..." : "Send report"}
-          </button>
-        </div>
+        {error && <p className="error-text">{error}</p>}
       </div>
-    </div>
+    </Modal>
   );
 }

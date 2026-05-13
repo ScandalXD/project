@@ -1,9 +1,10 @@
-import {  useEffect, useState, type SyntheticEvent } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 import { profileApi } from "../../api/profileApi";
 import { useAuth } from "../../hooks/useAuth";
 import type { UpdateProfileRequest } from "../../types/user";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
+import { ConfirmModal } from "../../components/ui/Modal";
 
 export default function ProfilePage() {
   const { user, setAuthData, logout } = useAuth();
@@ -20,6 +21,7 @@ export default function ProfilePage() {
   const [editingNickname, setEditingNickname] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [editingPassword, setEditingPassword] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -63,9 +65,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handlePasswordSubmit = async (
-    e: SyntheticEvent<HTMLFormElement>
-  ) => {
+  const handlePasswordSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage("");
     setError("");
@@ -85,52 +85,38 @@ export default function ProfilePage() {
     }
   };
 
+  const handleDeleteProfile = async () => {
+    try {
+      await profileApi.deleteProfile();
+
+      logout();
+      window.location.href = "/login";
+    } catch {
+      setError("Failed to delete account.");
+      setIsDeleteModalOpen(false);
+    }
+  };
+
   return (
-    <div
-      className="page-container"
-      style={{
-        maxWidth: "700px",
-      }}
-    >
-      <div
-        className="card"
-        style={{
-          padding: "28px",
-        }}
-      >
-        <h1 style={{ marginTop: 0 }}>My Profile</h1>
+    <div className="page-container profile-page">
+      <div className="card profile-card">
+        <h1 className="profile-title">My Profile</h1>
 
         {(message || error) && (
-          <div style={{ marginBottom: "20px" }}>
-            {message && (
-              <p className="success-text" style={{ margin: 0 }}>
-                {message}
-              </p>
-            )}
-
-            {error && (
-              <p className="error-text" style={{ margin: 0 }}>
-                {error}
-              </p>
-            )}
+          <div className="profile-message-box">
+            {message && <p className="success-text profile-message">{message}</p>}
+            {error && <p className="error-text profile-message">{error}</p>}
           </div>
         )}
 
-        <div
-          style={{
-            display: "grid",
-            gap: "24px",
-          }}
-        >
-          <section>
+        <div className="profile-sections">
+          <section className="profile-section">
             <div className="section-header">
               <div>
-                <h3 style={{ margin: 0 }}>Nickname</h3>
+                <h3 className="profile-section-title">Nickname</h3>
 
                 {!editingNickname && (
-                  <p className="muted-text" style={{ margin: "4px 0 0" }}>
-                    {nickname}
-                  </p>
+                  <p className="muted-text profile-section-value">{nickname}</p>
                 )}
               </div>
 
@@ -145,24 +131,16 @@ export default function ProfilePage() {
             </div>
 
             {editingNickname && (
-              <div
-                style={{
-                  display: "grid",
-                  gap: "12px",
-                }}
-              >
+              <div className="profile-edit-box">
                 <Input
                   value={nicknameDraft}
                   onChange={(e) => setNicknameDraft(e.target.value)}
                 />
 
-                <div style={{ display: "flex", gap: "10px" }}>
+                <div className="profile-actions">
                   <Button
                     onClick={() => {
-                      updateProfile({
-                        nickname: nicknameDraft,
-                      });
-
+                      updateProfile({ nickname: nicknameDraft });
                       setEditingNickname(false);
                     }}
                   >
@@ -183,48 +161,35 @@ export default function ProfilePage() {
             )}
           </section>
 
-          <section>
+          <section className="profile-section">
             <div className="section-header">
               <div>
-                <h3 style={{ margin: 0 }}>Email</h3>
+                <h3 className="profile-section-title">Email</h3>
 
                 {!editingEmail && (
-                  <p className="muted-text" style={{ margin: "4px 0 0" }}>
-                    {email}
-                  </p>
+                  <p className="muted-text profile-section-value">{email}</p>
                 )}
               </div>
 
               {!editingEmail && (
-                <Button
-                  variant="secondary"
-                  onClick={() => setEditingEmail(true)}
-                >
+                <Button variant="secondary" onClick={() => setEditingEmail(true)}>
                   Change
                 </Button>
               )}
             </div>
 
             {editingEmail && (
-              <div
-                style={{
-                  display: "grid",
-                  gap: "12px",
-                }}
-              >
+              <div className="profile-edit-box">
                 <Input
                   type="email"
                   value={emailDraft}
                   onChange={(e) => setEmailDraft(e.target.value)}
                 />
 
-                <div style={{ display: "flex", gap: "10px" }}>
+                <div className="profile-actions">
                   <Button
                     onClick={() => {
-                      updateProfile({
-                        email: emailDraft,
-                      });
-
+                      updateProfile({ email: emailDraft });
                       setEditingEmail(false);
                     }}
                   >
@@ -245,15 +210,13 @@ export default function ProfilePage() {
             )}
           </section>
 
-          <section>
+          <section className="profile-section">
             <div className="section-header">
               <div>
-                <h3 style={{ margin: 0 }}>Password</h3>
+                <h3 className="profile-section-title">Password</h3>
 
                 {!editingPassword && (
-                  <p className="muted-text" style={{ margin: "4px 0 0" }}>
-                    ••••••••
-                  </p>
+                  <p className="muted-text profile-section-value">••••••••</p>
                 )}
               </div>
 
@@ -268,13 +231,7 @@ export default function ProfilePage() {
             </div>
 
             {editingPassword && (
-              <form
-                onSubmit={handlePasswordSubmit}
-                style={{
-                  display: "grid",
-                  gap: "12px",
-                }}
-              >
+              <form onSubmit={handlePasswordSubmit} className="profile-edit-box">
                 <Input
                   type="password"
                   placeholder="Current password"
@@ -289,7 +246,7 @@ export default function ProfilePage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
 
-                <div style={{ display: "flex", gap: "10px" }}>
+                <div className="profile-actions">
                   <Button type="submit">Save</Button>
 
                   <Button
@@ -297,7 +254,6 @@ export default function ProfilePage() {
                     variant="secondary"
                     onClick={() => {
                       setEditingPassword(false);
-
                       setCurrentPassword("");
                       setNewPassword("");
                     }}
@@ -310,38 +266,12 @@ export default function ProfilePage() {
           </section>
 
           {user?.role !== "superadmin" && (
-            <section>
-              <hr
-                style={{
-                  border: "none",
-                  borderTop: "1px solid var(--color-border)",
-                  marginBottom: "24px",
-                }}
-              />
-
-              <h3 style={{ color: "var(--color-danger)" }}>
-                Danger Zone
-              </h3>
+            <section className="profile-section profile-danger-zone">
+              <h3 className="profile-danger-title">Danger Zone</h3>
 
               <Button
                 variant="danger"
-                onClick={async () => {
-                  const confirmed = window.confirm(
-                    "Are you sure you want to delete your account?"
-                  );
-
-                  if (!confirmed) return;
-
-                  try {
-                    await profileApi.deleteProfile();
-
-                    logout();
-
-                    window.location.href = "/login";
-                  } catch {
-                    setError("Failed to delete account.");
-                  }
-                }}
+                onClick={() => setIsDeleteModalOpen(true)}
               >
                 Delete Account
               </Button>
@@ -349,6 +279,18 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {isDeleteModalOpen && (
+        <ConfirmModal
+          title="Delete account"
+          text="Are you sure you want to delete your account? This action cannot be undone."
+          confirmText="Delete account"
+          cancelText="Cancel"
+          danger
+          onConfirm={handleDeleteProfile}
+          onCancel={() => setIsDeleteModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

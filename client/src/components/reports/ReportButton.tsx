@@ -11,16 +11,19 @@ export default function ReportButton({ type, id }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const closeModal = () => {
     setIsOpen(false);
     setReason("");
+    setError("");
   };
 
   const handleSubmit = async () => {
     if (!reason.trim()) return;
 
     setIsLoading(true);
+    setError("");
 
     try {
       if (type === "cocktail") {
@@ -31,7 +34,7 @@ export default function ReportButton({ type, id }: Props) {
 
       closeModal();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Failed to send report");
+      setError(error.response?.data?.message || "Failed to send report");
     } finally {
       setIsLoading(false);
     }
@@ -40,15 +43,9 @@ export default function ReportButton({ type, id }: Props) {
   return (
     <>
       <button
+        type="button"
         onClick={() => setIsOpen(true)}
-        style={{
-          border: "none",
-          background: "#dc2626",
-          color: "#fff",
-          padding: "8px 12px",
-          borderRadius: "8px",
-          cursor: "pointer",
-        }}
+        className="report-button"
       >
         Report
       </button>
@@ -57,6 +54,7 @@ export default function ReportButton({ type, id }: Props) {
         <ReportModal
           type={type}
           reason={reason}
+          error={error}
           isLoading={isLoading}
           onReasonChange={setReason}
           onClose={closeModal}

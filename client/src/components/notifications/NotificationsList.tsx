@@ -37,30 +37,34 @@ function getNotificationIcon(n: Notification) {
   return "🔔";
 }
 
-function getNotificationBackground(n: Notification) {
-  if (n.is_read) return "#f3f4f6";
-  if (n.type === "cocktail_approved") return "#dcfce7";
-  if (n.type === "cocktail_rejected") return "#fee2e2";
-  if (n.type.includes("report")) return "#fef3c7";
-  if (n.type === "cocktail_like" || n.type === "comment_like") return "#ffe4e6";
-  if (n.type === "cocktail_comment" || n.type === "comment_reply") return "#dbeafe";
-  if (n.type === "mention") return "#ede9fe";
-  if (n.type === "public_cocktail_deleted" || n.type === "admin_comment_deleted") return "#fee2e2";
-  if (n.type === "role_changed") return "#dbeafe";
+function getNotificationClassName(n: Notification) {
+  if (n.is_read) return "notification-card notification-read";
+  if (n.type === "cocktail_approved") return "notification-card notification-approved";
+  if (n.type === "cocktail_rejected") return "notification-card notification-rejected";
+  if (n.type.includes("report")) return "notification-card notification-report";
+  if (n.type === "cocktail_like" || n.type === "comment_like") return "notification-card notification-like";
+  if (n.type === "cocktail_comment" || n.type === "comment_reply") return "notification-card notification-comment";
+  if (n.type === "mention") return "notification-card notification-mention";
+  if (n.type === "public_cocktail_deleted" || n.type === "admin_comment_deleted") return "notification-card notification-rejected";
+  if (n.type === "role_changed") return "notification-card notification-comment";
 
-  return "#dbeafe";
+  return "notification-card notification-comment";
 }
 
 function getNotificationPath(n: Notification) {
   if (n.type === "cocktail_approved") return `/public-cocktails/${n.recipe_id}`;
   if (n.type === "cocktail_rejected") return `/my-cocktails/${n.recipe_id}`;
+
   if (n.comment_id) {
     if (n.recipe_type === "public") {
       return `/public-cocktails/${n.recipe_id}#comment-${n.comment_id}`;
     }
-    if (n.recipe_type === "catalog")
+
+    if (n.recipe_type === "catalog") {
       return `/catalog/${n.recipe_id}#comment-${n.comment_id}`;
+    }
   }
+
   if (n.recipe_type === "public") return `/public-cocktails/${n.recipe_id}`;
   if (n.recipe_type === "catalog") return `/catalog/${n.recipe_id}`;
   if (n.recipe_type === "user") return `/my-cocktails/${n.recipe_id}`;
@@ -72,12 +76,13 @@ export default function NotificationsList() {
   const navigate = useNavigate();
 
   const [showClearModal, setShowClearModal] = useState(false);
-
   const [items, setItems] = useState<Notification[]>([]);
   const [error, setError] = useState("");
 
   const load = async () => {
     try {
+      setError("");
+
       const data = await notificationsApi.getNotifications();
       setItems(data);
     } catch {
@@ -101,15 +106,19 @@ export default function NotificationsList() {
   };
 
   if (error) {
-    return <p className="text-danger">{error}</p>;
+    return <p className="error-text">{error}</p>;
   }
 
   return (
-    <div className="page-container">
-      <div className="actions-row">
+    <div className="notifications-panel">
+      <div className="notifications-actions">
         <Button onClick={handleMarkAllRead}>Mark all as read</Button>
 
-        <Button variant="danger" disabled={items.length === 0} onClick={() => setShowClearModal(true)}>
+        <Button
+          variant="danger"
+          disabled={items.length === 0}
+          onClick={() => setShowClearModal(true)}
+        >
           Clear all
         </Button>
       </div>
@@ -118,43 +127,41 @@ export default function NotificationsList() {
         <EmptyState text="No notifications" />
       ) : (
         <div className="notifications-grid">
-          {items.map((n) => {
-            const path = getNotificationPath(n);
+          {items.map((notification) => {
+            const path = getNotificationPath(notification);
 
             return (
               <div
-                key={n.id}
-                className="notification-card"
+                key={notification.id}
+                className={`${getNotificationClassName(notification)} ${
+                  path ? "notification-clickable" : ""
+                }`}
                 onClick={async () => {
-                  if (!n.is_read) {
-                    await notificationsApi.markAsRead(n.id);
+                  if (!notification.is_read) {
+                    await notificationsApi.markAsRead(notification.id);
                   }
 
                   if (path) {
                     navigate(path);
                   }
                 }}
-                style={{
-                  background: getNotificationBackground(n),
-                  cursor: path ? "pointer" : "default",
-                }}
               >
                 <p className="notification-title">
                   <span className="notification-icon">
-                    {getNotificationIcon(n)}
+                    {getNotificationIcon(notification)}
                   </span>
 
-                  {getNotificationText(n)}
+                  {getNotificationText(notification)}
                 </p>
 
-                {n.admin_reason && (
+                {notification.admin_reason && (
                   <p className="notification-reason">
-                    <strong>Reason:</strong> {n.admin_reason}
+                    <strong>Reason:</strong> {notification.admin_reason}
                   </p>
                 )}
 
                 <small className="notification-date">
-                  {new Date(n.created_at).toLocaleString("pl-PL")}
+                  {new Date(notification.created_at).toLocaleString("pl-PL")}
                 </small>
               </div>
             );
@@ -170,8 +177,8 @@ export default function NotificationsList() {
           danger
           onConfirm={handleClearAll}
           onCancel={() => setShowClearModal(false)}
-  />
-)}
+        />
+      )}
     </div>
   );
 }

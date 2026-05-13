@@ -2,21 +2,29 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { favoritesApi } from "../../api/favoritesApi";
 import CocktailCard from "../../components/cocktails/CocktailCard";
+import type { CocktailCardData, CocktailType } from "../../types/cocktail";
+
+interface FavoriteItem extends CocktailCardData {
+  cocktail_type: CocktailType;
+}
 
 export default function FavoritesPage() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<FavoriteItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   const load = async () => {
     try {
+      setError("");
+
       const favorites = await favoritesApi.getFavorites();
 
-      const mapped = favorites.map((item: any) => ({
-        ...item,
-        type: item.cocktail_type,
-      }))
-        .filter((item: any) => item.id && item.name);
+      const mapped = favorites
+        .map((item: FavoriteItem) => ({
+          ...item,
+          type: item.cocktail_type,
+        }))
+        .filter((item: FavoriteItem) => item.id && item.name);
 
       setItems(mapped);
     } catch {
@@ -30,7 +38,7 @@ export default function FavoritesPage() {
     load();
   }, []);
 
-  const getDetailsPath = (item: any) => {
+  const getDetailsPath = (item: FavoriteItem) => {
     if (item.cocktail_type === "catalog") {
       return `/catalog/${item.id}`;
     }
@@ -43,28 +51,43 @@ export default function FavoritesPage() {
   };
 
   if (isLoading) {
-    return <div>Loading favorites...</div>;
+    return (
+      <div className="page-container">
+        <div className="empty-state">Loading favorites...</div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div style={{ color: "#dc2626" }}>{error}</div>;
+    return (
+      <div className="page-container">
+        <div className="empty-state error-text">{error}</div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h1>Favorites</h1>
+    <div className="page-container">
+      <div className="section-header">
+        <div>
+          <h1>Favorites</h1>
+          <p className="muted-text">
+            Your saved catalog and public cocktails.
+          </p>
+        </div>
+      </div>
 
       {items.length === 0 ? (
-        <p>No favorites yet</p>
+        <div className="empty-state">No favorites yet</div>
       ) : (
-        <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>
-          {items.map((c) => (
+        <div className="catalog-grid">
+          {items.map((cocktail) => (
             <Link
-              key={`${c.cocktail_type}-${c.id}`}
-              to={getDetailsPath(c)}
-              style={{ textDecoration: "none", color: "inherit" }}
+              key={`${cocktail.cocktail_type}-${cocktail.id}`}
+              to={getDetailsPath(cocktail)}
+              className="cocktail-card-link"
             >
-              <CocktailCard cocktail={c} />
+              <CocktailCard cocktail={cocktail} />
             </Link>
           ))}
         </div>

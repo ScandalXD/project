@@ -3,7 +3,7 @@ export type CommentCocktailType = "catalog" | "public";
 export interface CommentItemData {
     id: number;
     user_id: number;
-    cocktail_id:  string;
+    cocktail_id: string;
     cocktail_type: CommentCocktailType;
     content: string;
     parent_comment_id: number | null;

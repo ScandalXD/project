@@ -1,6 +1,8 @@
-import { useState, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -14,7 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
 
     setForm((prev) => ({
@@ -39,60 +41,40 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: "420px",
-        margin: "40px auto",
-        background: "#ffffff",
-        padding: "24px",
-        borderRadius: "16px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-      }}
-    >
-      <h1 style={{ marginBottom: "20px" }}>Login</h1>
+    <div className="page-container auth-page">
+      <div className="card auth-card">
+        <h1 className="auth-title">Login</h1>
 
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          required
-          style={{ padding: "12px", borderRadius: "10px", border: "1px solid #d1d5db" }}
-        />
+        <form onSubmit={handleSubmit} className="auth-form">
+          <Input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={handleChange}
+            required
+          />
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          required
-          style={{ padding: "12px", borderRadius: "10px", border: "1px solid #d1d5db" }}
-        />
+          <Input
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={handleChange}
+            required
+          />
 
-        {error && <p style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
+          {error && <p className="error-text auth-message">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          style={{
-            border: "none",
-            background: "#111827",
-            color: "#ffffff",
-            padding: "12px",
-            borderRadius: "10px",
-            cursor: "pointer",
-          }}
-        >
-          {isSubmitting ? "Logging in..." : "Login"}
-        </button>
-      </form>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Logging in..." : "Login"}
+          </Button>
+        </form>
 
-      <p style={{ marginTop: "16px" }}>
-        Nie masz konta? <Link to="/register">Zarejestruj się</Link>
-      </p>
+        <p className="auth-link-text">
+          Nie masz konta? <Link to="/register">Zarejestruj się</Link>
+        </p>
+      </div>
     </div>
   );
 }

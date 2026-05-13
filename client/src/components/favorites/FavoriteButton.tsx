@@ -14,9 +14,9 @@ export default function FavoriteButton({ cocktailId, type }: Props) {
     const data = await favoritesApi.getFavorites();
 
     const exists = data.some(
-      (f: any) =>
-        String(f.id) === String(cocktailId) &&
-        f.cocktail_type === type
+      (favorite: any) =>
+        String(favorite.id) === String(cocktailId) &&
+        favorite.cocktail_type === type
     );
 
     setIsFavorite(exists);
@@ -44,16 +44,12 @@ export default function FavoriteButton({ cocktailId, type }: Props) {
 
   return (
     <button
+      type="button"
       onClick={toggle}
       disabled={isLoading}
-      style={{
-        border: "none",
-        background: isFavorite ? "#dc2626" : "#111827",
-        color: "#ffffff",
-        padding: "10px 14px",
-        borderRadius: "10px",
-        cursor: "pointer",
-      }}
+      className={`favorite-button ${
+        isFavorite ? "favorite-button-active" : ""
+      }`}
     >
       {isLoading ? "..." : isFavorite ? "❤️ Saved" : "🤍 Save"}
     </button>

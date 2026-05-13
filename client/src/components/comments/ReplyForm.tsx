@@ -6,7 +6,7 @@ interface ReplyFormProps {
 
 export default function ReplyForm({ onSubmit }: ReplyFormProps) {
   return (
-    <div style={{ marginTop: "10px" }}>
+    <div className="reply-form-wrap">
       <CommentForm
         onSubmit={onSubmit}
         placeholder="Write a reply..."

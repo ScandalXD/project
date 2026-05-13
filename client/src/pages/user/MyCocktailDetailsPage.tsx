@@ -4,16 +4,26 @@ import { cocktailsApi } from "../../api/cocktailsApi";
 import { getImageUrl } from "../../utils/getImageUrl";
 import type { UserCocktail } from "../../types/cocktail";
 
+const statusLabels: Record<UserCocktail["publication_status"], string> = {
+  draft: "Draft",
+  pending: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
+};
+
 export default function CocktailDetailsPage() {
   const { id } = useParams();
   const [cocktail, setCocktail] = useState<UserCocktail | null>(null);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
+        setError("");
+
         const list = await cocktailsApi.getMyCocktails();
-        const found = list.find((c) => c.id === Number(id));
+        const found = list.find((item) => item.id === Number(id));
 
         if (!found) {
           setError("Cocktail not found");
@@ -23,55 +33,78 @@ export default function CocktailDetailsPage() {
         setCocktail(found);
       } catch {
         setError("Error loading cocktail");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     load();
   }, [id]);
 
-  if (!cocktail) return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="page-container details-page">
+        <div className="empty-state">Loading cocktail...</div>
+      </div>
+    );
+  }
+
+  if (error || !cocktail) {
+    return (
+      <div className="page-container details-page">
+        <div className="empty-state error-text">
+          {error || "Cocktail not found"}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+    <div className="page-container details-page">
       {cocktail.image && (
-        <div
-          style={{
-            width: "100%",
-            height: "420px",
-            background: "#e5e7eb",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-            borderRadius: "12px",
-            marginBottom: "20px",
-          }}
-        >
+        <div className="details-image-wrap">
           <img
             src={getImageUrl(cocktail.image)}
             alt={cocktail.name}
-            style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              objectFit: "contain",
-              display: "block",
-            }}
+            className="details-image"
           />
         </div>
       )}
 
-      <h1>{cocktail.name}</h1>
+      <div className="card details-card">
+        <div className="cocktail-card-title-row">
+          <div>
+            <h1 className="details-title">{cocktail.name}</h1>
 
-      <p>
-        <strong>Category:</strong> {cocktail.category}
-      </p>
-      <p>
-        <strong>Ingredients:</strong> {cocktail.ingredients}
-      </p>
-      <p>
-        {" "}
-        <strong>Instructions:</strong> {cocktail.instructions}
-      </p>
+            <div className="badge-row">
+              <span className="category-badge">{cocktail.category}</span>
+              <span
+                className={`status-badge status-${cocktail.publication_status}`}
+              >
+                {statusLabels[cocktail.publication_status]}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {cocktail.publication_status === "rejected" &&
+          cocktail.moderation_reason && (
+            <p className="error-text details-warning">
+              <strong>Moderation reason:</strong>{" "}
+              {cocktail.moderation_reason}
+            </p>
+          )}
+
+        <section className="details-section">
+          <h3>Ingredients</h3>
+          <p>{cocktail.ingredients}</p>
+        </section>
+
+        <section className="details-section">
+          <h3>Instructions</h3>
+          <p>{cocktail.instructions}</p>
+        </section>
+      </div>
     </div>
   );
 }

@@ -1,20 +1,35 @@
 import { useEffect, useState } from "react";
 import { adminApi } from "../../api/adminApi";
-
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 
+type AdminUserRole = "user" | "admin" | "superadmin";
+
+interface AdminUser {
+  id: number;
+  nickname: string;
+  email: string;
+  role: AdminUserRole;
+  is_active: boolean;
+  created_at: string;
+}
+
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
   const loadUsers = async () => {
     try {
+      setError("");
+
       const data = await adminApi.getUsers();
       setUsers(data);
     } catch {
       setError("Failed to load users.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -22,15 +37,16 @@ export default function AdminUsersPage() {
     loadUsers();
   }, []);
 
-  const handleRoleChange = async (userId: number, role: "user" | "admin") => {
+  const handleRoleChange = async (
+    userId: number,
+    role: Exclude<AdminUserRole, "superadmin">
+  ) => {
     setError("");
     setMessage("");
 
     try {
       await adminApi.updateUserRole(userId, role);
-
       setMessage("User role updated.");
-
       await loadUsers();
     } catch (error: any) {
       setError(error?.response?.data?.message || "Failed to update role.");
@@ -43,9 +59,7 @@ export default function AdminUsersPage() {
 
     try {
       await adminApi.deactivateUser(userId);
-
       setMessage("User deactivated.");
-
       await loadUsers();
     } catch (error: any) {
       setError(error?.response?.data?.message || "Failed to deactivate user.");
@@ -58,45 +72,61 @@ export default function AdminUsersPage() {
 
     try {
       await adminApi.reactivateUser(userId);
-
       setMessage("User activated.");
-
       await loadUsers();
     } catch (error: any) {
       setError(error?.response?.data?.message || "Failed to activate user.");
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="page-container">
+        <div className="empty-state">Loading users...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container">
       <div className="admin-page-header">
-        <h1>Admin Users</h1>
+        <div>
+          <h1>Admin Users</h1>
+          <p className="muted-text">
+            Manage user roles and account status.
+          </p>
+        </div>
       </div>
 
       {message && <p className="success-text">{message}</p>}
-
       {error && <p className="error-text">{error}</p>}
 
       {users.length === 0 ? (
         <EmptyState text="No users found" />
       ) : (
-        <div className="admin-grid">
+        <div className="admin-users-grid">
           {users.map((user) => (
             <div key={user.id} className="admin-card">
-              <h3 style={{ marginTop: 0 }}>{user.nickname}</h3>
+              <div className="admin-user-card-header">
+                <div>
+                  <h3 className="admin-user-title">{user.nickname}</h3>
+                  <p className="muted-text admin-user-email">{user.email}</p>
+                </div>
 
-              <p>
-                <strong>Email:</strong> {user.email}
-              </p>
+                <div className="admin-user-badges">
+                  <span className={`role-badge role-${user.role}`}>
+                    {user.role}
+                  </span>
 
-              <p>
-                <strong>Role:</strong> {user.role}
-              </p>
-
-              <p>
-                <strong>Status:</strong>{" "}
-                {user.is_active ? "Active" : "Inactive"}
-              </p>
+                  <span
+                    className={`status-badge ${
+                      user.is_active ? "status-approved" : "status-rejected"
+                    }`}
+                  >
+                    {user.is_active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+              </div>
 
               <p>
                 <strong>Created:</strong>{" "}

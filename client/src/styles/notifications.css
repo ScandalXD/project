@@ -1,12 +1,13 @@
-.page-container {
+.notifications-panel {
   max-width: 800px;
   margin: 0 auto;
 }
 
-.actions-row {
+.notifications-actions {
   display: flex;
   gap: 10px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .notifications-grid {
@@ -16,12 +17,16 @@
 
 .notification-card {
   padding: 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   transition: 0.2s;
 }
 
 .notification-card:hover {
   transform: translateY(-1px);
+}
+
+.notification-clickable {
+  cursor: pointer;
 }
 
 .notification-title {
@@ -35,13 +40,37 @@
 
 .notification-reason {
   margin-top: 6px;
-  color: #b91c1c;
+  color: var(--color-danger-hover);
 }
 
 .notification-date {
-  color: #6b7280;
+  color: var(--color-muted);
 }
 
-.text-danger {
-  color: #dc2626;
+.notification-read {
+  background: #f3f4f6;
+}
+
+.notification-approved {
+  background: #dcfce7;
+}
+
+.notification-rejected {
+  background: #fee2e2;
+}
+
+.notification-report {
+  background: #fef3c7;
+}
+
+.notification-like {
+  background: #ffe4e6;
+}
+
+.notification-comment {
+  background: #dbeafe;
+}
+
+.notification-mention {
+  background: #ede9fe;
 }

@@ -22,7 +22,8 @@ export default function CocktailForm({
     () => ({
       name: initialData?.name ?? "",
       category:
-        (initialData?.category as CocktailCategory | undefined) ?? "Alkoholowy",
+        (initialData?.category as CocktailCategory | undefined) ??
+        "Alkoholowy",
       ingredients: initialData?.ingredients ?? "",
       instructions: initialData?.instructions ?? "",
       currentImage: initialData?.currentImage ?? "",
@@ -35,7 +36,9 @@ export default function CocktailForm({
   const [error, setError] = useState("");
 
   const handleChange = (
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    event: ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = event.target;
 
@@ -56,6 +59,8 @@ export default function CocktailForm({
     form.ingredients !== initialForm.ingredients ||
     form.instructions !== initialForm.instructions ||
     image !== null;
+
+  const isDisabled = isSubmitting || (mode === "edit" && !isChanged);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -85,22 +90,22 @@ export default function CocktailForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
+    <form onSubmit={handleSubmit} className="cocktail-form">
       <input
-        type="text"
-        name="name"
-        placeholder="Nazwa koktajlu"
-        value={form.name}
-        onChange={handleChange}
-        required
-        style={{ padding: "12px", borderRadius: "10px", border: "1px solid #d1d5db" }}
-      />
+  type="text"
+  name="name"
+  placeholder="Nazwa koktajlu"
+  value={form.name}
+  onChange={handleChange}
+  required
+  className="app-input"
+/>
 
       <select
         name="category"
         value={form.category}
         onChange={handleChange}
-        style={{ padding: "12px", borderRadius: "10px", border: "1px solid #d1d5db" }}
+        className="app-select cocktail-form-select"
       >
         <option value="Alkoholowy">Alkoholowy</option>
         <option value="Bezalkoholowy">Bezalkoholowy</option>
@@ -113,12 +118,7 @@ export default function CocktailForm({
         onChange={handleChange}
         required
         rows={4}
-        style={{
-          padding: "12px",
-          borderRadius: "10px",
-          border: "1px solid #d1d5db",
-          resize: "vertical",
-        }}
+        className="app-textarea"
       />
 
       <textarea
@@ -128,57 +128,31 @@ export default function CocktailForm({
         onChange={handleChange}
         required
         rows={5}
-        style={{
-          padding: "12px",
-          borderRadius: "10px",
-          border: "1px solid #d1d5db",
-          resize: "vertical",
-        }}
+        className="app-textarea"
       />
 
       {mode === "edit" && form.currentImage && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "220px 1fr",
-            gap: "16px",
-            alignItems: "start",
-          }}
-        >
+        <div className="cocktail-form-image-row">
           <div>
-            <p style={{ marginTop: 0, marginBottom: "8px" }}>Current image</p>
-            <div
-              style={{
-                width: "220px",
-                height: "160px",
-                borderRadius: "12px",
-                overflow: "hidden",
-                border: "1px solid #d1d5db",
-                background: "#f3f4f6",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <p className="cocktail-form-label">Current image</p>
+
+            <div className="cocktail-form-image-preview">
               <img
                 src={getImageUrl(form.currentImage)}
                 alt="Current cocktail"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  objectFit: "contain",
-                }}
+                className="cocktail-form-image"
               />
             </div>
           </div>
 
           <div>
-            <p style={{ marginTop: 0, marginBottom: "8px" }}>Choose new file</p>
+            <p className="cocktail-form-label">Choose new file</p>
+
             <input
               type="file"
               accept="image/*"
               onChange={handleImageChange}
-              style={{ padding: "8px 0" }}
+              className="cocktail-form-file"
             />
           </div>
         </div>
@@ -189,26 +163,18 @@ export default function CocktailForm({
           type="file"
           accept="image/*"
           onChange={handleImageChange}
-          style={{ padding: "8px 0" }}
+          className="cocktail-form-file"
         />
       )}
 
-      {error && <p style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
+      {error && <p className="error-text cocktail-form-error">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={isSubmitting || (mode === "edit" && !isChanged)}
-        style={{
-          border: "none",
-          background: "#111827",
-          color: "#ffffff",
-          padding: "12px",
-          borderRadius: "10px",
-          cursor: isSubmitting || (mode === "edit" && !isChanged) ? "not-allowed" : "pointer",
-          opacity: isSubmitting || (mode === "edit" && !isChanged) ? 0.6 : 1,
-        }}
-      >
-        {isSubmitting ? "Saving..." : mode === "edit" ? "Save changes" : "Create cocktail"}
+      <button type="submit" disabled={isDisabled} className="cocktail-form-submit">
+        {isSubmitting
+          ? "Saving..."
+          : mode === "edit"
+          ? "Save changes"
+          : "Create cocktail"}
       </button>
     </form>
   );

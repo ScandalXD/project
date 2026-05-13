@@ -2,43 +2,68 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { authorsApi } from "../../api/authorsApi";
 import CocktailCard from "../../components/cocktails/CocktailCard";
+import type { CocktailCardData } from "../../types/cocktail";
 
 export default function AuthorProfilePage() {
   const { authorId } = useParams();
-  const [cocktails, setCocktails] = useState<any[]>([]);
+  const [cocktails, setCocktails] = useState<CocktailCardData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const load = async () => {
-    try {
-      const data = await authorsApi.getAuthorCocktails(authorId!);
-      setCocktails(data);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    const load = async () => {
+      if (!authorId) {
+        setError("Author not found.");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setError("");
+
+        const data = await authorsApi.getAuthorCocktails(authorId);
+        setCocktails(data.map((item: CocktailCardData) => ({ ...item, type: "public" })));
+      } catch {
+        setError("Failed to load author cocktails.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     load();
   }, [authorId]);
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="page-container">
+        <div className="empty-state">Loading author cocktails...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-container">
+        <div className="empty-state error-text">{error}</div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-      <h1>Author cocktails</h1>
+    <div className="page-container">
+      <div className="section-header">
+        <div>
+          <h1>Author cocktails</h1>
+          <p className="muted-text">Published cocktails from this author.</p>
+        </div>
+      </div>
 
       {cocktails.length === 0 ? (
-        <p>No cocktails yet</p>
+        <div className="empty-state">No cocktails yet</div>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-            gap: "20px",
-          }}
-        >
-          {cocktails.map((c) => (
-            <CocktailCard key={c.id} cocktail={{ ...c, type: "public" }} />
+        <div className="catalog-grid">
+          {cocktails.map((cocktail) => (
+            <CocktailCard key={cocktail.id} cocktail={cocktail} />
           ))}
         </div>
       )}

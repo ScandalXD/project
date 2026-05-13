@@ -17,7 +17,7 @@ export interface Notification {
   id: number;
   user_id: number;
   type: NotificationType;
-  actor_user_id: number;
+  actor_user_id: number | null;
   recipe_id: string;
   recipe_type: "catalog" | "public" | "user";
   comment_id: number | null;

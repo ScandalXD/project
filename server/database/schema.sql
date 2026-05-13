@@ -126,20 +126,20 @@ CREATE TABLE comment_mentions (
 CREATE TABLE notifications (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   user_id BIGINT NOT NULL,
-   MODIFY type ENUM('mention', 'cocktail_like', 'cocktail_comment', 'comment_like', 'comment_reply', 'report_public_cocktail_removed',
-                    'report_comment_deleted', 'report_rejected', 'cocktail_approved', 'cocktail_rejected',
-                    'role_changed', 'public_cocktail_deleted', 'admin_comment_deleted') NOT NULL,
+  type ENUM('mention', 'cocktail_like', 'cocktail_comment', 'comment_like', 'comment_reply', 'report_public_cocktail_removed',
+            'report_comment_deleted', 'report_rejected', 'cocktail_approved', 'cocktail_rejected',
+            'role_changed', 'public_cocktail_deleted', 'admin_comment_deleted') NOT NULL,
   admin_reason TEXT NULL,
-  actor_user_id BIGINT NOT NULL,
-  recipe_id VARCHAR(100) NOT NULL,
-  recipe_type ENUM('catalog', 'public', 'user') NOT NULL,
+  actor_user_id BIGINT NULL,
+  recipe_id VARCHAR(100) NULL,
+  recipe_type ENUM('catalog', 'public', 'user') NULL,
   comment_id BIGINT NULL,
   is_read BOOLEAN NOT NULL DEFAULT FALSE,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_notifications_user
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_notifications_actor_user
-    FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT fk_notifications_comment
     FOREIGN KEY (comment_id) REFERENCES cocktail_comments(id) ON DELETE CASCADE
 );

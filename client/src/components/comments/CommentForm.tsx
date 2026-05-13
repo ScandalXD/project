@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import Button from "../ui/Button";
 
 interface CommentFormProps {
   onSubmit: (content: string) => Promise<void>;
@@ -17,9 +18,7 @@ export default function CommentForm({
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
-    if (!content.trim()) {
-      return;
-    }
+    if (!content.trim()) return;
 
     setIsSubmitting(true);
 
@@ -32,35 +31,18 @@ export default function CommentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "grid", gap: "10px" }}>
+    <form onSubmit={handleSubmit} className="comment-form">
       <textarea
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={(event) => setContent(event.target.value)}
         placeholder={placeholder}
         rows={3}
-        style={{
-          padding: "12px",
-          borderRadius: "10px",
-          border: "1px solid #d1d5db",
-          resize: "vertical",
-        }}
+        className="app-textarea"
       />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        style={{
-          border: "none",
-          background: "#111827",
-          color: "#ffffff",
-          padding: "10px 14px",
-          borderRadius: "10px",
-          cursor: "pointer",
-          width: "fit-content",
-        }}
-      >
+      <Button type="submit" disabled={isSubmitting} className="comment-form-submit">
         {isSubmitting ? "Sending..." : buttonText}
-      </button>
+      </Button>
     </form>
   );
 }
