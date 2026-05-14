@@ -26,6 +26,81 @@ const getPendingCocktailById = async (
   return rows[0] as UserCocktail;
 };
 
+const getPublicCocktailCommentIds = async (
+  publicCocktailId: number,
+): Promise<number[]> => {
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT id FROM cocktail_comments WHERE cocktail_id = ? AND cocktail_type = 'public'",
+    [String(publicCocktailId)],
+  );
+
+  return rows.map((row) => Number(row.id));
+};
+
+const closeReportsForPublicCocktail = async (
+  adminId: number,
+  publicCocktailId: number,
+  commentIds: number[],
+  reason: string,
+): Promise<void> => {
+  await db.query(
+    `UPDATE reports
+     SET status = 'reviewed',
+         reviewed_by = ?,
+         reviewed_at = NOW(),
+         admin_reason = ?
+     WHERE target_type = 'public_cocktail'
+       AND target_id = ?`,
+    [adminId, reason, publicCocktailId],
+  );
+
+  if (commentIds.length > 0) {
+    await db.query(
+      `UPDATE reports
+       SET status = 'reviewed',
+           reviewed_by = ?,
+           reviewed_at = NOW(),
+           admin_reason = ?
+       WHERE target_type = 'comment'
+         AND target_id IN (?)`,
+      [adminId, reason, commentIds],
+    );
+  }
+};
+
+const cleanupPublicCocktailRelations = async (
+  publicCocktailId: number,
+  commentIds: number[],
+): Promise<void> => {
+  if (commentIds.length > 0) {
+    await db.query("DELETE FROM notifications WHERE comment_id IN (?)", [
+      commentIds,
+    ]);
+
+    await db.query("DELETE FROM comment_likes WHERE comment_id IN (?)", [
+      commentIds,
+    ]);
+
+    await db.query("DELETE FROM comment_mentions WHERE comment_id IN (?)", [
+      commentIds,
+    ]);
+
+    await db.query("DELETE FROM cocktail_comments WHERE id IN (?)", [
+      commentIds,
+    ]);
+  }
+
+  await db.query(
+    "DELETE FROM cocktail_likes WHERE cocktail_id = ? AND cocktail_type = 'public'",
+    [String(publicCocktailId)],
+  );
+
+  await db.query(
+    "DELETE FROM favorites WHERE cocktail_id = ? AND cocktail_type = 'public'",
+    [String(publicCocktailId)],
+  );
+};
+
 export const getPendingCocktails = async (): Promise<PendingCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT uc.*, u.nickname AS owner_nickname, u.email AS owner_email
@@ -51,6 +126,8 @@ export const approveCocktail = async (
   if (cocktail.publication_status !== "pending") {
     throw new ServiceError("Only pending cocktails can be approved", 409);
   }
+
+  let publicCocktailId: number;
 
   await db.query("START TRANSACTION");
 
@@ -79,21 +156,23 @@ export const approveCocktail = async (
       ],
     );
 
-    await db.query("COMMIT");
+    publicCocktailId = Number(publicResult.insertId);
 
-    await createNotification({
-      userId: cocktail.owner_id,
-      type: "cocktail_approved",
-      actorUserId: adminId,
-      recipeId: String(publicResult.insertId),
-      recipeType: "public",
-      commentId: null,
-      adminReason: null,
-    });
+    await db.query("COMMIT");
   } catch (error) {
     await db.query("ROLLBACK");
     throw error;
   }
+
+  await createNotification({
+    userId: cocktail.owner_id,
+    type: "cocktail_approved",
+    actorUserId: adminId,
+    recipeId: String(publicCocktailId),
+    recipeType: "public",
+    commentId: null,
+    adminReason: null,
+  });
 };
 
 export const rejectCocktail = async (
@@ -158,6 +237,8 @@ export const removePublishedCocktail = async (
     throw new ServiceError("Published cocktail not found", 404);
   }
 
+  const publicCocktail = publicRows[0] as PublicCocktail;
+
   const [userRows] = await db.query<RowDataPacket[]>(
     "SELECT * FROM user_cocktails WHERE id = ?",
     [cocktailId],
@@ -176,18 +257,25 @@ export const removePublishedCocktail = async (
     );
   }
 
+  const publicCocktailId = Number(publicCocktail.id);
+  const commentIds = await getPublicCocktailCommentIds(publicCocktailId);
+  const adminReason = reason.trim();
+
   await db.query("START TRANSACTION");
 
   try {
-    await db.query(
-      "DELETE FROM favorites WHERE cocktail_id = ? AND cocktail_type = 'public'",
-      [String(cocktailId)],
+    await closeReportsForPublicCocktail(
+      adminId,
+      publicCocktailId,
+      commentIds,
+      "Target cocktail was removed by admin.",
     );
 
-    await db.query(
-      "DELETE FROM public_cocktails WHERE source_cocktail_id = ?",
-      [cocktailId],
-    );
+    await cleanupPublicCocktailRelations(publicCocktailId, commentIds);
+
+    await db.query("DELETE FROM public_cocktails WHERE id = ?", [
+      publicCocktailId,
+    ]);
 
     await db.query(
       `UPDATE user_cocktails
@@ -196,7 +284,7 @@ export const removePublishedCocktail = async (
            moderated_at = NOW(),
            moderated_by = ?
        WHERE id = ?`,
-      [reason.trim(), adminId, cocktailId],
+      [adminReason, adminId, cocktailId],
     );
 
     await db.query("COMMIT");
@@ -204,6 +292,16 @@ export const removePublishedCocktail = async (
     await db.query("ROLLBACK");
     throw error;
   }
+
+  await createNotification({
+    userId: Number(publicCocktail.author_id),
+    type: "public_cocktail_deleted",
+    actorUserId: adminId,
+    recipeId: String(publicCocktail.source_cocktail_id),
+    recipeType: "user",
+    commentId: null,
+    adminReason,
+  });
 };
 
 export const getPublishedCocktailsForAdmin = async (): Promise<
@@ -244,9 +342,54 @@ export const deleteAnyComment = async (
   const comment = rows[0] as {
     id: number;
     user_id: number;
-    cocktail_id: number;
+    cocktail_id: string;
     cocktail_type: "catalog" | "public";
   };
+
+  const [commentRows] = await db.query<RowDataPacket[]>(
+    "SELECT id FROM cocktail_comments WHERE id = ? OR parent_comment_id = ?",
+    [commentId, commentId],
+  );
+
+  const commentIds = commentRows.map((row) => Number(row.id));
+  const adminReason = reason.trim();
+
+  await db.query("START TRANSACTION");
+
+  try {
+    await db.query(
+      `UPDATE reports
+       SET status = 'reviewed',
+           reviewed_by = ?,
+           reviewed_at = NOW(),
+           admin_reason = ?
+       WHERE target_type = 'comment'
+         AND target_id IN (?)`,
+      [adminId, "Target comment was deleted by admin.", commentIds],
+    );
+
+    await db.query("DELETE FROM notifications WHERE comment_id IN (?)", [
+      commentIds,
+    ]);
+
+    await db.query("DELETE FROM comment_likes WHERE comment_id IN (?)", [
+      commentIds,
+    ]);
+
+    await db.query("DELETE FROM comment_mentions WHERE comment_id IN (?)", [
+      commentIds,
+    ]);
+
+    await db.query<ResultSetHeader>(
+      "DELETE FROM cocktail_comments WHERE id IN (?)",
+      [commentIds],
+    );
+
+    await db.query("COMMIT");
+  } catch (error) {
+    await db.query("ROLLBACK");
+    throw error;
+  }
 
   await createNotification({
     userId: Number(comment.user_id),
@@ -255,19 +398,8 @@ export const deleteAnyComment = async (
     recipeId: String(comment.cocktail_id),
     recipeType: comment.cocktail_type,
     commentId: null,
-    adminReason: reason.trim(),
+    adminReason,
   });
-
-  await db.query("DELETE FROM comment_likes WHERE comment_id = ?", [commentId]);
-
-  await db.query("DELETE FROM comment_mentions WHERE comment_id = ?", [
-    commentId,
-  ]);
-
-  await db.query<ResultSetHeader>(
-    "DELETE FROM cocktail_comments WHERE id = ?",
-    [commentId],
-  );
 };
 
 export const deletePublicCocktailById = async (
@@ -293,44 +425,20 @@ export const deletePublicCocktailById = async (
   }
 
   const publicCocktail = rows[0] as PublicCocktail;
+  const commentIds = await getPublicCocktailCommentIds(publicCocktailId);
+  const adminReason = reason.trim();
 
   await db.query("START TRANSACTION");
 
   try {
-    await createNotification({
-      userId: Number(publicCocktail.author_id),
-      type: "public_cocktail_deleted",
-      actorUserId: adminId,
-      recipeId: String(publicCocktail.id),
-      recipeType: "public",
-      commentId: null,
-      adminReason: reason.trim(),
-    });
-
-    await db.query(
-      "DELETE FROM comment_likes WHERE comment_id IN (SELECT id FROM cocktail_comments WHERE cocktail_id = ? AND cocktail_type = 'public')",
-      [publicCocktailId],
+    await closeReportsForPublicCocktail(
+      adminId,
+      publicCocktailId,
+      commentIds,
+      "Target cocktail was removed by admin.",
     );
 
-    await db.query(
-      "DELETE FROM comment_mentions WHERE comment_id IN (SELECT id FROM cocktail_comments WHERE cocktail_id = ? AND cocktail_type = 'public')",
-      [publicCocktailId],
-    );
-
-    await db.query(
-      "DELETE FROM cocktail_comments WHERE cocktail_id = ? AND cocktail_type = 'public'",
-      [publicCocktailId],
-    );
-
-    await db.query(
-      "DELETE FROM cocktail_likes WHERE cocktail_id = ? AND cocktail_type = 'public'",
-      [String(publicCocktailId)],
-    );
-
-    await db.query(
-      "DELETE FROM favorites WHERE cocktail_id = ? AND cocktail_type = 'public'",
-      [String(publicCocktailId)],
-    );
+    await cleanupPublicCocktailRelations(publicCocktailId, commentIds);
 
     await db.query("DELETE FROM public_cocktails WHERE id = ?", [
       publicCocktailId,
@@ -343,7 +451,7 @@ export const deletePublicCocktailById = async (
            moderated_at = NOW(),
            moderated_by = ?
        WHERE id = ?`,
-      [reason.trim(), adminId, publicCocktail.source_cocktail_id],
+      [adminReason, adminId, publicCocktail.source_cocktail_id],
     );
 
     await db.query("COMMIT");
@@ -351,4 +459,14 @@ export const deletePublicCocktailById = async (
     await db.query("ROLLBACK");
     throw error;
   }
+
+  await createNotification({
+    userId: Number(publicCocktail.author_id),
+    type: "public_cocktail_deleted",
+    actorUserId: adminId,
+    recipeId: String(publicCocktail.source_cocktail_id),
+    recipeType: "user",
+    commentId: null,
+    adminReason,
+  });
 };

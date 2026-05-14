@@ -17,7 +17,7 @@ const validateCocktailType = (cocktailType: CocktailType) => {
 
 const validateCocktailExists = async (
   cocktailId: string,
-  cocktailType: CocktailType
+  cocktailType: CocktailType,
 ) => {
   validateCocktailType(cocktailType);
 
@@ -30,7 +30,7 @@ const validateCocktailExists = async (
 
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT id FROM ${tableName} WHERE id = ?`,
-    [cocktailId]
+    [cocktailId],
   );
 
   if (rows.length === 0) {
@@ -41,7 +41,7 @@ const validateCocktailExists = async (
 const validateParentComment = async (
   parentCommentId: number,
   cocktailId: string,
-  cocktailType: CocktailType
+  cocktailType: CocktailType,
 ) => {
   if (!Number.isInteger(parentCommentId)) {
     throw new ServiceError("Invalid parent comment id", 400);
@@ -51,7 +51,7 @@ const validateParentComment = async (
     `SELECT id, cocktail_id, cocktail_type
      FROM cocktail_comments
      WHERE id = ?`,
-    [parentCommentId]
+    [parentCommentId],
   );
 
   if (rows.length === 0) {
@@ -68,10 +68,7 @@ const validateParentComment = async (
     String(parent.cocktail_id) !== String(cocktailId) ||
     parent.cocktail_type !== cocktailType
   ) {
-    throw new ServiceError(
-      "Parent comment belongs to another cocktail",
-      409
-    );
+    throw new ServiceError("Parent comment belongs to another cocktail", 409);
   }
 };
 
@@ -80,7 +77,7 @@ export const addComment = async (
   cocktailId: string,
   cocktailType: CocktailType,
   content: string,
-  parentCommentId?: number | null
+  parentCommentId?: number | null,
 ): Promise<number> => {
   await validateCocktailExists(cocktailId, cocktailType);
 
@@ -95,7 +92,7 @@ export const addComment = async (
 
     const [parentRows] = await db.query<RowDataPacket[]>(
       `SELECT user_id FROM cocktail_comments WHERE id = ?`,
-      [parentCommentId]
+      [parentCommentId],
     );
 
     if (parentRows.length > 0) {
@@ -107,40 +104,42 @@ export const addComment = async (
     `INSERT INTO cocktail_comments
       (user_id, cocktail_id, cocktail_type, content, parent_comment_id)
      VALUES (?, ?, ?, ?, ?)`,
-    [userId, cocktailId, cocktailType, content.trim(), parentCommentId ?? null]
+    [userId, cocktailId, cocktailType, content.trim(), parentCommentId ?? null],
   );
 
   const commentId = result.insertId;
 
-  if (cocktailType === "public") {
-    const [publicRows] = await db.query<RowDataPacket[]>(
-      `SELECT author_id FROM public_cocktails WHERE id = ?`,
-      [cocktailId]
-    );
-
-    if (publicRows.length > 0) {
-      const authorId = Number(publicRows[0].author_id);
-
+  if (parentCommentAuthorId !== null) {
+    if (parentCommentAuthorId !== userId) {
       await createNotification({
-        userId: authorId,
-        type: "cocktail_comment",
+        userId: parentCommentAuthorId,
+        type: "comment_reply",
         actorUserId: userId,
         recipeId: cocktailId,
         recipeType: cocktailType,
         commentId,
       });
     }
-  }
+  } else if (cocktailType === "public") {
+    const [publicRows] = await db.query<RowDataPacket[]>(
+      `SELECT author_id FROM public_cocktails WHERE id = ?`,
+      [cocktailId],
+    );
 
-  if (parentCommentAuthorId !== null) {
-    await createNotification({
-      userId: parentCommentAuthorId,
-      type: "comment_reply",
-      actorUserId: userId,
-      recipeId: cocktailId,
-      recipeType: cocktailType,
-      commentId,
-    });
+    if (publicRows.length > 0) {
+      const authorId = Number(publicRows[0].author_id);
+
+      if (authorId !== userId) {
+        await createNotification({
+          userId: authorId,
+          type: "cocktail_comment",
+          actorUserId: userId,
+          recipeId: cocktailId,
+          recipeType: cocktailType,
+          commentId,
+        });
+      }
+    }
   }
 
   await processCommentMentions(
@@ -148,7 +147,7 @@ export const addComment = async (
     commentId,
     cocktailId,
     cocktailType,
-    content.trim()
+    content.trim(),
   );
 
   return commentId;
@@ -156,7 +155,7 @@ export const addComment = async (
 
 const buildCommentTree = (
   comments: CocktailComment[],
-  parentId: number | null = null
+  parentId: number | null = null,
 ): CocktailComment[] => {
   return comments
     .filter((comment) => comment.parent_comment_id === parentId)
@@ -169,7 +168,7 @@ const buildCommentTree = (
 export const getComments = async (
   cocktailId: string,
   cocktailType: CocktailType,
-  currentUserId?: number
+  currentUserId?: number,
 ): Promise<CocktailComment[]> => {
   await validateCocktailExists(cocktailId, cocktailType);
 
@@ -192,7 +191,7 @@ export const getComments = async (
        cc.created_at,
        u.nickname
      ORDER BY cc.created_at ASC`,
-    [cocktailId, cocktailType]
+    [cocktailId, cocktailType],
   );
 
   const comments = rows as CommentRow[];
@@ -204,12 +203,10 @@ export const getComments = async (
       `SELECT comment_id
        FROM comment_likes
        WHERE user_id = ?`,
-      [currentUserId]
+      [currentUserId],
     );
 
-    likedCommentIds = new Set(
-      likedRows.map((row) => Number(row.comment_id))
-    );
+    likedCommentIds = new Set(likedRows.map((row) => Number(row.comment_id)));
   }
 
   const normalizedComments: CocktailComment[] = comments.map((comment) => ({
@@ -244,7 +241,7 @@ export const getAllCommentsForAdmin = async () => {
      JOIN users u ON cc.user_id = u.id
      LEFT JOIN comment_likes cl ON cc.id = cl.comment_id
      GROUP BY cc.id, u.nickname
-     ORDER BY cc.created_at DESC, cc.id DESC`
+     ORDER BY cc.created_at DESC, cc.id DESC`,
   );
 
   return rows;
@@ -252,7 +249,7 @@ export const getAllCommentsForAdmin = async () => {
 
 export const deleteComment = async (
   userId: number,
-  commentId: number
+  commentId: number,
 ): Promise<void> => {
   if (!Number.isInteger(commentId)) {
     throw new ServiceError("Invalid comment id", 400);
@@ -260,7 +257,7 @@ export const deleteComment = async (
 
   const [rows] = await db.query<RowDataPacket[]>(
     "SELECT * FROM cocktail_comments WHERE id = ?",
-    [commentId]
+    [commentId],
   );
 
   if (rows.length === 0) {

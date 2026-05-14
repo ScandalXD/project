@@ -22,13 +22,12 @@ export default function CocktailForm({
     () => ({
       name: initialData?.name ?? "",
       category:
-        (initialData?.category as CocktailCategory | undefined) ??
-        "Alkoholowy",
+        (initialData?.category as CocktailCategory | undefined) ?? "Alkoholowy",
       ingredients: initialData?.ingredients ?? "",
       instructions: initialData?.instructions ?? "",
       currentImage: initialData?.currentImage ?? "",
     }),
-    [initialData]
+    [initialData],
   );
 
   const [form, setForm] = useState(initialForm);
@@ -38,7 +37,7 @@ export default function CocktailForm({
   const handleChange = (
     event: ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value } = event.target;
 
@@ -66,7 +65,12 @@ export default function CocktailForm({
     event.preventDefault();
     setError("");
 
-    if (!form.name || !form.category || !form.ingredients || !form.instructions) {
+    if (
+      !form.name ||
+      !form.category ||
+      !form.ingredients ||
+      !form.instructions
+    ) {
       setError("Wypełnij wszystkie wymagane pola.");
       return;
     }
@@ -92,14 +96,14 @@ export default function CocktailForm({
   return (
     <form onSubmit={handleSubmit} className="cocktail-form">
       <input
-  type="text"
-  name="name"
-  placeholder="Nazwa koktajlu"
-  value={form.name}
-  onChange={handleChange}
-  required
-  className="app-input"
-/>
+        type="text"
+        name="name"
+        placeholder="Nazwa koktajlu"
+        value={form.name}
+        onChange={handleChange}
+        required
+        className="app-input"
+      />
 
       <select
         name="category"
@@ -169,12 +173,16 @@ export default function CocktailForm({
 
       {error && <p className="error-text cocktail-form-error">{error}</p>}
 
-      <button type="submit" disabled={isDisabled} className="cocktail-form-submit">
+      <button
+        type="submit"
+        disabled={isDisabled}
+        className="cocktail-form-submit"
+      >
         {isSubmitting
           ? "Saving..."
           : mode === "edit"
-          ? "Save changes"
-          : "Create cocktail"}
+            ? "Save changes"
+            : "Create cocktail"}
       </button>
     </form>
   );
