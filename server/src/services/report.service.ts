@@ -237,7 +237,9 @@ export const deleteCommentFromReport = async (
     adminReason: adminReason.trim(),
   });
 
-  await deleteAnyComment(adminUserId, Number(report.target_id), adminReason.trim());
+  await deleteAnyComment(adminUserId, Number(report.target_id), adminReason.trim(), {
+    skipNotification: true,
+  });
 
   await db.query<ResultSetHeader>(
     `UPDATE reports

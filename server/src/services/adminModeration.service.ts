@@ -321,6 +321,7 @@ export const deleteAnyComment = async (
   adminId: number,
   commentId: number,
   reason: string,
+  options: { skipNotification?: boolean } = {},
 ): Promise<void> => {
   if (!Number.isInteger(commentId)) {
     throw new ServiceError("Invalid comment id", 400);
@@ -391,15 +392,17 @@ export const deleteAnyComment = async (
     throw error;
   }
 
-  await createNotification({
-    userId: Number(comment.user_id),
-    type: "admin_comment_deleted",
-    actorUserId: adminId,
-    recipeId: String(comment.cocktail_id),
-    recipeType: comment.cocktail_type,
-    commentId: null,
-    adminReason,
-  });
+  if (!options.skipNotification) {
+    await createNotification({
+      userId: Number(comment.user_id),
+      type: "admin_comment_deleted",
+      actorUserId: adminId,
+      recipeId: String(comment.cocktail_id),
+      recipeType: comment.cocktail_type,
+      commentId: null,
+      adminReason,
+    });
+  }
 };
 
 export const deletePublicCocktailById = async (
