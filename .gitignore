@@ -24,6 +24,7 @@ client/dist/
 
 server/node_modules/
 server/dist/
+server/uploads/
 
 *.sql~
 
