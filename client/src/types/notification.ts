@@ -11,7 +11,9 @@ export type NotificationType =
   | "admin_comment_deleted"
   | "report_public_cocktail_removed"
   | "report_comment_deleted"
-  | "report_rejected";
+  | "report_rejected"
+  | "friend_request_received"
+  | "friend_request_accepted";
 
 export interface Notification {
   id: number;

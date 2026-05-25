@@ -16,6 +16,7 @@ import CatalogCocktailDetailsPage from "../pages/public/CatalogCocktailDetailsPa
 import PublicCocktailDetailsPage from "../pages/public/PublicCocktailDetailsPage";
 import FavoritesPage from "../pages/user/FavoritesPage";
 import NotificationsPage from "../pages/user/NotificationsPage";
+import FriendsPage from "../pages/user/FriendsPage";
 import AuthorProfilePage from "../pages/public/AuthorProfilePage";
 import AdminRoute from "../routes/AdminRoute";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
           { path: "my-cocktails/:id/edit", element: <EditCocktailPage /> },
           { path: "my-cocktails/:id", element: <MyCocktailDetailsPage /> },
           { path: "favorites", element: <FavoritesPage /> },
+          { path: "friends", element: <FriendsPage /> },
           { path: "notifications", element: <NotificationsPage /> },
         ],
       },

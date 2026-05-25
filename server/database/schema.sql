@@ -128,7 +128,8 @@ CREATE TABLE notifications (
   user_id BIGINT NOT NULL,
   type ENUM('mention', 'cocktail_like', 'cocktail_comment', 'comment_like', 'comment_reply', 'report_public_cocktail_removed',
             'report_comment_deleted', 'report_rejected', 'cocktail_approved', 'cocktail_rejected',
-            'role_changed', 'public_cocktail_deleted', 'admin_comment_deleted') NOT NULL,
+            'role_changed', 'public_cocktail_deleted', 'admin_comment_deleted',
+            'friend_request_received', 'friend_request_accepted') NOT NULL,
   admin_reason TEXT NULL,
   actor_user_id BIGINT NULL,
   recipe_id VARCHAR(100) NULL,
@@ -142,6 +143,29 @@ CREATE TABLE notifications (
     FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT fk_notifications_comment
     FOREIGN KEY (comment_id) REFERENCES cocktail_comments(id) ON DELETE CASCADE
+);
+
+CREATE TABLE friendships (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  requester_id BIGINT NOT NULL,
+  receiver_id BIGINT NOT NULL,
+  status ENUM('pending', 'accepted', 'rejected', 'blocked') NOT NULL DEFAULT 'pending',
+  blocked_by BIGINT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  responded_at DATETIME NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_friendships_requester
+    FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_friendships_receiver
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_friendships_blocked_by
+    FOREIGN KEY (blocked_by) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT chk_friendships_not_self
+    CHECK (requester_id <> receiver_id),
+  UNIQUE KEY uq_friendships_direction (requester_id, receiver_id),
+  INDEX idx_friendships_requester_status (requester_id, status),
+  INDEX idx_friendships_receiver_status (receiver_id, status),
+  INDEX idx_friendships_blocked_by (blocked_by)
 );
 
 CREATE TABLE reports (

@@ -49,6 +49,7 @@ export default function MainLayout() {
               <Link to="/profile">Profile</Link>
               <Link to="/my-cocktails">My Cocktails</Link>
               <Link to="/favorites">Favorites</Link>
+              <Link to="/friends">Friends</Link>
               <Link to="/notifications">Notifications</Link>
 
               {(user?.role === "admin" || user?.role === "superadmin") && (

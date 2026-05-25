@@ -20,6 +20,8 @@ function getNotificationText(n: Notification) {
   if (n.type === "role_changed") return "Your role was changed";
   if (n.type === "public_cocktail_deleted") return "Your public cocktail was deleted by admin";
   if (n.type === "admin_comment_deleted") return "Your comment was deleted by admin";
+  if (n.type === "friend_request_received") return `${n.actor_nickname} sent you a friend request`;
+  if (n.type === "friend_request_accepted") return `${n.actor_nickname} accepted your friend request`;
 
   return n.type;
 }
@@ -33,6 +35,7 @@ function getNotificationIcon(n: Notification) {
   if (n.type.includes("report")) return "⚠️";
   if (n.type === "role_changed") return "🛡️";
   if (n.type === "public_cocktail_deleted" || n.type === "admin_comment_deleted") return "🗑️";
+  if (n.type === "friend_request_received" || n.type === "friend_request_accepted") return "👥";
 
   return "🔔";
 }
@@ -47,6 +50,7 @@ function getNotificationClassName(n: Notification) {
   if (n.type === "mention") return "notification-card notification-mention";
   if (n.type === "public_cocktail_deleted" || n.type === "admin_comment_deleted") return "notification-card notification-rejected";
   if (n.type === "role_changed") return "notification-card notification-comment";
+  if (n.type === "friend_request_received" || n.type === "friend_request_accepted") return "notification-card notification-comment";
 
   return "notification-card notification-comment";
 }
@@ -68,6 +72,7 @@ function getNotificationPath(n: Notification) {
   if (n.recipe_type === "public") return `/public-cocktails/${n.recipe_id}`;
   if (n.recipe_type === "catalog") return `/catalog/${n.recipe_id}`;
   if (n.recipe_type === "user") return `/my-cocktails/${n.recipe_id}`;
+  if (n.type === "friend_request_received" || n.type === "friend_request_accepted") return "/friends";
 
   return null;
 }

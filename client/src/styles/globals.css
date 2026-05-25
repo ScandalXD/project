@@ -758,6 +758,115 @@ select {
   color: var(--color-danger);
 }
 
+.friends-page {
+  max-width: 1120px;
+}
+
+.friends-page-header {
+  align-items: flex-start;
+}
+
+.friends-layout {
+  display: grid;
+  gap: 20px;
+}
+
+.friends-panel {
+  padding: 20px;
+}
+
+.friends-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.friends-panel-header h2 {
+  margin: 0;
+}
+
+.friends-panel-header p {
+  margin: 4px 0 0;
+}
+
+.friends-search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.friends-message {
+  margin: 0 0 12px;
+}
+
+.friends-list {
+  display: grid;
+  gap: 12px;
+}
+
+.friend-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: #ffffff;
+}
+
+.friend-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.friend-row-main {
+  min-width: 0;
+}
+
+.friend-row-main h3 {
+  margin: 0;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
+.friend-row-main p {
+  margin: 4px 0 0;
+}
+
+.friend-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.friends-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.friends-subtitle {
+  margin: 0 0 12px;
+}
+
+.friends-blocked-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-border);
+}
+
 .comments-section {
   margin-top: 30px;
 }
@@ -876,4 +985,21 @@ select {
 
 .auth-link-text {
   margin-top: 16px;
+}
+
+@media (max-width: 760px) {
+  .friends-search-form,
+  .friends-columns,
+  .friend-row {
+    grid-template-columns: 1fr;
+  }
+
+  .friend-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .friend-actions {
+    justify-content: flex-start;
+  }
 }

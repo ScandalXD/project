@@ -10,6 +10,7 @@ import likeRoutes from "./routes/like.routes";
 import commentRoutes from "./routes/comment.routes";
 import notificationRoutes from "./routes/notification.routes";
 import reportRoutes from "./routes/report.routes";
+import friendRoutes from "./routes/friend.routes";
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api", likeRoutes);
 app.use("/api", commentRoutes);
 app.use("/api", notificationRoutes);
 app.use("/api", reportRoutes);
+app.use("/api", friendRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 export default app;
