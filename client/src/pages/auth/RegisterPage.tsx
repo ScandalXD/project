@@ -12,6 +12,7 @@ export default function RegisterPage() {
     nickname: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
   const [error, setError] = useState("");
@@ -29,10 +30,25 @@ export default function RegisterPage() {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
+
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      await register(form);
+      await register({
+        nickname: form.nickname,
+        email: form.email,
+        password: form.password,
+      });
       navigate("/catalog");
     } catch {
       setError("Nie udało się utworzyć konta.");
@@ -71,6 +87,17 @@ export default function RegisterPage() {
             placeholder="Password"
             value={form.password}
             onChange={handleChange}
+            minLength={6}
+            required
+          />
+
+          <Input
+            type="password"
+            name="confirmPassword"
+            placeholder="Confirm password"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            minLength={6}
             required
           />
 
