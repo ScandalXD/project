@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { chatApi } from "../../api/chatApi";
 import { friendsApi } from "../../api/friendsApi";
 import FriendRequests from "../../components/friends/FriendRequests";
 import FriendSearch from "../../components/friends/FriendSearch";
@@ -6,6 +8,7 @@ import FriendsList from "../../components/friends/FriendsList";
 import type { FriendRequestsResponse, Friendship } from "../../types/friend";
 
 export default function FriendsPage() {
+  const navigate = useNavigate();
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [blockedUsers, setBlockedUsers] = useState<Friendship[]>([]);
   const [requests, setRequests] = useState<FriendRequestsResponse>({
@@ -101,6 +104,12 @@ export default function FriendsPage() {
         <FriendsList
           friends={friends}
           blockedUsers={blockedUsers}
+          onMessage={(friendId) =>
+            runAction(async () => {
+              const { conversationId } = await chatApi.openConversation(friendId);
+              navigate(`/chat?conversationId=${conversationId}`);
+            }, "Conversation opened.")
+          }
           onRemove={(friendId) =>
             runAction(
               () => friendsApi.removeFriend(friendId),

@@ -11,6 +11,9 @@ import commentRoutes from "./routes/comment.routes";
 import notificationRoutes from "./routes/notification.routes";
 import reportRoutes from "./routes/report.routes";
 import friendRoutes from "./routes/friend.routes";
+import chatRoutes from "./routes/chat.routes";
+import chatReportRoutes from "./routes/chatReport.routes";
+import adminChatRoutes from "./routes/adminChat.routes";
 
 const app = express();
 
@@ -30,6 +33,9 @@ app.use("/api", commentRoutes);
 app.use("/api", notificationRoutes);
 app.use("/api", reportRoutes);
 app.use("/api", friendRoutes);
+app.use("/api", chatRoutes);
+app.use("/api", chatReportRoutes);
+app.use("/api/admin", adminChatRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 export default app;

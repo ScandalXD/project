@@ -5,6 +5,7 @@ import EmptyState from "../ui/EmptyState";
 interface FriendsListProps {
   friends: Friendship[];
   blockedUsers: Friendship[];
+  onMessage: (friendId: number) => Promise<void>;
   onRemove: (friendId: number) => Promise<void>;
   onBlock: (userId: number) => Promise<void>;
   onUnblock: (userId: number) => Promise<void>;
@@ -13,6 +14,7 @@ interface FriendsListProps {
 export default function FriendsList({
   friends,
   blockedUsers,
+  onMessage,
   onRemove,
   onBlock,
   onUnblock,
@@ -43,6 +45,10 @@ export default function FriendsList({
 
               {friendship.friend_id && (
                 <div className="friend-actions">
+                  <Button onClick={() => onMessage(Number(friendship.friend_id))}>
+                    Message
+                  </Button>
+
                   <Button
                     variant="secondary"
                     onClick={() => onRemove(Number(friendship.friend_id))}

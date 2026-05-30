@@ -129,7 +129,9 @@ CREATE TABLE notifications (
   type ENUM('mention', 'cocktail_like', 'cocktail_comment', 'comment_like', 'comment_reply', 'report_public_cocktail_removed',
             'report_comment_deleted', 'report_rejected', 'cocktail_approved', 'cocktail_rejected',
             'role_changed', 'public_cocktail_deleted', 'admin_comment_deleted',
-            'friend_request_received', 'friend_request_accepted') NOT NULL,
+            'friend_request_received', 'friend_request_accepted',
+            'new_message', 'cocktail_shared', 'admin_warning', 'chat_muted',
+            'chat_banned') NOT NULL,
   admin_reason TEXT NULL,
   actor_user_id BIGINT NULL,
   recipe_id VARCHAR(100) NULL,
@@ -168,6 +170,145 @@ CREATE TABLE friendships (
   INDEX idx_friendships_blocked_by (blocked_by)
 );
 
+CREATE TABLE user_chat_status (
+  user_id BIGINT PRIMARY KEY,
+  is_online BOOLEAN NOT NULL DEFAULT FALSE,
+  last_seen_at DATETIME NULL,
+  muted_until DATETIME NULL,
+  is_chat_banned BOOLEAN NOT NULL DEFAULT FALSE,
+  chat_banned_until DATETIME NULL,
+  strike_count INT NOT NULL DEFAULT 0,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_user_chat_status_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user_chat_status_online (is_online),
+  INDEX idx_user_chat_status_muted_until (muted_until),
+  INDEX idx_user_chat_status_banned (is_chat_banned),
+  INDEX idx_user_chat_status_chat_banned_until (chat_banned_until)
+);
+
+CREATE TABLE user_penalties (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  admin_id BIGINT NULL,
+  type ENUM('warning', 'mute', 'chat_ban') NOT NULL,
+  reason TEXT NOT NULL,
+  muted_until DATETIME NULL,
+  banned_until DATETIME NULL,
+  is_permanent BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_user_penalties_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_user_penalties_admin
+    FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_user_penalties_user_created (user_id, created_at),
+  INDEX idx_user_penalties_type (type)
+);
+
+CREATE TABLE conversations (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  type ENUM('private') NOT NULL DEFAULT 'private',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_conversations_updated_at (updated_at)
+);
+
+CREATE TABLE conversation_participants (
+  conversation_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  last_read_message_id BIGINT NULL,
+  is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+  is_marked_unread BOOLEAN NOT NULL DEFAULT FALSE,
+  deleted_at DATETIME NULL,
+  joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (conversation_id, user_id),
+  CONSTRAINT fk_conversation_participants_conversation
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+  CONSTRAINT fk_conversation_participants_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_conversation_participants_user (user_id),
+  INDEX idx_conversation_participants_user_deleted (user_id, deleted_at),
+  INDEX idx_conversation_participants_user_pinned (user_id, is_pinned),
+  INDEX idx_conversation_participants_last_read (last_read_message_id)
+);
+
+CREATE TABLE messages (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  conversation_id BIGINT NOT NULL,
+  sender_id BIGINT NOT NULL,
+  reply_to_message_id BIGINT NULL,
+  message_type ENUM('text', 'cocktail_share', 'image', 'file', 'voice', 'system') NOT NULL,
+  content TEXT NULL,
+  metadata JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at DATETIME NULL,
+  is_edited BOOLEAN NOT NULL DEFAULT FALSE,
+  CONSTRAINT fk_messages_conversation
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+  CONSTRAINT fk_messages_sender
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_messages_reply
+    FOREIGN KEY (reply_to_message_id) REFERENCES messages(id) ON DELETE SET NULL,
+  INDEX idx_messages_conversation_created (conversation_id, created_at),
+  INDEX idx_messages_sender (sender_id),
+  INDEX idx_messages_reply (reply_to_message_id),
+  INDEX idx_messages_type (message_type)
+);
+
+CREATE TABLE message_reads (
+  message_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (message_id, user_id),
+  CONSTRAINT fk_message_reads_message
+    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+  CONSTRAINT fk_message_reads_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_message_reads_user (user_id)
+);
+
+CREATE TABLE message_deletions (
+  message_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  deleted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (message_id, user_id),
+  CONSTRAINT fk_message_deletions_message
+    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+  CONSTRAINT fk_message_deletions_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_message_deletions_user (user_id)
+);
+
+CREATE TABLE chat_reports (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  reporter_user_id BIGINT NOT NULL,
+  target_type ENUM('message', 'user') NOT NULL,
+  target_user_id BIGINT NOT NULL,
+  message_id BIGINT NULL,
+  reason ENUM('spam', 'harassment', 'abuse', 'inappropriate_content', 'scam', 'fake_account', 'other') NOT NULL,
+  details TEXT NULL,
+  status ENUM('open', 'reviewed', 'rejected') NOT NULL DEFAULT 'open',
+  reviewed_by BIGINT NULL,
+  reviewed_at DATETIME NULL,
+  admin_reason TEXT NULL,
+  action_taken ENUM('dismiss', 'delete_message', 'warn', 'mute', 'temporary_chat_ban', 'permanent_chat_ban') NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_chat_reports_reporter
+    FOREIGN KEY (reporter_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_chat_reports_target_user
+    FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_chat_reports_message
+    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE SET NULL,
+  CONSTRAINT fk_chat_reports_reviewed_by
+    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_chat_reports_status_created (status, created_at),
+  INDEX idx_chat_reports_target_user (target_user_id),
+  INDEX idx_chat_reports_message (message_id),
+  INDEX idx_chat_reports_reporter (reporter_user_id)
+);
+
 CREATE TABLE reports (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   reporter_user_id BIGINT NOT NULL,
@@ -176,7 +317,7 @@ CREATE TABLE reports (
   reason VARCHAR(255) NOT NULL,
   admin_reason TEXT NULL,
   details TEXT NULL,
-  status ENUM('open', 'reviewed') NOT NULL DEFAULT 'open',
+  status ENUM('open', 'reviewed', 'rejected') NOT NULL DEFAULT 'open',
   reviewed_by BIGINT NULL,
   reviewed_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
