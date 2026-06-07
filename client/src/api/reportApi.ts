@@ -1,5 +1,5 @@
 import { api } from "./axios";
-import type { ReportItem } from "../types/report";
+import type { ReportItem, ReportStatus } from "../types/report";
 
 export const reportApi = {
   async reportCocktail(cocktailId: number, reason: string) {
@@ -22,8 +22,10 @@ export const reportApi = {
     return res.data;
   },
 
-  async getAdminReports(): Promise<ReportItem[]> {
-    const res = await api.get("/admin/reports");
+  async getAdminReports(status?: ReportStatus): Promise<ReportItem[]> {
+    const res = await api.get("/admin/reports", {
+      params: status ? { status } : undefined,
+    });
     return res.data;
   },
 

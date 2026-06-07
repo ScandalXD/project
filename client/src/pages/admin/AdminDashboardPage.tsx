@@ -8,6 +8,7 @@ type DashboardStats = {
   publicCocktailsCount: number;
   pendingCocktailsCount: number;
   openReportsCount: number;
+  openChatReportsCount: number;
   commentsCount: number;
 };
 
@@ -82,7 +83,7 @@ export default function AdminDashboardPage() {
 
         <DashboardCard
           title="Reports"
-          value={stats.openReportsCount}
+          value={stats.openReportsCount + stats.openChatReportsCount}
           to="/admin/reports"
         />
 

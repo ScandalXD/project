@@ -1,5 +1,26 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import {
+  Bell,
+  BookOpen,
+  Gauge,
+  GlassWater,
+  Globe2,
+  Heart,
+  LogOut,
+  MessageCircle,
+  Users,
+} from "lucide-react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+
+const navItems = [
+  { to: "/catalog", label: "Catalog", icon: BookOpen },
+  { to: "/public-cocktails", label: "Public", icon: Globe2 },
+  { to: "/my-cocktails", label: "My Cocktails", icon: GlassWater },
+  { to: "/favorites", label: "Favorites", icon: Heart },
+  { to: "/friends", label: "Friends", icon: Users },
+  { to: "/chat", label: "Chat", icon: MessageCircle },
+  { to: "/notifications", label: "Notifications", icon: Bell },
+];
 
 export default function MainLayout() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -12,64 +33,66 @@ export default function MainLayout() {
 
   return (
     <>
-      <header
-        style={{
-          height: "64px",
-          borderBottom: "1px solid #e5e7eb",
-          background: "#ffffff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 32px",
-        }}
-      >
-        <Link
-          to={isAuthenticated ? "/catalog" : "/login"}
-          style={{
-            textDecoration: "none",
-            color: "#111827",
-            fontWeight: 700,
-            fontSize: "20px",
-          }}
-        >
+      <header className="app-header">
+        <Link to={isAuthenticated ? "/catalog" : "/login"} className="app-brand">
           CocktailApp
         </Link>
 
-        <nav
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "16px",
-          }}
-        >
+        <nav className="app-nav">
           {isAuthenticated ? (
             <>
-              <Link to="/catalog">Catalog</Link>
-              <Link to="/public-cocktails">Public</Link>
-              <Link to="/profile">Profile</Link>
-              <Link to="/my-cocktails">My Cocktails</Link>
-              <Link to="/favorites">Favorites</Link>
-              <Link to="/friends">Friends</Link>
-              <Link to="/notifications">Notifications</Link>
+              {navItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `app-nav-link ${isActive ? "app-nav-link-active" : ""}`
+                    }
+                    title={item.label}
+                  >
+                    <Icon size={17} strokeWidth={2.1} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
 
               {(user?.role === "admin" || user?.role === "superadmin") && (
-                <Link to="/admin">Dashboard</Link>
+                <NavLink
+                  to="/admin"
+                  className={({ isActive }) =>
+                    `app-nav-link ${isActive ? "app-nav-link-active" : ""}`
+                  }
+                  title="Dashboard"
+                >
+                  <Gauge size={17} strokeWidth={2.1} aria-hidden="true" />
+                  <span>Dashboard</span>
+                </NavLink>
               )}
 
-              <span>{user?.nickname}</span>
+              <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                  `app-user-badge ${isActive ? "app-user-badge-active" : ""}`
+                }
+                title="Profile"
+              >
+                <span className="app-user-avatar" aria-hidden="true">
+                  {user?.nickname?.charAt(0).toUpperCase()}
+                </span>
+                <span>{user?.nickname}</span>
+              </NavLink>
 
               <button
                 onClick={handleLogout}
-                style={{
-                  border: "none",
-                  background: "#111827",
-                  color: "#ffffff",
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                }}
+                className="app-logout-button"
+                title="Logout"
+                aria-label="Logout"
               >
-                Logout
+                <LogOut size={17} strokeWidth={2.2} aria-hidden="true" />
+                <span>Logout</span>
               </button>
             </>
           ) : (
@@ -79,13 +102,7 @@ export default function MainLayout() {
         </nav>
       </header>
 
-      <main
-        style={{
-          minHeight: "calc(100vh - 64px)",
-          background: "#f3f6fb",
-          padding: "40px 24px",
-        }}
-      >
+      <main className="app-main">
         <Outlet />
       </main>
     </>

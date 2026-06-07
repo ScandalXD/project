@@ -8,7 +8,7 @@ import {
   deleteReviewedReport,
 } from "../services/report.service";
 import { ServiceError } from "../services/cocktail.service";
-import { ReportTargetType } from "../models/Report.model";
+import { ReportStatus, ReportTargetType } from "../models/Report.model";
 
 const handleError = (res: Response, err: unknown) => {
   if (err instanceof ServiceError) {
@@ -59,9 +59,12 @@ export const createReportHandler = async (
   }
 };
 
-export const getReportsHandler = async (_req: Request, res: Response) => {
+export const getReportsHandler = async (
+  req: Request<{}, {}, {}, { status?: ReportStatus }>,
+  res: Response
+) => {
   try {
-    const reports = await getAllReports();
+    const reports = await getAllReports(req.query.status);
     res.json(reports);
   } catch (e) {
     handleError(res, e);

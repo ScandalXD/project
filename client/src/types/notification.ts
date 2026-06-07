@@ -13,7 +13,12 @@ export type NotificationType =
   | "report_comment_deleted"
   | "report_rejected"
   | "friend_request_received"
-  | "friend_request_accepted";
+  | "friend_request_accepted"
+  | "new_message"
+  | "cocktail_shared"
+  | "admin_warning"
+  | "chat_muted"
+  | "chat_banned";
 
 export interface Notification {
   id: number;

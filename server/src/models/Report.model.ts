@@ -1,5 +1,5 @@
 export type ReportTargetType = "public_cocktail" | "comment";
-export type ReportStatus = "open" | "reviewed";
+export type ReportStatus = "open" | "reviewed" | "rejected";
 
 export interface Report {
     id: number;

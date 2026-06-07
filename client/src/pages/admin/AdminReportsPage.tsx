@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { chatReportsApi } from "../../api/chatReportsApi";
 import { reportApi } from "../../api/reportApi";
-import type { ReportItem } from "../../types/report";
+import RejectReportModal from "../../components/reports/RejectReportModal";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
-import Modal from "../../components/ui/Modal";
 import Input from "../../components/ui/Input";
-import RejectReportModal from "../../components/reports/RejectReportModal";
+import Modal from "../../components/ui/Modal";
+import type { ChatReport } from "../../types/chatReport";
+import type { ReportItem, ReportStatus } from "../../types/report";
 
-type AdminAction =
+type ReportTypeFilter = "all" | "content" | "chat";
+
+type ContentAdminAction =
   | null
   | {
       type: "hideCocktail";
@@ -19,28 +23,82 @@ type AdminAction =
       reportId: number;
     };
 
-function getTargetLabel(report: ReportItem) {
+type ChatAdminAction =
+  | "dismiss"
+  | "deleteMessage"
+  | "warn"
+  | "mute"
+  | "temporaryBan"
+  | "permanentBan";
+
+type PendingChatAction = {
+  report: ChatReport;
+  action: ChatAdminAction;
+};
+
+type CombinedReport =
+  | { kind: "content"; report: ReportItem; createdAt: string }
+  | { kind: "chat"; report: ChatReport; createdAt: string };
+
+const chatActionLabels: Record<ChatAdminAction, string> = {
+  dismiss: "Dismiss report",
+  deleteMessage: "Delete message",
+  warn: "Warn user",
+  mute: "Mute user",
+  temporaryBan: "Temporary chat ban",
+  permanentBan: "Permanent chat ban",
+};
+
+const chatActionsWithDate: ChatAdminAction[] = ["mute", "temporaryBan"];
+
+function getContentTargetLabel(report: ReportItem) {
   if (report.target_type === "public_cocktail") return "Public cocktail";
   if (report.target_type === "comment") return "Comment";
   return report.target_type;
 }
 
+function getStatusClass(status: ReportStatus) {
+  if (status === "open") return "pending";
+  if (status === "reviewed") return "approved";
+  return "rejected";
+}
+
 export default function AdminReportsPage() {
-  const [reports, setReports] = useState<ReportItem[]>([]);
+  const [contentReports, setContentReports] = useState<ReportItem[]>([]);
+  const [chatReports, setChatReports] = useState<ChatReport[]>([]);
+  const [status, setStatus] = useState<ReportStatus | "all">("open");
+  const [reportType, setReportType] = useState<ReportTypeFilter>("all");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [deleteReportId, setDeleteReportId] = useState<number | null>(null);
+
+  const [deleteContentReportId, setDeleteContentReportId] = useState<number | null>(null);
+  const [deleteChatReportId, setDeleteChatReportId] = useState<number | null>(null);
   const [rejectReportId, setRejectReportId] = useState<number | null>(null);
-  const [adminAction, setAdminAction] = useState<AdminAction>(null);
+  const [contentAction, setContentAction] = useState<ContentAdminAction>(null);
+  const [chatAction, setChatAction] = useState<PendingChatAction | null>(null);
   const [adminReason, setAdminReason] = useState("");
+  const [untilDate, setUntilDate] = useState("");
 
   const loadReports = async () => {
     try {
-      const data = await reportApi.getAdminReports();
-      setReports(data);
-    } catch {
-      setError("Nie udało się pobrać zgłoszeń.");
+      setError("");
+      setIsLoading(true);
+
+      const statusParam = status === "all" ? undefined : status;
+      const [contentData, chatData] = await Promise.all([
+        reportType === "chat"
+          ? Promise.resolve([])
+          : reportApi.getAdminReports(statusParam),
+        reportType === "content"
+          ? Promise.resolve([])
+          : chatReportsApi.getAdminReports(statusParam),
+      ]);
+
+      setContentReports(contentData);
+      setChatReports(chatData);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to load reports.");
     } finally {
       setIsLoading(false);
     }
@@ -48,9 +106,27 @@ export default function AdminReportsPage() {
 
   useEffect(() => {
     loadReports();
-  }, []);
+  }, [status, reportType]);
 
-  const handleRejectReport = async (reason: string) => {
+  const combinedReports = useMemo<CombinedReport[]>(() => {
+    return [
+      ...contentReports.map((report) => ({
+        kind: "content" as const,
+        report,
+        createdAt: report.created_at,
+      })),
+      ...chatReports.map((report) => ({
+        kind: "chat" as const,
+        report,
+        createdAt: report.created_at,
+      })),
+    ].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [contentReports, chatReports]);
+
+  const handleRejectContentReport = async (reason: string) => {
     if (!rejectReportId) return;
 
     setError("");
@@ -62,52 +138,66 @@ export default function AdminReportsPage() {
       setRejectReportId(null);
       await loadReports();
     } catch {
-      setError("Nie udało się odrzucić zgłoszenia.");
+      setError("Failed to reject report.");
     }
   };
 
-  const handleDeleteReport = async () => {
-    if (!deleteReportId) return;
+  const handleDeleteContentReport = async () => {
+    if (!deleteContentReportId) return;
 
     setError("");
     setMessage("");
 
     try {
-      await reportApi.deleteReviewedReport(deleteReportId);
+      await reportApi.deleteReviewedReport(deleteContentReportId);
       setMessage("Report deleted.");
-      setDeleteReportId(null);
+      setDeleteContentReportId(null);
       await loadReports();
     } catch {
-      setError("Nie udało się usunąć zgłoszenia.");
+      setError("Failed to delete report.");
     }
   };
 
-  const handleAdminActionSubmit = async () => {
-    if (!adminAction || !adminReason.trim()) return;
+  const handleDeleteChatReport = async () => {
+    if (!deleteChatReportId) return;
 
     setError("");
     setMessage("");
 
     try {
-      if (adminAction.type === "hideCocktail") {
+      await chatReportsApi.deleteReviewedReport(deleteChatReportId);
+      setMessage("Chat report deleted.");
+      setDeleteChatReportId(null);
+      await loadReports();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to delete chat report.");
+    }
+  };
+
+  const handleContentActionSubmit = async () => {
+    if (!contentAction || !adminReason.trim()) return;
+
+    setError("");
+    setMessage("");
+
+    try {
+      if (contentAction.type === "hideCocktail") {
         await reportApi.hidePublicCocktailFromReport(
-          adminAction.reportId,
+          contentAction.reportId,
           adminReason.trim(),
         );
-
         setMessage("Public cocktail hidden.");
       }
 
-      if (adminAction.type === "deleteComment") {
+      if (contentAction.type === "deleteComment") {
         await reportApi.deleteCommentFromReport(
-          adminAction.reportId,
+          contentAction.reportId,
           adminReason.trim(),
         );
-
         setMessage("Comment deleted.");
       }
 
-      setAdminAction(null);
+      setContentAction(null);
       setAdminReason("");
       await loadReports();
     } catch {
@@ -115,177 +205,327 @@ export default function AdminReportsPage() {
     }
   };
 
+  const openChatActionModal = (report: ChatReport, action: ChatAdminAction) => {
+    setError("");
+    setMessage("");
+    setAdminReason("");
+    setUntilDate("");
+    setChatAction({ report, action });
+  };
+
+  const closeChatActionModal = () => {
+    setChatAction(null);
+    setAdminReason("");
+    setUntilDate("");
+  };
+
+  const handleChatActionSubmit = async () => {
+    if (!chatAction) return;
+
+    if (!adminReason.trim()) {
+      setError("Admin reason is required.");
+      return;
+    }
+
+    if (chatActionsWithDate.includes(chatAction.action) && !untilDate) {
+      setError("Date is required for this action.");
+      return;
+    }
+
+    setError("");
+    setMessage("");
+
+    try {
+      const reportId = chatAction.report.id;
+
+      if (chatAction.action === "dismiss") {
+        await chatReportsApi.dismiss(reportId, adminReason.trim());
+      }
+
+      if (chatAction.action === "deleteMessage") {
+        await chatReportsApi.deleteMessage(reportId, adminReason.trim());
+      }
+
+      if (chatAction.action === "warn") {
+        await chatReportsApi.warn(reportId, adminReason.trim());
+      }
+
+      if (chatAction.action === "mute") {
+        await chatReportsApi.mute(reportId, adminReason.trim(), untilDate);
+      }
+
+      if (chatAction.action === "temporaryBan") {
+        await chatReportsApi.ban(reportId, adminReason.trim(), false, untilDate);
+      }
+
+      if (chatAction.action === "permanentBan") {
+        await chatReportsApi.ban(reportId, adminReason.trim(), true);
+      }
+
+      setMessage("Action completed.");
+      closeChatActionModal();
+      await loadReports();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Action failed.");
+    }
+  };
+
+  const renderContentReport = (report: ReportItem) => (
+    <div
+      key={`content-${report.id}`}
+      className={`admin-card ${report.status !== "open" ? "admin-card-muted" : ""}`}
+    >
+      <div className="admin-card-title-row">
+        <h3>#{report.id} — {getContentTargetLabel(report)}</h3>
+        <span className={`status-badge status-${getStatusClass(report.status)}`}>
+          {report.status}
+        </span>
+      </div>
+
+      <p><strong>Type:</strong> Content report</p>
+      <p><strong>Reporter:</strong> {report.reporter_nickname}</p>
+      <p><strong>Target ID:</strong> {report.target_id}</p>
+      <p><strong>Reason:</strong> {report.reason}</p>
+      {report.details && <p><strong>Details:</strong> {report.details}</p>}
+      {report.comment_content && (
+        <p><strong>Comment:</strong> {report.comment_content}</p>
+      )}
+      <p>
+        <strong>Created:</strong>{" "}
+        {new Date(report.created_at).toLocaleString("pl-PL")}
+      </p>
+      {report.reviewed_at && (
+        <p>
+          <strong>Reviewed:</strong>{" "}
+          {new Date(report.reviewed_at).toLocaleString("pl-PL")}
+        </p>
+      )}
+      {report.reviewed_by_nickname && (
+        <p><strong>Reviewed by:</strong> {report.reviewed_by_nickname}</p>
+      )}
+      {report.admin_reason && (
+        <p className="error-text">
+          <strong>Admin reason:</strong> {report.admin_reason}
+        </p>
+      )}
+
+      <div className="report-actions">
+        {report.target_type === "public_cocktail" && (
+          <Link
+            to={`/public-cocktails/${report.target_id}`}
+            className="admin-create-link"
+          >
+            View cocktail
+          </Link>
+        )}
+
+        {report.target_type === "comment" &&
+          report.comment_cocktail_type === "public" && (
+            <Link
+              to={`/public-cocktails/${report.comment_cocktail_id}#comment-${report.target_id}`}
+              className="admin-create-link"
+            >
+              View comment
+            </Link>
+          )}
+
+        {report.status === "open" && (
+          <>
+            <Button
+              variant="warning"
+              onClick={() => setRejectReportId(report.id)}
+            >
+              Reject report
+            </Button>
+
+            {report.target_type === "public_cocktail" && (
+              <Button
+                variant="danger"
+                onClick={() => {
+                  setContentAction({ type: "hideCocktail", reportId: report.id });
+                  setAdminReason("");
+                }}
+              >
+                Hide cocktail
+              </Button>
+            )}
+
+            {report.target_type === "comment" && (
+              <Button
+                variant="danger"
+                onClick={() => {
+                  setContentAction({ type: "deleteComment", reportId: report.id });
+                  setAdminReason("");
+                }}
+              >
+                Delete comment
+              </Button>
+            )}
+          </>
+        )}
+
+        {report.status !== "open" && (
+          <Button
+            variant="danger"
+            onClick={() => setDeleteContentReportId(report.id)}
+          >
+            Delete report
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderChatReport = (report: ChatReport) => (
+    <div
+      key={`chat-${report.id}`}
+      className={`admin-card ${report.status !== "open" ? "admin-card-muted" : ""}`}
+    >
+      <div className="admin-card-title-row">
+        <h3>#{report.id} {report.target_type}</h3>
+        <span className={`status-badge status-${getStatusClass(report.status)}`}>
+          {report.status}
+        </span>
+      </div>
+
+      <p><strong>Type:</strong> Chat report</p>
+      <p><strong>Reporter:</strong> {report.reporter_nickname}</p>
+      <p><strong>Target:</strong> {report.target_nickname}</p>
+      <p><strong>Reason:</strong> {report.reason}</p>
+      {report.details && <p><strong>Details:</strong> {report.details}</p>}
+      {report.message_content && (
+        <p><strong>Message:</strong> {report.message_content}</p>
+      )}
+      <p>
+        <strong>Created:</strong>{" "}
+        {new Date(report.created_at).toLocaleString("pl-PL")}
+      </p>
+      {report.admin_reason && (
+        <p className="muted-text">
+          <strong>Admin reason:</strong> {report.admin_reason}
+        </p>
+      )}
+
+      {report.status === "open" && (
+        <div className="admin-card-actions">
+          <Button
+            variant="secondary"
+            onClick={() => openChatActionModal(report, "dismiss")}
+          >
+            Dismiss
+          </Button>
+          {report.message_id && (
+            <Button
+              variant="danger"
+              onClick={() => openChatActionModal(report, "deleteMessage")}
+            >
+              Delete message
+            </Button>
+          )}
+          <Button
+            variant="warning"
+            onClick={() => openChatActionModal(report, "warn")}
+          >
+            Warn
+          </Button>
+          <Button onClick={() => openChatActionModal(report, "mute")}>
+            Mute
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => openChatActionModal(report, "temporaryBan")}
+          >
+            Temp ban
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => openChatActionModal(report, "permanentBan")}
+          >
+            Permanent ban
+          </Button>
+        </div>
+      )}
+
+      {report.status !== "open" && (
+        <div className="admin-card-actions">
+          <Button
+            variant="danger"
+            onClick={() => setDeleteChatReportId(report.id)}
+          >
+            Delete report
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   if (isLoading) {
-    return <div>Loading reports...</div>;
+    return <div className="page-container">Loading reports...</div>;
   }
 
   return (
     <div className="page-container">
       <div className="admin-page-header">
         <h1>Admin Reports</h1>
+
+        <div className="reports-filter-row">
+          <select
+            className="app-select"
+            value={status}
+            onChange={(event) =>
+              setStatus(event.target.value as ReportStatus | "all")
+            }
+          >
+            <option value="open">Open</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">All</option>
+          </select>
+
+          <select
+            className="app-select"
+            value={reportType}
+            onChange={(event) =>
+              setReportType(event.target.value as ReportTypeFilter)
+            }
+          >
+            <option value="all">All types</option>
+            <option value="content">Content reports</option>
+            <option value="chat">Chat reports</option>
+          </select>
+        </div>
       </div>
 
       {message && <p className="success-text">{message}</p>}
       {error && <p className="error-text">{error}</p>}
 
-      {reports.length === 0 ? (
+      {combinedReports.length === 0 ? (
         <EmptyState text="No reports found" />
       ) : (
         <div className="admin-grid">
-          {reports.map((report) => (
-            <div
-              key={report.id}
-              className="admin-card"
-              style={{
-                opacity: report.status === "reviewed" ? 0.7 : 1,
-              }}
-            >
-              <h3 style={{ marginTop: 0 }}>
-                #{report.id} — {getTargetLabel(report)}
-              </h3>
-
-              <p>
-                <strong>Status:</strong> {report.status}
-              </p>
-
-              <p>
-                <strong>Reporter:</strong> {report.reporter_nickname}
-              </p>
-
-              <p>
-                <strong>Target ID:</strong> {report.target_id}
-              </p>
-
-              <p>
-                <strong>Reason:</strong> {report.reason}
-              </p>
-
-              {report.details && (
-                <p>
-                  <strong>Details:</strong> {report.details}
-                </p>
-              )}
-
-              {report.comment_content && (
-                <p>
-                  <strong>Comment:</strong> {report.comment_content}
-                </p>
-              )}
-
-              <p>
-                <strong>Created:</strong>{" "}
-                {new Date(report.created_at).toLocaleString("pl-PL")}
-              </p>
-
-              {report.reviewed_at && (
-                <p>
-                  <strong>Reviewed:</strong>{" "}
-                  {new Date(report.reviewed_at).toLocaleString("pl-PL")}
-                </p>
-              )}
-
-              {report.reviewed_by_nickname && (
-                <p>
-                  <strong>Reviewed by:</strong> {report.reviewed_by_nickname}
-                </p>
-              )}
-
-              {report.admin_reason && (
-                <p className="error-text">
-                  <strong>Admin reason:</strong> {report.admin_reason}
-                </p>
-              )}
-
-              <div className="report-actions">
-                {report.target_type === "public_cocktail" && (
-                  <Link
-                    to={`/public-cocktails/${report.target_id}`}
-                    className="admin-create-link"
-                  >
-                    View cocktail
-                  </Link>
-                )}
-
-                {report.target_type === "comment" &&
-                  report.comment_cocktail_type === "public" && (
-                    <Link
-                      to={`/public-cocktails/${report.comment_cocktail_id}#comment-${report.target_id}`}
-                      className="admin-create-link"
-                    >
-                      View comment
-                    </Link>
-                  )}
-
-                {report.status === "open" && (
-                  <>
-                    <Button
-                      variant="warning"
-                      onClick={() => setRejectReportId(report.id)}
-                    >
-                      Reject report
-                    </Button>
-
-                    {report.target_type === "public_cocktail" && (
-                      <Button
-                        variant="danger"
-                        onClick={() => {
-                          setAdminAction({
-                            type: "hideCocktail",
-                            reportId: report.id,
-                          });
-                          setAdminReason("");
-                        }}
-                      >
-                        Hide cocktail
-                      </Button>
-                    )}
-
-                    {report.target_type === "comment" && (
-                      <Button
-                        variant="danger"
-                        onClick={() => {
-                          setAdminAction({
-                            type: "deleteComment",
-                            reportId: report.id,
-                          });
-                          setAdminReason("");
-                        }}
-                      >
-                        Delete comment
-                      </Button>
-                    )}
-                  </>
-                )}
-
-                {report.status === "reviewed" && (
-                  <Button
-                    variant="danger"
-                    onClick={() => setDeleteReportId(report.id)}
-                  >
-                    Delete report
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+          {combinedReports.map((item) =>
+            item.kind === "content"
+              ? renderContentReport(item.report)
+              : renderChatReport(item.report),
+          )}
         </div>
       )}
 
       <RejectReportModal
         isOpen={rejectReportId !== null}
         onClose={() => setRejectReportId(null)}
-        onReject={handleRejectReport}
+        onReject={handleRejectContentReport}
       />
 
-      {adminAction && (
+      {contentAction && (
         <Modal
           title={
-            adminAction.type === "hideCocktail"
+            contentAction.type === "hideCocktail"
               ? "Hide public cocktail"
               : "Delete comment"
           }
           onClose={() => {
-            setAdminAction(null);
+            setContentAction(null);
             setAdminReason("");
           }}
           footer={
@@ -293,17 +533,16 @@ export default function AdminReportsPage() {
               <Button
                 variant="secondary"
                 onClick={() => {
-                  setAdminAction(null);
+                  setContentAction(null);
                   setAdminReason("");
                 }}
               >
                 Cancel
               </Button>
-
               <Button
                 variant="danger"
                 disabled={!adminReason.trim()}
-                onClick={handleAdminActionSubmit}
+                onClick={handleContentActionSubmit}
               >
                 Confirm
               </Button>
@@ -311,35 +550,105 @@ export default function AdminReportsPage() {
           }
         >
           <p className="muted-text">Provide admin reason:</p>
-
           <Input
             value={adminReason}
-            onChange={(e) => setAdminReason(e.target.value)}
+            onChange={(event) => setAdminReason(event.target.value)}
             placeholder="Admin reason"
           />
         </Modal>
       )}
-      {deleteReportId && (
+
+      {chatAction && (
+        <Modal
+          title={chatActionLabels[chatAction.action]}
+          onClose={closeChatActionModal}
+          footer={
+            <>
+              <Button variant="secondary" onClick={closeChatActionModal}>
+                Cancel
+              </Button>
+              <Button
+                variant={
+                  ["deleteMessage", "temporaryBan", "permanentBan"].includes(
+                    chatAction.action,
+                  )
+                    ? "danger"
+                    : chatAction.action === "warn"
+                      ? "warning"
+                      : "primary"
+                }
+                onClick={handleChatActionSubmit}
+              >
+                Confirm
+              </Button>
+            </>
+          }
+        >
+          <div className="modal-form">
+            <p className="muted-text">
+              Report #{chatAction.report.id} against{" "}
+              {chatAction.report.target_nickname}
+            </p>
+            <Input
+              value={adminReason}
+              onChange={(event) => setAdminReason(event.target.value)}
+              placeholder="Admin reason"
+            />
+            {chatActionsWithDate.includes(chatAction.action) && (
+              <Input
+                type="datetime-local"
+                value={untilDate}
+                onChange={(event) => setUntilDate(event.target.value)}
+              />
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {deleteContentReportId && (
         <Modal
           title="Delete report"
-          onClose={() => setDeleteReportId(null)}
+          onClose={() => setDeleteContentReportId(null)}
           footer={
             <>
               <Button
                 variant="secondary"
-                onClick={() => setDeleteReportId(null)}
+                onClick={() => setDeleteContentReportId(null)}
               >
                 Cancel
               </Button>
-
-              <Button variant="danger" onClick={handleDeleteReport}>
+              <Button variant="danger" onClick={handleDeleteContentReport}>
                 Delete
               </Button>
             </>
           }
         >
           <p className="muted-text">
-            Are you sure you want to delete this reviewed report?
+            Are you sure you want to delete this reviewed or rejected report?
+          </p>
+        </Modal>
+      )}
+
+      {deleteChatReportId && (
+        <Modal
+          title="Delete chat report"
+          onClose={() => setDeleteChatReportId(null)}
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => setDeleteChatReportId(null)}
+              >
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={handleDeleteChatReport}>
+                Delete
+              </Button>
+            </>
+          }
+        >
+          <p className="muted-text">
+            Are you sure you want to delete this reviewed or rejected chat report?
           </p>
         </Modal>
       )}

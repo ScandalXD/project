@@ -22,6 +22,11 @@ function getNotificationText(n: Notification) {
   if (n.type === "admin_comment_deleted") return "Your comment was deleted by admin";
   if (n.type === "friend_request_received") return `${n.actor_nickname} sent you a friend request`;
   if (n.type === "friend_request_accepted") return `${n.actor_nickname} accepted your friend request`;
+  if (n.type === "new_message") return `${n.actor_nickname} sent you a message`;
+  if (n.type === "cocktail_shared") return `${n.actor_nickname} shared a cocktail with you`;
+  if (n.type === "admin_warning") return "You received an admin warning";
+  if (n.type === "chat_muted") return "You were temporarily muted in chat";
+  if (n.type === "chat_banned") return "You were banned from chat";
 
   return n.type;
 }
@@ -36,6 +41,8 @@ function getNotificationIcon(n: Notification) {
   if (n.type === "role_changed") return "🛡️";
   if (n.type === "public_cocktail_deleted" || n.type === "admin_comment_deleted") return "🗑️";
   if (n.type === "friend_request_received" || n.type === "friend_request_accepted") return "👥";
+  if (n.type === "new_message" || n.type === "cocktail_shared") return "💬";
+  if (n.type === "admin_warning" || n.type === "chat_muted" || n.type === "chat_banned") return "⚠️";
 
   return "🔔";
 }
@@ -51,6 +58,8 @@ function getNotificationClassName(n: Notification) {
   if (n.type === "public_cocktail_deleted" || n.type === "admin_comment_deleted") return "notification-card notification-rejected";
   if (n.type === "role_changed") return "notification-card notification-comment";
   if (n.type === "friend_request_received" || n.type === "friend_request_accepted") return "notification-card notification-comment";
+  if (n.type === "new_message" || n.type === "cocktail_shared") return "notification-card notification-comment";
+  if (n.type === "admin_warning" || n.type === "chat_muted" || n.type === "chat_banned") return "notification-card notification-report";
 
   return "notification-card notification-comment";
 }
@@ -73,6 +82,7 @@ function getNotificationPath(n: Notification) {
   if (n.recipe_type === "catalog") return `/catalog/${n.recipe_id}`;
   if (n.recipe_type === "user") return `/my-cocktails/${n.recipe_id}`;
   if (n.type === "friend_request_received" || n.type === "friend_request_accepted") return "/friends";
+  if (n.type === "new_message" || n.type === "cocktail_shared") return "/chat";
 
   return null;
 }

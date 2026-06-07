@@ -48,6 +48,10 @@ export const getSystemStats = async () => {
     "SELECT COUNT(*) AS count FROM reports WHERE status = 'open'"
   );
 
+  const [openChatReportsRows] = await db.query<RowDataPacket[]>(
+    "SELECT COUNT(*) AS count FROM chat_reports WHERE status = 'open'"
+  );
+
   const [pendingCocktailsRows] = await db.query<RowDataPacket[]>(
     "SELECT COUNT(*) AS count FROM user_cocktails WHERE publication_status = 'pending'"
   );
@@ -62,6 +66,7 @@ export const getSystemStats = async () => {
     commentLikesCount: Number(commentLikesRows[0].count),
     reportsCount: Number(reportsRows[0].count),
     openReportsCount: Number(openReportsRows[0].count),
+    openChatReportsCount: Number(openChatReportsRows[0].count),
     pendingCocktailsCount: Number(pendingCocktailsRows[0].count),
   };
 };

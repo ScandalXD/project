@@ -1,6 +1,6 @@
 import { db } from "../config/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-import { Report, ReportTargetType } from "../models/Report.model";
+import { Report, ReportStatus, ReportTargetType } from "../models/Report.model";
 import { ServiceError } from "./cocktail.service";
 import { removePublishedCocktail, deleteAnyComment } from "./adminModeration.service";
 import { createNotification } from "./notificationEvent.service";
@@ -93,7 +93,14 @@ export const createReport = async ({
   return result.insertId;
 };
 
-export const getAllReports = async (): Promise<Report[]> => {
+export const getAllReports = async (status?: ReportStatus): Promise<Report[]> => {
+  const params: string[] = [];
+  const statusFilter = status ? "WHERE r.status = ?" : "";
+
+  if (status) {
+    params.push(status);
+  }
+
   const [rows] = await db.query<RowDataPacket[]>(
     `SELECT
        r.*,
@@ -106,7 +113,9 @@ export const getAllReports = async (): Promise<Report[]> => {
      JOIN users reporter ON r.reporter_user_id = reporter.id
      LEFT JOIN users reviewer ON r.reviewed_by = reviewer.id
      LEFT JOIN cocktail_comments cc ON r.target_type = 'comment' AND r.target_id = cc.id
-     ORDER BY r.created_at DESC, r.id DESC`
+     ${statusFilter}
+     ORDER BY r.created_at DESC, r.id DESC`,
+    params
   );
 
   return rows as Report[];
@@ -173,7 +182,7 @@ export const hidePublicCocktailFromReport = async (
 
   await db.query<ResultSetHeader>(
     `UPDATE reports
-     SET status = 'reviewed',
+     SET status = 'rejected',
          reviewed_by = ?,
          reviewed_at = NOW(),
          admin_reason = ?
@@ -243,7 +252,7 @@ export const deleteCommentFromReport = async (
 
   await db.query<ResultSetHeader>(
     `UPDATE reports
-     SET status = 'reviewed',
+     SET status = 'rejected',
          reviewed_by = ?,
          reviewed_at = NOW(),
          admin_reason = ?
@@ -308,11 +317,11 @@ export const deleteReviewedReport = async (reportId: number): Promise<void> => {
 
   const [result] = await db.query<ResultSetHeader>(
     `DELETE FROM reports
-     WHERE id = ? AND status = 'reviewed'`,
+     WHERE id = ? AND status IN ('reviewed', 'rejected')`,
     [reportId]
   );
 
   if (result.affectedRows === 0) {
-    throw new ServiceError("Only reviewed reports can be deleted", 409);
+    throw new ServiceError("Only reviewed or rejected reports can be deleted", 409);
   }
 };
