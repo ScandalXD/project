@@ -280,6 +280,39 @@ CREATE TABLE message_deletions (
   INDEX idx_message_deletions_user (user_id)
 );
 
+CREATE TABLE message_reactions (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  message_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  emoji VARCHAR(16) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_message_reactions_message
+    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+  CONSTRAINT fk_message_reactions_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_message_reactions_user (message_id, user_id),
+  INDEX idx_message_reactions_message (message_id),
+  INDEX idx_message_reactions_user (user_id)
+);
+
+CREATE TABLE message_pins (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  conversation_id BIGINT NOT NULL,
+  message_id BIGINT NOT NULL,
+  pinned_by BIGINT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_message_pins_conversation
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+  CONSTRAINT fk_message_pins_message
+    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+  CONSTRAINT fk_message_pins_pinned_by
+    FOREIGN KEY (pinned_by) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_message_pins_message (message_id),
+  INDEX idx_message_pins_conversation (conversation_id, created_at),
+  INDEX idx_message_pins_pinned_by (pinned_by)
+);
+
 CREATE TABLE chat_reports (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   reporter_user_id BIGINT NOT NULL,

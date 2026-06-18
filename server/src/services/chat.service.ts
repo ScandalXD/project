@@ -6,6 +6,7 @@ import {
   ChatMessageMetadata,
   ChatMessageType,
   ConversationListItem,
+  MessageReactionSummary,
   SendMessageInput,
 } from "../models/Chat.model";
 import { ServiceError } from "./cocktail.service";
@@ -353,7 +354,11 @@ const createMessage = async (
     [result.insertId],
   );
 
-  return parseMetadata(rows[0] as ChatMessage);
+  const [message] = await withMessageState(senderId, [
+    parseMetadata(rows[0] as ChatMessage),
+  ]);
+
+  return message;
 };
 
 export const openPrivateConversation = async (
@@ -487,7 +492,13 @@ export const getConversationMessages = async (
        m.*,
        u.nickname AS sender_nickname,
        reply.content AS reply_content,
-       reply.message_type AS reply_message_type
+       reply.message_type AS reply_message_type,
+       EXISTS (
+         SELECT 1
+         FROM message_reads mr
+         WHERE mr.message_id = m.id
+           AND mr.user_id <> m.sender_id
+       ) AS is_read_by_recipient
      FROM messages m
      JOIN users u ON m.sender_id = u.id
      LEFT JOIN messages reply ON m.reply_to_message_id = reply.id
@@ -500,7 +511,7 @@ export const getConversationMessages = async (
     [userId, conversationId],
   );
 
-  return (rows as ChatMessage[]).map(parseMetadata);
+  return withMessageState(userId, (rows as ChatMessage[]).map(parseMetadata));
 };
 
 export const sendTextMessage = async (
@@ -607,6 +618,7 @@ export const sendAttachmentMessage = async (
   content?: string | null,
   replyToMessageId?: number | null,
   durationSeconds?: number | null,
+  waveformLevels?: number[] | null,
 ): Promise<ChatMessage> => {
   if (!["image", "file", "voice"].includes(messageType)) {
     throw new ServiceError("Invalid attachment message type", 400);
@@ -630,8 +642,58 @@ export const sendAttachmentMessage = async (
       fileSize: file.size,
       mimeType: file.mimetype,
       durationSeconds: durationSeconds ?? null,
+      waveformLevels: waveformLevels ?? [],
     },
   });
+};
+
+const withMessageState = async (
+  userId: number,
+  messages: ChatMessage[],
+): Promise<ChatMessage[]> => {
+  if (messages.length === 0) {
+    return messages;
+  }
+
+  const messageIds = messages.map((message) => Number(message.id));
+  const [reactionRows] = await db.query<RowDataPacket[]>(
+    `SELECT
+       message_id,
+       emoji,
+       COUNT(*) AS count,
+       MAX(user_id = ?) AS reacted_by_me
+     FROM message_reactions
+     WHERE message_id IN (?)
+     GROUP BY message_id, emoji`,
+    [userId, messageIds],
+  );
+  const [pinRows] = await db.query<RowDataPacket[]>(
+    "SELECT message_id FROM message_pins WHERE message_id IN (?)",
+    [messageIds],
+  );
+
+  const reactionsByMessage = new Map<number, MessageReactionSummary[]>();
+  reactionRows.forEach((row) => {
+    const messageId = Number(row.message_id);
+    const reactions = reactionsByMessage.get(messageId) ?? [];
+
+    reactions.push({
+      emoji: String(row.emoji),
+      count: Number(row.count),
+      reactedByMe: Boolean(row.reacted_by_me),
+    });
+    reactionsByMessage.set(messageId, reactions);
+  });
+
+  const pinnedMessageIds = new Set(
+    pinRows.map((row) => Number(row.message_id)),
+  );
+
+  return messages.map((message) => ({
+    ...message,
+    reactions: reactionsByMessage.get(Number(message.id)) ?? [],
+    is_pinned: pinnedMessageIds.has(Number(message.id)),
+  }));
 };
 
 export const markConversationAsRead = async (
@@ -706,6 +768,129 @@ export const setConversationPinned = async (
      WHERE conversation_id = ? AND user_id = ?`,
     [isPinned, conversationId, userId],
   );
+};
+
+const getVisibleMessageForUser = async (
+  userId: number,
+  messageId: number,
+): Promise<ChatMessage> => {
+  ensureInteger(messageId, "Invalid message id");
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT m.*, u.nickname AS sender_nickname
+     FROM messages m
+     JOIN users u ON m.sender_id = u.id
+     JOIN conversation_participants cp
+       ON cp.conversation_id = m.conversation_id
+      AND cp.user_id = ?
+      AND cp.deleted_at IS NULL
+     LEFT JOIN message_deletions md
+       ON md.message_id = m.id AND md.user_id = ?
+     WHERE m.id = ?
+       AND m.deleted_at IS NULL
+       AND md.message_id IS NULL
+     LIMIT 1`,
+    [userId, userId, messageId],
+  );
+
+  if (rows.length === 0) {
+    throw new ServiceError("Message not found", 404);
+  }
+
+  return parseMetadata(rows[0] as ChatMessage);
+};
+
+export const forwardMessage = async (
+  userId: number,
+  messageId: number,
+  targetConversationId: number,
+): Promise<ChatMessage> => {
+  ensureInteger(targetConversationId, "Invalid conversation id");
+
+  const sourceMessage = await getVisibleMessageForUser(userId, messageId);
+  await ensureVisibleConversationAccess(userId, targetConversationId);
+
+  const sourceMetadata =
+    sourceMessage.metadata && typeof sourceMessage.metadata === "object"
+      ? sourceMessage.metadata
+      : {};
+
+  return createMessage(userId, targetConversationId, {
+    messageType: sourceMessage.message_type,
+    content: sourceMessage.content,
+    metadata: {
+      ...sourceMetadata,
+      forwardedFromMessageId: Number(sourceMessage.id),
+      forwardedFromUserId: Number(sourceMessage.sender_id),
+      forwardedFromNickname: sourceMessage.sender_nickname,
+    } as ChatMessageMetadata,
+  });
+};
+
+export const setMessageReaction = async (
+  userId: number,
+  messageId: number,
+  emoji: string,
+): Promise<ChatMessage> => {
+  const message = await getVisibleMessageForUser(userId, messageId);
+  const normalizedEmoji = emoji.trim();
+
+  if (!normalizedEmoji || normalizedEmoji.length > 16) {
+    throw new ServiceError("Invalid emoji reaction", 400);
+  }
+
+  await db.query(
+    `INSERT INTO message_reactions (message_id, user_id, emoji)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE emoji = VALUES(emoji), updated_at = NOW()`,
+    [messageId, userId, normalizedEmoji],
+  );
+
+  const [updatedMessage] = await withMessageState(userId, [message]);
+  return updatedMessage;
+};
+
+export const removeMessageReaction = async (
+  userId: number,
+  messageId: number,
+): Promise<ChatMessage> => {
+  const message = await getVisibleMessageForUser(userId, messageId);
+
+  await db.query(
+    "DELETE FROM message_reactions WHERE message_id = ? AND user_id = ?",
+    [messageId, userId],
+  );
+
+  const [updatedMessage] = await withMessageState(userId, [message]);
+  return updatedMessage;
+};
+
+export const pinMessage = async (
+  userId: number,
+  messageId: number,
+): Promise<ChatMessage> => {
+  const message = await getVisibleMessageForUser(userId, messageId);
+
+  await db.query(
+    `INSERT IGNORE INTO message_pins (conversation_id, message_id, pinned_by)
+     VALUES (?, ?, ?)`,
+    [message.conversation_id, messageId, userId],
+  );
+
+  const [updatedMessage] = await withMessageState(userId, [message]);
+  return updatedMessage;
+};
+
+export const unpinMessage = async (
+  userId: number,
+  messageId: number,
+): Promise<ChatMessage> => {
+  const message = await getVisibleMessageForUser(userId, messageId);
+
+  await db.query("DELETE FROM message_pins WHERE message_id = ?", [messageId]);
+
+  const [updatedMessage] = await withMessageState(userId, [message]);
+  return updatedMessage;
 };
 
 export const deleteConversationForUser = async (

@@ -32,6 +32,7 @@ type ClientToServerEvents = {
 
 type ServerToClientEvents = {
   receive_message: (payload: unknown) => void;
+  message_updated: (payload: unknown) => void;
   message_deleted: (payload: { conversationId: number; messageId: number }) => void;
   conversation_removed: (payload: { conversationId: number }) => void;
   typing_start: (payload: { conversationId: number; userId: number }) => void;
@@ -238,6 +239,27 @@ export const emitMessageDeleted = (
   chatIo?.to(getConversationRoom(conversationId)).emit("conversation_updated", {
     conversationId,
   });
+};
+
+export const emitMessageSent = (conversationId: number, message: unknown) => {
+  chatIo?.to(getConversationRoom(conversationId)).emit(
+    "receive_message",
+    message,
+  );
+
+  chatIo?.to(getConversationRoom(conversationId)).emit("conversation_updated", {
+    conversationId,
+  });
+};
+
+export const emitMessageUpdated = (
+  conversationId: number,
+  message: unknown,
+) => {
+  chatIo?.to(getConversationRoom(conversationId)).emit(
+    "message_updated",
+    message,
+  );
 };
 
 export const emitConversationRemoved = (

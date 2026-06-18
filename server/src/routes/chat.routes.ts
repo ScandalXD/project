@@ -6,15 +6,20 @@ import {
   deleteConversationForUserHandler,
   deleteMessageForEveryoneHandler,
   deleteMessageForUserHandler,
+  forwardMessageHandler,
   getConversationMessagesHandler,
   getConversationsHandler,
   markConversationAsReadHandler,
   markConversationAsUnreadHandler,
   openPrivateConversationHandler,
+  pinMessageHandler,
+  removeMessageReactionHandler,
   pinConversationHandler,
   sendAttachmentMessageHandler,
   sendCocktailShareMessageHandler,
   sendTextMessageHandler,
+  setMessageReactionHandler,
+  unpinMessageHandler,
   unpinConversationHandler,
 } from "../controllers/chat.controller";
 
@@ -48,5 +53,10 @@ router.delete(
 
 router.delete("/chat/messages/:id", deleteMessageForUserHandler);
 router.delete("/chat/messages/:id/everyone", deleteMessageForEveryoneHandler);
+router.post("/chat/messages/:id/forward", forwardMessageHandler);
+router.put("/chat/messages/:id/reaction", setMessageReactionHandler);
+router.delete("/chat/messages/:id/reaction", removeMessageReactionHandler);
+router.patch("/chat/messages/:id/pin", pinMessageHandler);
+router.patch("/chat/messages/:id/unpin", unpinMessageHandler);
 
 export default router;

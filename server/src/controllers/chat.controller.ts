@@ -5,20 +5,27 @@ import {
   deleteConversationForUser,
   deleteMessageForEveryone,
   deleteMessageForUser,
+  forwardMessage,
   getConversationMessages,
   getUserConversations,
   markConversationAsRead,
   markConversationAsUnread,
   openPrivateConversation,
+  pinMessage,
+  removeMessageReaction,
   sendAttachmentMessage,
   sendCocktailShareMessage,
   sendTextMessage,
+  setMessageReaction,
   setConversationPinned,
+  unpinMessage,
 } from "../services/chat.service";
 import { ChatCocktailType } from "../models/Chat.model";
 import {
   emitConversationRemoved,
+  emitMessageSent,
   emitMessageDeleted,
+  emitMessageUpdated,
 } from "../services/socket.service";
 
 const handleError = (res: Response, err: unknown) => {
@@ -31,6 +38,28 @@ const handleError = (res: Response, err: unknown) => {
   }
 
   return res.status(500).json({ message: "Internal server error" });
+};
+
+const parseWaveformLevels = (value: unknown): number[] | null => {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+
+    return parsed
+      .map((level) => Number(level))
+      .filter((level) => Number.isFinite(level))
+      .slice(0, 64)
+      .map((level) => Math.max(0, Math.min(1, level)));
+  } catch {
+    return null;
+  }
 };
 
 export const getConversationsHandler = async (req: Request, res: Response) => {
@@ -140,6 +169,7 @@ export const sendCocktailShareMessageHandler = async (
       req.body.replyToMessageId,
     );
 
+    emitMessageSent(Number(req.params.id), message);
     res.status(201).json(message);
   } catch (e) {
     handleError(res, e);
@@ -155,6 +185,7 @@ export const sendAttachmentMessageHandler = async (
       content?: string | null;
       replyToMessageId?: string | number | null;
       durationSeconds?: string | number | null;
+      waveformLevels?: string | null;
     }
   >,
   res: Response,
@@ -180,6 +211,7 @@ export const sendAttachmentMessageHandler = async (
     req.body.durationSeconds === ""
       ? null
       : Number(req.body.durationSeconds);
+  const waveformLevels = parseWaveformLevels(req.body.waveformLevels);
 
   try {
     const message = await sendAttachmentMessage(
@@ -190,8 +222,10 @@ export const sendAttachmentMessageHandler = async (
       req.body.content,
       replyToMessageId,
       durationSeconds,
+      waveformLevels,
     );
 
+    emitMessageSent(Number(req.params.id), message);
     res.status(201).json(message);
   } catch (e) {
     handleError(res, e);
@@ -329,6 +363,104 @@ export const deleteMessageForEveryoneHandler = async (
     );
     emitMessageDeleted(result.conversationId, result.messageId);
     res.json({ message: "Message deleted for everyone" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const forwardMessageHandler = async (
+  req: Request<{ id: string }, {}, { conversationId: number }>,
+  res: Response,
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const message = await forwardMessage(
+      req.user.id,
+      Number(req.params.id),
+      Number(req.body.conversationId),
+    );
+
+    emitMessageSent(Number(message.conversation_id), message);
+    res.status(201).json(message);
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const setMessageReactionHandler = async (
+  req: Request<{ id: string }, {}, { emoji: string }>,
+  res: Response,
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const message = await setMessageReaction(
+      req.user.id,
+      Number(req.params.id),
+      req.body.emoji,
+    );
+
+    emitMessageUpdated(Number(message.conversation_id), message);
+    res.json(message);
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const removeMessageReactionHandler = async (
+  req: Request<{ id: string }>,
+  res: Response,
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const message = await removeMessageReaction(req.user.id, Number(req.params.id));
+
+    emitMessageUpdated(Number(message.conversation_id), message);
+    res.json(message);
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const pinMessageHandler = async (
+  req: Request<{ id: string }>,
+  res: Response,
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const message = await pinMessage(req.user.id, Number(req.params.id));
+
+    emitMessageUpdated(Number(message.conversation_id), message);
+    res.json(message);
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const unpinMessageHandler = async (
+  req: Request<{ id: string }>,
+  res: Response,
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const message = await unpinMessage(req.user.id, Number(req.params.id));
+
+    emitMessageUpdated(Number(message.conversation_id), message);
+    res.json(message);
   } catch (e) {
     handleError(res, e);
   }
