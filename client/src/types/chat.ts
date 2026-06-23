@@ -14,6 +14,10 @@ export interface ChatAttachmentMetadata {
   fileSize?: number;
   mimeType?: string;
   durationSeconds?: number | null;
+  waveformLevels?: number[];
+  forwardedFromMessageId?: number;
+  forwardedFromUserId?: number;
+  forwardedFromNickname?: string;
 }
 
 export interface CocktailShareMetadata {
@@ -21,6 +25,9 @@ export interface CocktailShareMetadata {
   cocktailType: ChatCocktailType;
   cocktailName: string;
   cocktailImage: string | null;
+  forwardedFromMessageId?: number;
+  forwardedFromUserId?: number;
+  forwardedFromNickname?: string;
 }
 
 export type ChatMessageMetadata =
@@ -59,7 +66,16 @@ export interface ChatMessage {
   updated_at: string;
   deleted_at: string | null;
   is_edited: boolean | number;
+  is_read_by_recipient?: boolean | number;
+  is_pinned?: boolean | number;
+  reactions?: MessageReactionSummary[];
   sender_nickname?: string;
   reply_content?: string | null;
   reply_message_type?: ChatMessageType | null;
+}
+
+export interface MessageReactionSummary {
+  emoji: string;
+  count: number;
+  reactedByMe: boolean;
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Mail,
   MailOpen,
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { ConversationListItem } from "../../types/chat";
 import EmptyState from "../ui/EmptyState";
+import Input from "../ui/Input";
 import OnlineBadge from "./OnlineBadge";
 
 interface ChatSidebarProps {
@@ -41,6 +42,18 @@ export default function ChatSidebar({
   onDeleteForEveryone,
 }: ChatSidebarProps) {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const filteredConversations = useMemo(() => {
+    const searchValue = search.trim().toLowerCase();
+
+    if (!searchValue) {
+      return conversations;
+    }
+
+    return conversations.filter((conversation) =>
+      conversation.other_user_nickname.toLowerCase().includes(searchValue),
+    );
+  }, [conversations, search]);
 
   const runMenuAction = async (
     action: () => Promise<void>,
@@ -53,13 +66,21 @@ export default function ChatSidebar({
     <aside className="chat-sidebar">
       <div className="chat-sidebar-header">
         <h2>Chats</h2>
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search chats"
+          className="chat-search-input"
+        />
       </div>
 
       {conversations.length === 0 ? (
         <EmptyState text="No chats yet. Open a chat from your friends list later." />
+      ) : filteredConversations.length === 0 ? (
+        <EmptyState text="No chats match your search" />
       ) : (
         <div className="chat-conversation-list">
-          {conversations.map((conversation) => (
+          {filteredConversations.map((conversation) => (
             <div
               key={conversation.id}
               className={`chat-conversation-item ${

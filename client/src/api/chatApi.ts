@@ -61,6 +61,8 @@ export const chatApi = {
     messageType: "image" | "file" | "voice",
     content?: string,
     replyToMessageId?: number | null,
+    durationSeconds?: number | null,
+    waveformLevels?: number[] | null,
   ): Promise<ChatMessage> {
     const formData = new FormData();
 
@@ -73,6 +75,14 @@ export const chatApi = {
 
     if (replyToMessageId) {
       formData.append("replyToMessageId", String(replyToMessageId));
+    }
+
+    if (durationSeconds !== undefined && durationSeconds !== null) {
+      formData.append("durationSeconds", String(durationSeconds));
+    }
+
+    if (waveformLevels?.length) {
+      formData.append("waveformLevels", JSON.stringify(waveformLevels));
     }
 
     const res = await api.post(
@@ -125,6 +135,39 @@ export const chatApi = {
 
   async deleteMessageForEveryone(messageId: number) {
     const res = await api.delete(`/chat/messages/${messageId}/everyone`);
+    return res.data;
+  },
+
+  async forwardMessage(
+    messageId: number,
+    conversationId: number,
+  ): Promise<ChatMessage> {
+    const res = await api.post(`/chat/messages/${messageId}/forward`, {
+      conversationId,
+    });
+    return res.data;
+  },
+
+  async setMessageReaction(
+    messageId: number,
+    emoji: string,
+  ): Promise<ChatMessage> {
+    const res = await api.put(`/chat/messages/${messageId}/reaction`, { emoji });
+    return res.data;
+  },
+
+  async removeMessageReaction(messageId: number): Promise<ChatMessage> {
+    const res = await api.delete(`/chat/messages/${messageId}/reaction`);
+    return res.data;
+  },
+
+  async pinMessage(messageId: number): Promise<ChatMessage> {
+    const res = await api.patch(`/chat/messages/${messageId}/pin`);
+    return res.data;
+  },
+
+  async unpinMessage(messageId: number): Promise<ChatMessage> {
+    const res = await api.patch(`/chat/messages/${messageId}/unpin`);
     return res.data;
   },
 };

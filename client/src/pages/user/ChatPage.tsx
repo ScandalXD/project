@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { chatApi } from "../../api/chatApi";
 import ChatSidebar from "../../components/chat/ChatSidebar";
 import ChatWindow from "../../components/chat/ChatWindow";
+import { ConfirmModal } from "../../components/ui/Modal";
 import { useAuth } from "../../hooks/useAuth";
 import { useSocket } from "../../hooks/useSocket";
 import type { ChatMessage, ConversationListItem } from "../../types/chat";
@@ -18,6 +19,10 @@ export default function ChatPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [error, setError] = useState("");
   const [typingUserIds, setTypingUserIds] = useState<number[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<{
+    conversationId: number;
+    mode: "me" | "everyone";
+  } | null>(null);
 
   const activeConversation = useMemo(
     () =>
@@ -58,6 +63,7 @@ export default function ChatPage() {
       const data = await chatApi.getMessages(conversationId);
       setMessages(data);
       await chatApi.markAsRead(conversationId);
+      socket?.emit("message_seen", { conversationId });
       await loadConversations();
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to load messages.");
@@ -99,6 +105,7 @@ export default function ChatPage() {
         });
 
         chatApi.markAsRead(message.conversation_id);
+        socket.emit("message_seen", { conversationId: message.conversation_id });
       }
 
       loadConversations();
@@ -106,6 +113,34 @@ export default function ChatPage() {
 
     const handleConversationUpdated = () => {
       loadConversations();
+    };
+
+    const handleMessageUpdated = (message: ChatMessage) => {
+      if (message.conversation_id === activeConversationId) {
+        setMessages((prev) =>
+          prev.map((item) => (item.id === message.id ? message : item)),
+        );
+      }
+    };
+
+    const handleMessageSeen = (payload: {
+      conversationId: number;
+      userId: number;
+    }) => {
+      if (
+        payload.conversationId !== activeConversationId ||
+        payload.userId === user?.id
+      ) {
+        return;
+      }
+
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.sender_id === user?.id
+            ? { ...message, is_read_by_recipient: true }
+            : message,
+        ),
+      );
     };
 
     const handleMessageDeleted = (payload: {
@@ -153,9 +188,11 @@ export default function ChatPage() {
     };
 
     socket.on("receive_message", handleReceiveMessage);
+    socket.on("message_updated", handleMessageUpdated);
     socket.on("message_deleted", handleMessageDeleted);
     socket.on("conversation_removed", handleConversationRemoved);
     socket.on("conversation_updated", handleConversationUpdated);
+    socket.on("message_seen", handleMessageSeen);
     socket.on("typing_start", handleTypingStart);
     socket.on("typing_stop", handleTypingStop);
     socket.on("user_online", handlePresence);
@@ -163,9 +200,11 @@ export default function ChatPage() {
 
     return () => {
       socket.off("receive_message", handleReceiveMessage);
+      socket.off("message_updated", handleMessageUpdated);
       socket.off("message_deleted", handleMessageDeleted);
       socket.off("conversation_removed", handleConversationRemoved);
       socket.off("conversation_updated", handleConversationUpdated);
+      socket.off("message_seen", handleMessageSeen);
       socket.off("typing_start", handleTypingStart);
       socket.off("typing_stop", handleTypingStop);
       socket.off("user_online", handlePresence);
@@ -177,7 +216,6 @@ export default function ChatPage() {
     if (!activeConversationId) return;
 
     await loadMessages(activeConversationId);
-    await loadConversations();
   };
 
   const handleTogglePin = async (conversation: ConversationListItem) => {
@@ -258,12 +296,17 @@ export default function ChatPage() {
               onSelect={setActiveConversationId}
               onTogglePin={handleTogglePin}
               onToggleRead={handleToggleRead}
-              onDeleteForMe={handleDeleteConversationForMe}
-              onDeleteForEveryone={handleDeleteConversationForEveryone}
+              onDeleteForMe={async (conversationId) =>
+                setPendingDelete({ conversationId, mode: "me" })
+              }
+              onDeleteForEveryone={async (conversationId) =>
+                setPendingDelete({ conversationId, mode: "everyone" })
+              }
             />
 
             <ChatWindow
               conversation={activeConversation}
+              conversations={conversations}
               currentUserId={user.id}
               messages={messages}
               isLoading={isLoadingMessages}
@@ -279,6 +322,34 @@ export default function ChatPage() {
           </>
         )}
       </div>
+
+      {pendingDelete && (
+        <ConfirmModal
+          title={
+            pendingDelete.mode === "me"
+              ? "Delete chat"
+              : "Delete chat for everyone"
+          }
+          text={
+            pendingDelete.mode === "me"
+              ? "This chat will be removed only from your chat list."
+              : "This chat will be removed for both participants."
+          }
+          confirmText="Delete"
+          danger
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={async () => {
+            const target = pendingDelete;
+            setPendingDelete(null);
+
+            if (target.mode === "me") {
+              await handleDeleteConversationForMe(target.conversationId);
+            } else {
+              await handleDeleteConversationForEveryone(target.conversationId);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
