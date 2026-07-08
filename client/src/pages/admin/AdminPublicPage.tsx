@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { adminApi } from "../../api/adminApi";
 import { cocktailsApi } from "../../api/cocktailsApi";
+import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
@@ -20,7 +21,7 @@ export default function AdminPublicPage() {
       const data = await cocktailsApi.getPublicCocktails();
       setItems(data);
     } catch {
-      setError("Nie udało się pobrać publicznych koktajli.");
+      setError("Failed to load public cocktails.");
     }
   };
 
@@ -41,7 +42,7 @@ export default function AdminPublicPage() {
       setDeleteReason("");
       await loadPublic();
     } catch {
-      setError("Nie udało się usunąć publicznego koktajlu.");
+      setError("Failed to delete public cocktail.");
     }
   };
 
@@ -79,7 +80,7 @@ export default function AdminPublicPage() {
               </p>
 
               <p>
-                <strong>Category:</strong> {item.category}
+                <strong>Category:</strong> {formatCocktailCategory(item.category)}
               </p>
 
               <p>

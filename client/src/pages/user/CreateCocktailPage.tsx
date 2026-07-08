@@ -15,7 +15,7 @@ export default function CreateCocktailPage() {
 
     try {
       await cocktailsApi.createCocktail(data);
-      setMessage("Koktajl został utworzony.");
+      setMessage("Cocktail created.");
 
       setTimeout(() => {
         navigate("/my-cocktails");
@@ -31,7 +31,7 @@ export default function CreateCocktailPage() {
         <h1>Create Cocktail</h1>
 
         <p className="muted-text">
-          Dodaj swój własny koktajl do aplikacji.
+          Add your own cocktail to the app.
         </p>
 
         {message && <p className="success-text">{message}</p>}

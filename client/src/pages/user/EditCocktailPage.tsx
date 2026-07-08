@@ -78,7 +78,7 @@ export default function EditCocktailPage() {
         <h1>Edit Cocktail</h1>
 
         <p className="muted-text">
-          Zmień dane swojego koktajlu i zapisz aktualizację.
+          Update your cocktail details and save the changes.
         </p>
 
         <CocktailForm

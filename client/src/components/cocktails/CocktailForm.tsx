@@ -71,7 +71,7 @@ export default function CocktailForm({
       !form.ingredients ||
       !form.instructions
     ) {
-      setError("Wypełnij wszystkie wymagane pola.");
+      setError("Fill in all required fields.");
       return;
     }
 
@@ -89,7 +89,7 @@ export default function CocktailForm({
         currentImage: form.currentImage || null,
       });
     } catch {
-      setError("Nie udało się zapisać koktajlu.");
+      setError("Failed to save cocktail.");
     }
   };
 
@@ -98,7 +98,7 @@ export default function CocktailForm({
       <input
         type="text"
         name="name"
-        placeholder="Nazwa koktajlu"
+        placeholder="Cocktail name"
         value={form.name}
         onChange={handleChange}
         required
@@ -111,13 +111,13 @@ export default function CocktailForm({
         onChange={handleChange}
         className="app-select cocktail-form-select"
       >
-        <option value="Alkoholowy">Alkoholowy</option>
-        <option value="Bezalkoholowy">Bezalkoholowy</option>
+        <option value="Alkoholowy">Alcoholic</option>
+        <option value="Bezalkoholowy">Non-alcoholic</option>
       </select>
 
       <textarea
         name="ingredients"
-        placeholder="Składniki"
+        placeholder="Ingredients"
         value={form.ingredients}
         onChange={handleChange}
         required
@@ -127,7 +127,7 @@ export default function CocktailForm({
 
       <textarea
         name="instructions"
-        placeholder="Przygotowanie"
+        placeholder="Instructions"
         value={form.instructions}
         onChange={handleChange}
         required

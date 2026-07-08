@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
+import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import CommentList from "../../components/comments/CommentList";
 import ReportButton from "../../components/reports/ReportButton";
@@ -73,7 +74,7 @@ export default function PublicCocktailDetailsPage() {
       </p>
 
       <p>
-        <strong>Category:</strong> {cocktail.category}
+        <strong>Category:</strong> {formatCocktailCategory(cocktail.category)}
       </p>
 
       <p>

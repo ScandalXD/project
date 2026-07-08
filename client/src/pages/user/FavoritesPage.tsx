@@ -28,7 +28,7 @@ export default function FavoritesPage() {
 
       setItems(mapped);
     } catch {
-      setError("Nie udało się pobrać ulubionych koktajli.");
+      setError("Failed to load favorite cocktails.");
     } finally {
       setIsLoading(false);
     }

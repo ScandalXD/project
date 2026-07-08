@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
+import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import type { UserCocktail } from "../../types/cocktail";
 
@@ -77,7 +78,9 @@ export default function CocktailDetailsPage() {
             <h1 className="details-title">{cocktail.name}</h1>
 
             <div className="badge-row">
-              <span className="category-badge">{cocktail.category}</span>
+              <span className="category-badge">
+                {formatCocktailCategory(cocktail.category)}
+              </span>
               <span
                 className={`status-badge status-${cocktail.publication_status}`}
               >

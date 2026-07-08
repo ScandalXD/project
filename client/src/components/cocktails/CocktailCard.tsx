@@ -1,4 +1,5 @@
 import type { CocktailCardData } from "../../types/cocktail";
+import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 
 interface CocktailCardProps {
@@ -23,21 +24,23 @@ export default function CocktailCard({ cocktail }: CocktailCardProps) {
       <div className="cocktail-card-body">
         <div className="cocktail-card-title-row">
           <h3 className="cocktail-card-title">{cocktail.name}</h3>
-          <span className="category-badge">{cocktail.category}</span>
+          <span className="category-badge">
+            {formatCocktailCategory(cocktail.category)}
+          </span>
         </div>
 
         {cocktail.type === "public" && cocktail.author_nickname && (
           <p className="muted-text cocktail-card-author">
-            Autor: {cocktail.author_nickname}
+            Author: {cocktail.author_nickname}
           </p>
         )}
 
         <p className="cocktail-preview">
-          <strong>Składniki:</strong> {cocktail.ingredients}
+          <strong>Ingredients:</strong> {cocktail.ingredients}
         </p>
 
         <p className="cocktail-preview">
-          <strong>Przygotowanie:</strong> {cocktail.instructions}
+          <strong>Instructions:</strong> {cocktail.instructions}
         </p>
       </div>
     </article>

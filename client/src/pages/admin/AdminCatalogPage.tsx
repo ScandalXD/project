@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
 import { cocktailsApi } from "../../api/cocktailsApi";
+import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
@@ -17,7 +18,7 @@ export default function AdminCatalogPage() {
       const data = await cocktailsApi.getCatalogCocktails();
       setItems(data);
     } catch {
-      setError("Nie udało się pobrać katalogu.");
+      setError("Failed to load catalog.");
     }
   };
 
@@ -40,7 +41,7 @@ export default function AdminCatalogPage() {
       setMessage("Catalog cocktail deleted.");
       await loadCatalog();
     } catch {
-      setError("Nie udało się usunąć koktajlu katalogowego.");
+      setError("Failed to delete catalog cocktail.");
     }
   };
 
@@ -94,7 +95,7 @@ export default function AdminCatalogPage() {
 
               <p>
                 <strong>Category:</strong>{" "}
-                {item.category}
+                {formatCocktailCategory(item.category)}
               </p>
 
               <p>

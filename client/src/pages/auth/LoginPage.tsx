@@ -34,7 +34,7 @@ export default function LoginPage() {
       await login(form);
       navigate("/catalog");
     } catch {
-      setError("Nie udało się zalogować.");
+      setError("Failed to log in.");
     } finally {
       setIsSubmitting(false);
     }
@@ -72,7 +72,7 @@ export default function LoginPage() {
         </form>
 
         <p className="auth-link-text">
-          Nie masz konta? <Link to="/register">Zarejestruj się</Link>
+          Don't have an account? <Link to="/register">Register</Link>
         </p>
       </div>
     </div>

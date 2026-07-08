@@ -46,7 +46,7 @@ export default function AdminCatalogCreatePage() {
         <h1>Create Catalog Cocktail</h1>
 
         <p className="muted-text">
-          Dodaj nowy koktajl do katalogu.
+          Add a new cocktail to the catalog.
         </p>
 
         {message && <p className="success-text">{message}</p>}

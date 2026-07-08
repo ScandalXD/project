@@ -38,7 +38,7 @@ export default function AdminDashboardPage() {
       const data = await adminApi.getStats();
       setStats(data);
     } catch {
-      setError("Nie udało się pobrać statystyk.");
+      setError("Failed to load statistics.");
     }
   };
 

@@ -80,7 +80,7 @@ export default function AdminCatalogForm({
       !form.instructions.trim() ||
       (mode === "create" && !form.id.trim())
     ) {
-      setError("Wypełnij wszystkie wymagane pola.");
+      setError("Fill in all required fields.");
       return;
     }
 
@@ -99,7 +99,7 @@ export default function AdminCatalogForm({
         currentImage: form.currentImage || null,
       });
     } catch {
-      setError("Nie udało się zapisać koktajlu katalogowego.");
+      setError("Failed to save catalog cocktail.");
     }
   };
 
@@ -109,7 +109,7 @@ export default function AdminCatalogForm({
         <input
           type="text"
           name="id"
-          placeholder="id, np. mojito"
+          placeholder="id, e.g. mojito"
           value={form.id}
           onChange={handleChange}
           required
@@ -124,7 +124,7 @@ export default function AdminCatalogForm({
       <input
         type="text"
         name="name"
-        placeholder="Nazwa koktajlu"
+        placeholder="Cocktail name"
         value={form.name}
         onChange={handleChange}
         required
@@ -145,13 +145,13 @@ export default function AdminCatalogForm({
           border: "1px solid #d1d5db",
         }}
       >
-        <option value="Alkoholowy">Alkoholowy</option>
-        <option value="Bezalkoholowy">Bezalkoholowy</option>
+        <option value="Alkoholowy">Alcoholic</option>
+        <option value="Bezalkoholowy">Non-alcoholic</option>
       </select>
 
       <textarea
         name="ingredients"
-        placeholder="Składniki"
+        placeholder="Ingredients"
         value={form.ingredients}
         onChange={handleChange}
         required
@@ -166,7 +166,7 @@ export default function AdminCatalogForm({
 
       <textarea
         name="instructions"
-        placeholder="Przygotowanie"
+        placeholder="Instructions"
         value={form.instructions}
         onChange={handleChange}
         required

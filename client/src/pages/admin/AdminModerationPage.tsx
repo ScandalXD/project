@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
+import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -85,7 +86,7 @@ export default function AdminModerationPage() {
                   : "—"}
               </p>
               <p>
-                <strong>Category:</strong> {c.category}
+                <strong>Category:</strong> {formatCocktailCategory(c.category)}
               </p>
               <p>
                 <strong>Ingredients:</strong> {c.ingredients}

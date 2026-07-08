@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import { favoritesApi } from "../../api/favoritesApi";
 import { likesApi } from "../../api/likesApi";
+import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import { useAuth } from "../../hooks/useAuth";
 import type { PublicCocktail } from "../../types/cocktail";
@@ -76,7 +77,7 @@ export default function PublicCocktailsPage() {
         setLikedIds([]);
       }
     } catch {
-      setError("Nie udało się pobrać publicznych koktajli.");
+      setError("Failed to load public cocktails.");
     }
   };
 
@@ -155,7 +156,7 @@ export default function PublicCocktailsPage() {
         <div>
           <h1>Public Cocktails</h1>
           <p className="muted-text">
-            Koktajle opublikowane przez społeczność użytkowników.
+            Cocktails published by the user community.
           </p>
         </div>
 
@@ -203,7 +204,9 @@ export default function PublicCocktailsPage() {
                     <p className="muted-text">Author: {item.author_nickname}</p>
                   </div>
 
-                  <p className="muted-text">{item.category}</p>
+                  <p className="muted-text">
+                    {formatCocktailCategory(item.category)}
+                  </p>
 
                   <p className="cocktail-preview">
                     {item.ingredients.length > 120

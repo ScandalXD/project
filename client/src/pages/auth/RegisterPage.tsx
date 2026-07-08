@@ -51,7 +51,7 @@ export default function RegisterPage() {
       });
       navigate("/catalog");
     } catch {
-      setError("Nie udało się utworzyć konta.");
+      setError("Failed to create account.");
     } finally {
       setIsSubmitting(false);
     }
@@ -109,7 +109,7 @@ export default function RegisterPage() {
         </form>
 
         <p className="auth-link-text">
-          Masz już konto? <Link to="/login">Zaloguj się</Link>
+          Already have an account? <Link to="/login">Log in</Link>
         </p>
       </div>
     </div>

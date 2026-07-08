@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import { favoritesApi } from "../../api/favoritesApi";
 import { likesApi } from "../../api/likesApi";
+import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import { useAuth } from "../../hooks/useAuth";
 import type { CatalogCocktail } from "../../types/cocktail";
@@ -197,7 +198,9 @@ export default function CatalogPage() {
                 <div className="cocktail-card-body">
                   <h3>{item.name}</h3>
 
-                  <p className="muted-text">{item.category}</p>
+                  <p className="muted-text">
+                    {formatCocktailCategory(item.category)}
+                  </p>
 
                   <p className="cocktail-preview">
                     {item.ingredients.length > 120

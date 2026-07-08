@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
+import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import type { UserCocktail } from "../../types/cocktail";
 
@@ -34,7 +35,7 @@ export default function MyCocktailsPage() {
       const data = await cocktailsApi.getMyCocktails();
       setCocktails(data);
     } catch {
-      setError("Nie udało się pobrać Twoich koktajli.");
+      setError("Failed to load your cocktails.");
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +54,7 @@ export default function MyCocktailsPage() {
       setActionMessage("Cocktail submitted for moderation.");
       await loadCocktails();
     } catch {
-      setError("Nie udało się wysłać koktajlu do moderacji.");
+      setError("Failed to submit cocktail for moderation.");
     }
   };
 
@@ -69,7 +70,7 @@ export default function MyCocktailsPage() {
       setDeleteId(null);
       await loadCocktails();
     } catch {
-      setError("Nie udało się usunąć koktajlu.");
+      setError("Failed to delete cocktail.");
     }
   };
 
@@ -86,7 +87,7 @@ export default function MyCocktailsPage() {
       <div className="admin-page-header">
         <div>
           <h1>My Cocktails</h1>
-          <p className="muted-text">Zarządzaj swoimi własnymi koktajlami.</p>
+          <p className="muted-text">Manage your own cocktails.</p>
         </div>
 
         <Link to="/my-cocktails/create" className="admin-create-link">
@@ -98,7 +99,7 @@ export default function MyCocktailsPage() {
       {error && <p className="error-text">{error}</p>}
 
       {cocktails.length === 0 ? (
-        <EmptyState text="Nie masz jeszcze żadnych koktajli." />
+        <EmptyState text="You do not have any cocktails yet." />
       ) : (
         <div className="my-cocktails-grid">
           {cocktails.map((cocktail) => (
@@ -124,7 +125,9 @@ export default function MyCocktailsPage() {
                   <h3>{cocktail.name}</h3>
 
                   <div className="badge-row">
-                    <span className="category-badge">{cocktail.category}</span>
+                    <span className="category-badge">
+                      {formatCocktailCategory(cocktail.category)}
+                    </span>
                     <span className={getStatusClass(cocktail.publication_status)}>
                       {getStatusLabel(cocktail.publication_status)}
                     </span>
@@ -132,11 +135,11 @@ export default function MyCocktailsPage() {
                 </div>
 
                 <p>
-                  <strong>Składniki:</strong> {cocktail.ingredients}
+                  <strong>Ingredients:</strong> {cocktail.ingredients}
                 </p>
 
                 <p>
-                  <strong>Przygotowanie:</strong> {cocktail.instructions}
+                  <strong>Instructions:</strong> {cocktail.instructions}
                 </p>
 
                 {cocktail.moderation_reason && (
