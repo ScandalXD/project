@@ -19,6 +19,7 @@ export default function ChatPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [error, setError] = useState("");
   const [typingUserIds, setTypingUserIds] = useState<number[]>([]);
+  const [isMobileConversationOpen, setIsMobileConversationOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{
     conversationId: number;
     mode: "me" | "everyone";
@@ -218,6 +219,15 @@ export default function ChatPage() {
     await loadMessages(activeConversationId);
   };
 
+  const handleSelectConversation = (conversationId: number) => {
+    setActiveConversationId(conversationId);
+    setIsMobileConversationOpen(true);
+  };
+
+  const handleBackToChats = () => {
+    setIsMobileConversationOpen(false);
+  };
+
   const handleTogglePin = async (conversation: ConversationListItem) => {
     if (conversation.is_pinned) {
       await chatApi.unpinConversation(conversation.id);
@@ -285,7 +295,13 @@ export default function ChatPage() {
         <p className="error-text chat-page-error">{error || socketError}</p>
       )}
 
-      <div className="chat-shell card">
+      <div
+        className={`chat-shell card ${
+          isMobileConversationOpen
+            ? "chat-mobile-conversation"
+            : "chat-mobile-list"
+        }`}
+      >
         {isLoadingConversations ? (
           <div className="chat-loading">Loading chats...</div>
         ) : (
@@ -293,7 +309,7 @@ export default function ChatPage() {
             <ChatSidebar
               conversations={conversations}
               activeConversationId={activeConversationId}
-              onSelect={setActiveConversationId}
+              onSelect={handleSelectConversation}
               onTogglePin={handleTogglePin}
               onToggleRead={handleToggleRead}
               onDeleteForMe={async (conversationId) =>
@@ -317,6 +333,7 @@ export default function ChatPage() {
                   ? `${activeConversation?.other_user_nickname} is typing...`
                   : ""
               }
+              onBack={handleBackToChats}
               onMessagesChanged={handleMessagesChanged}
             />
           </>

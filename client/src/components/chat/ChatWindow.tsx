@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { GlassWater, Mic, Paperclip, Square, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  GlassWater,
+  Mic,
+  Paperclip,
+  Pin,
+  Smile,
+  Square,
+  Trash2,
+  X,
+} from "lucide-react";
 import type { Socket } from "socket.io-client";
 import { chatApi } from "../../api/chatApi";
 import { chatReportsApi } from "../../api/chatReportsApi";
@@ -31,6 +41,7 @@ interface ChatWindowProps {
   socket: Socket | null;
   isSocketConnected: boolean;
   typingLabel: string;
+  onBack?: () => void;
   onMessagesChanged: () => Promise<void>;
 }
 
@@ -86,6 +97,30 @@ function formatSeenAgo(value: string) {
   return `Seen ${diffHours} h. ago`;
 }
 
+function getPinnedMessagePreview(message: ChatMessage) {
+  if (message.message_type === "cocktail_share") {
+    const cocktailName =
+      message.metadata && "cocktailName" in message.metadata
+        ? message.metadata.cocktailName
+        : "Cocktail";
+
+    return `Cocktail: ${cocktailName}`;
+  }
+
+  if (message.message_type === "image") return message.content || "Image";
+  if (message.message_type === "voice") return "Voice message";
+  if (message.message_type === "file") {
+    const fileName =
+      message.metadata && "fileName" in message.metadata
+        ? message.metadata.fileName
+        : "File";
+
+    return fileName || "File";
+  }
+
+  return message.content || "Message";
+}
+
 export default function ChatWindow({
   conversation,
   conversations,
@@ -95,6 +130,7 @@ export default function ChatWindow({
   socket,
   isSocketConnected,
   typingLabel,
+  onBack,
   onMessagesChanged,
 }: ChatWindowProps) {
   const [content, setContent] = useState("");
@@ -104,6 +140,7 @@ export default function ChatWindow({
   const [forwardMessage, setForwardMessage] = useState<ChatMessage | null>(null);
   const [isReportUserOpen, setIsReportUserOpen] = useState(false);
   const [isShareCocktailOpen, setIsShareCocktailOpen] = useState(false);
+  const [isComposerEmojiOpen, setIsComposerEmojiOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [attachmentType, setAttachmentType] = useState<"image" | "file" | "voice">("file");
   const [isRecording, setIsRecording] = useState(false);
@@ -488,6 +525,10 @@ export default function ChatWindow({
   };
 
   const lastMessage = messages[messages.length - 1] ?? null;
+  const pinnedMessages = messages.filter(
+    (message) => message.is_pinned && !message.deleted_at,
+  );
+  const pinnedMessage = pinnedMessages[pinnedMessages.length - 1] ?? null;
   const lastReadOwnMessage =
     lastMessage?.sender_id === currentUserId && lastMessage.is_read_by_recipient
       ? lastMessage
@@ -504,6 +545,18 @@ export default function ChatWindow({
   return (
     <section className="chat-window">
       <div className="chat-window-header">
+        {onBack && (
+          <button
+            type="button"
+            className="chat-mobile-back"
+            onClick={onBack}
+            aria-label="Back to chats"
+            title="Back to chats"
+          >
+            <ArrowLeft size={19} aria-hidden="true" />
+          </button>
+        )}
+
         <div className="chat-avatar" aria-hidden="true">
           {conversation.other_user_nickname.charAt(0).toUpperCase()}
         </div>
@@ -528,6 +581,44 @@ export default function ChatWindow({
 
       {error && <p className="error-text chat-error">{error}</p>}
 
+      {pinnedMessage && (
+        <div className="chat-pinned-panel">
+          <button
+            type="button"
+            className="chat-pinned-content"
+            onClick={() =>
+              document
+                .getElementById(`chat-message-${pinnedMessage.id}`)
+                ?.scrollIntoView({ behavior: "smooth", block: "center" })
+            }
+          >
+            <span className="chat-pinned-icon" aria-hidden="true">
+              <Pin size={16} />
+            </span>
+            <span className="chat-pinned-text">
+              <strong>
+                Pinned message
+                {pinnedMessages.length > 1 ? ` ${pinnedMessages.length}` : ""}
+              </strong>
+              <span>
+                {pinnedMessage.sender_nickname}:{" "}
+                {getPinnedMessagePreview(pinnedMessage)}
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="chat-pinned-unpin"
+            onClick={() => handlePinMessage(pinnedMessage)}
+            title="Unpin message"
+            aria-label="Unpin message"
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       <div className="chat-messages">
         {isLoading ? (
           <EmptyState text="Loading messages..." />
@@ -542,7 +633,11 @@ export default function ChatWindow({
                 getDateKey(message.created_at);
 
             return (
-              <div key={message.id} className="message-stack-item">
+              <div
+                key={message.id}
+                id={`chat-message-${message.id}`}
+                className="message-stack-item"
+              >
                 {shouldShowDateDivider && (
                   <div className="message-date-divider">
                     {formatDateDivider(message.created_at)}
@@ -644,18 +739,6 @@ export default function ChatWindow({
         </div>
       )}
 
-      <div className="chat-emoji-row">
-        {QUICK_MESSAGE_EMOJIS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            onClick={() => setContent((value) => `${value}${emoji}`)}
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
-
       <form className="chat-composer" onSubmit={handleSubmit}>
         <Button
           type="button"
@@ -673,6 +756,36 @@ export default function ChatWindow({
           <span className="sr-only">Attach file</span>
           <input type="file" onChange={handleFileChange} />
         </label>
+
+        <div className="chat-composer-emoji-wrap">
+          <Button
+            type="button"
+            variant="secondary"
+            className="chat-composer-icon-button"
+            onClick={() => setIsComposerEmojiOpen((open) => !open)}
+            title="Add emoji"
+            aria-label="Add emoji"
+          >
+            <Smile size={18} aria-hidden="true" />
+          </Button>
+
+          {isComposerEmojiOpen && (
+            <div className="chat-composer-emoji-popover">
+              {QUICK_MESSAGE_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => {
+                    setContent((value) => `${value}${emoji}`);
+                    setIsComposerEmojiOpen(false);
+                  }}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <Button
           type="button"
