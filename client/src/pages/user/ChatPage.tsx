@@ -7,6 +7,7 @@ import { ConfirmModal } from "../../components/ui/Modal";
 import { useAuth } from "../../hooks/useAuth";
 import { useSocket } from "../../hooks/useSocket";
 import type { ChatMessage, ConversationListItem } from "../../types/chat";
+import { isEnabledFlag } from "../../utils/booleanFlag";
 
 export default function ChatPage() {
   const { user, token } = useAuth();
@@ -229,7 +230,7 @@ export default function ChatPage() {
   };
 
   const handleTogglePin = async (conversation: ConversationListItem) => {
-    if (conversation.is_pinned) {
+    if (isEnabledFlag(conversation.is_pinned)) {
       await chatApi.unpinConversation(conversation.id);
     } else {
       await chatApi.pinConversation(conversation.id);

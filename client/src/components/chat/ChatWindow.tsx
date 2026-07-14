@@ -19,6 +19,7 @@ import type {
   ConversationListItem,
 } from "../../types/chat";
 import type { ChatReportReason } from "../../types/chatReport";
+import { isEnabledFlag } from "../../utils/booleanFlag";
 import Button from "../ui/Button";
 import EmptyState from "../ui/EmptyState";
 import Input from "../ui/Input";
@@ -471,7 +472,7 @@ export default function ChatWindow({
   };
 
   const handlePinMessage = async (message: ChatMessage) => {
-    message.is_pinned
+    isEnabledFlag(message.is_pinned)
       ? await chatApi.unpinMessage(message.id)
       : await chatApi.pinMessage(message.id);
 
@@ -526,7 +527,7 @@ export default function ChatWindow({
 
   const lastMessage = messages[messages.length - 1] ?? null;
   const pinnedMessages = messages.filter(
-    (message) => message.is_pinned && !message.deleted_at,
+    (message) => isEnabledFlag(message.is_pinned) && !message.deleted_at,
   );
   const pinnedMessage = pinnedMessages[pinnedMessages.length - 1] ?? null;
   const lastReadOwnMessage =

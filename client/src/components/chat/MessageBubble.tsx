@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { ChatAttachmentMetadata, ChatMessage, CocktailShareMetadata } from "../../types/chat";
+import { isEnabledFlag } from "../../utils/booleanFlag";
 import { getImageUrl } from "../../utils/getImageUrl";
 import VoiceWaveform, {
   compactWaveformLevels,
@@ -131,6 +132,7 @@ export default function MessageBubble({
     ? message.metadata
     : null;
   const cocktail = isCocktailMetadata(message.metadata) ? message.metadata : null;
+  const isPinned = isEnabledFlag(message.is_pinned);
   const forwardedNickname =
     message.metadata && "forwardedFromNickname" in message.metadata
       ? message.metadata.forwardedFromNickname
@@ -205,8 +207,8 @@ export default function MessageBubble({
             <Copy size={17} aria-hidden="true" />
           </button>
           <button type="button" onClick={() => runAction(() => onPin(message))}>
-            <span>{message.is_pinned ? "Unpin" : "Pin"}</span>
-            {message.is_pinned ? (
+            <span>{isPinned ? "Unpin" : "Pin"}</span>
+            {isPinned ? (
               <PinOff size={17} aria-hidden="true" />
             ) : (
               <Pin size={17} aria-hidden="true" />
@@ -248,7 +250,6 @@ export default function MessageBubble({
       )}
 
       <div className={`message-bubble ${isOwn ? "message-bubble-own" : ""}`}>
-        {!isOwn && <p className="message-author">{message.sender_nickname}</p>}
         {forwardedNickname && (
           <p className="message-forwarded">Forwarded from {forwardedNickname}</p>
         )}
@@ -300,9 +301,17 @@ export default function MessageBubble({
           </a>
         )}
 
-        <div className="message-meta">
-          {message.is_pinned && <span className="message-pin-label">Pinned</span>}
-        </div>
+        {isPinned && (
+          <div className="message-meta">
+            <span
+              className="message-pin-label"
+              title="Pinned"
+              aria-label="Pinned"
+            >
+              <Pin size={14} aria-hidden="true" />
+            </span>
+          </div>
+        )}
 
         {message.reactions && message.reactions.length > 0 && (
           <div className="message-reactions">
