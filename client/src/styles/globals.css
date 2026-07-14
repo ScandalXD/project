@@ -56,6 +56,10 @@ select {
   flex-wrap: wrap;
 }
 
+.app-mobile-menu-button {
+  display: none;
+}
+
 .app-nav-link,
 .app-logout-button,
 .app-user-badge {
@@ -2158,6 +2162,70 @@ select {
 }
 
 @media (max-width: 760px) {
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    min-height: 60px;
+    padding: 0 16px;
+  }
+
+  .app-brand {
+    font-size: 18px;
+  }
+
+  .app-mobile-menu-button {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    color: var(--color-text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .app-nav {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    z-index: 39;
+    max-height: calc(100dvh - 60px);
+    padding: 10px 16px 14px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    overflow-y: auto;
+  }
+
+  .app-nav-open {
+    display: flex;
+  }
+
+  .app-nav-link,
+  .app-user-badge,
+  .app-logout-button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: flex-start;
+  }
+
+  .app-main {
+    min-height: calc(100vh - 60px);
+    padding: 24px 12px;
+  }
+
+  .page-container {
+    max-width: 100%;
+  }
+
   .friends-search-form,
   .friends-columns,
   .friend-row {

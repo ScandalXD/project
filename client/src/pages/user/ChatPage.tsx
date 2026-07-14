@@ -283,15 +283,6 @@ export default function ChatPage() {
 
   return (
     <div className="page-container chat-page">
-      <div className="chat-page-header">
-        <div>
-          <h1>Chat</h1>
-          <p className="muted-text">
-            Message your friends, share cocktails, and send attachments.
-          </p>
-        </div>
-      </div>
-
       {(error || socketError) && (
         <p className="error-text chat-page-error">{error || socketError}</p>
       )}

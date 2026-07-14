@@ -6,9 +6,12 @@ import {
   Globe2,
   Heart,
   LogOut,
+  Menu,
   MessageCircle,
   Users,
+  X,
 } from "lucide-react";
+import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -25,20 +28,46 @@ const navItems = [
 export default function MainLayout() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const handleLogout = () => {
+    setIsMobileNavOpen(false);
     logout();
     navigate("/login");
+  };
+
+  const closeMobileNav = () => {
+    setIsMobileNavOpen(false);
   };
 
   return (
     <>
       <header className="app-header">
-        <Link to={isAuthenticated ? "/catalog" : "/login"} className="app-brand">
+        <Link
+          to={isAuthenticated ? "/catalog" : "/login"}
+          className="app-brand"
+          onClick={closeMobileNav}
+        >
           CocktailApp
         </Link>
 
-        <nav className="app-nav">
+        {isAuthenticated && (
+          <button
+            type="button"
+            className="app-mobile-menu-button"
+            onClick={() => setIsMobileNavOpen((open) => !open)}
+            aria-label={isMobileNavOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={isMobileNavOpen}
+          >
+            {isMobileNavOpen ? (
+              <X size={20} aria-hidden="true" />
+            ) : (
+              <Menu size={20} aria-hidden="true" />
+            )}
+          </button>
+        )}
+
+        <nav className={`app-nav ${isMobileNavOpen ? "app-nav-open" : ""}`}>
           {isAuthenticated ? (
             <>
               {navItems.map((item) => {
@@ -52,6 +81,7 @@ export default function MainLayout() {
                       `app-nav-link ${isActive ? "app-nav-link-active" : ""}`
                     }
                     title={item.label}
+                    onClick={closeMobileNav}
                   >
                     <Icon size={17} strokeWidth={2.1} aria-hidden="true" />
                     <span>{item.label}</span>
@@ -66,6 +96,7 @@ export default function MainLayout() {
                     `app-nav-link ${isActive ? "app-nav-link-active" : ""}`
                   }
                   title="Dashboard"
+                  onClick={closeMobileNav}
                 >
                   <Gauge size={17} strokeWidth={2.1} aria-hidden="true" />
                   <span>Dashboard</span>
@@ -78,6 +109,7 @@ export default function MainLayout() {
                   `app-user-badge ${isActive ? "app-user-badge-active" : ""}`
                 }
                 title="Profile"
+                onClick={closeMobileNav}
               >
                 <span className="app-user-avatar" aria-hidden="true">
                   {user?.nickname?.charAt(0).toUpperCase()}
