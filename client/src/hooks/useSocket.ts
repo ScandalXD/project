@@ -29,7 +29,11 @@ export function useSocket(token: string | null) {
     });
 
     nextSocket.on("connect_error", (err) => {
-      setError(err.message);
+      setError(
+        err.message === "xhr poll error"
+          ? "Realtime chat connection is unavailable. Messages may update after refresh."
+          : err.message,
+      );
       setIsConnected(false);
     });
 
