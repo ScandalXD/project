@@ -5,7 +5,6 @@ import {
   GlassWater,
   Globe2,
   Heart,
-  LogOut,
   Menu,
   MessageCircle,
   Users,
@@ -26,15 +25,8 @@ const navItems = [
 ];
 
 export default function MainLayout() {
-  const { user, isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-
-  const handleLogout = () => {
-    setIsMobileNavOpen(false);
-    logout();
-    navigate("/login");
-  };
 
   const closeMobileNav = () => {
     setIsMobileNavOpen(false);
@@ -116,16 +108,6 @@ export default function MainLayout() {
                 </span>
                 <span>{user?.nickname}</span>
               </NavLink>
-
-              <button
-                onClick={handleLogout}
-                className="app-logout-button"
-                title="Logout"
-                aria-label="Logout"
-              >
-                <LogOut size={17} strokeWidth={2.2} aria-hidden="true" />
-                <span>Logout</span>
-              </button>
             </>
           ) : (
             <>

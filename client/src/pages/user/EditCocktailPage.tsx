@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import CocktailForm from "../../components/cocktails/CocktailForm";
 import { cocktailsApi } from "../../api/cocktailsApi";
@@ -74,6 +75,15 @@ export default function EditCocktailPage() {
 
   return (
     <div className="page-container catalog-form-page">
+      <button
+        type="button"
+        className="page-back-button"
+        onClick={() => navigate("/my-cocktails")}
+      >
+        <ArrowLeft size={18} aria-hidden="true" />
+        <span>My Cocktails</span>
+      </button>
+
       <div className="card catalog-form-card">
         <h1>Edit Cocktail</h1>
 

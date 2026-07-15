@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
@@ -8,6 +9,7 @@ import type { CatalogCocktail } from "../../types/cocktail";
 
 export default function CatalogCocktailDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [cocktail, setCocktail] = useState<CatalogCocktail | null>(null);
   const [error, setError] = useState("");
@@ -42,6 +44,15 @@ export default function CatalogCocktailDetailsPage() {
 
   return (
     <div className="page-container details-page">
+      <button
+        type="button"
+        className="page-back-button"
+        onClick={() => navigate("/catalog")}
+      >
+        <ArrowLeft size={18} aria-hidden="true" />
+        <span>Catalog</span>
+      </button>
+
       {cocktail.image && (
         <div className="details-image-wrap">
           <img

@@ -151,6 +151,7 @@ export const sendCocktailShareMessageHandler = async (
     {
       cocktailId: string;
       cocktailType: ChatCocktailType;
+      content?: string | null;
       replyToMessageId?: number | null;
     }
   >,
@@ -166,6 +167,7 @@ export const sendCocktailShareMessageHandler = async (
       Number(req.params.id),
       String(req.body.cocktailId),
       req.body.cocktailType,
+      req.body.content,
       req.body.replyToMessageId,
     );
 

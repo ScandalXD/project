@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import CommentList from "../../components/comments/CommentList";
-import ReportButton from "../../components/reports/ReportButton";
 import type { PublicCocktail } from "../../types/cocktail";
 
 export default function PublicCocktailDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [cocktail, setCocktail] = useState<PublicCocktail | null>(null);
   const [error, setError] = useState("");
@@ -54,6 +55,15 @@ export default function PublicCocktailDetailsPage() {
 
   return (
     <div className="page-container details-page">
+      <button
+        type="button"
+        className="page-back-button"
+        onClick={() => navigate("/public-cocktails")}
+      >
+        <ArrowLeft size={18} aria-hidden="true" />
+        <span>Public Cocktails</span>
+      </button>
+
       {cocktail.image && (
         <div className="details-image-wrap">
           <img
@@ -67,13 +77,6 @@ export default function PublicCocktailDetailsPage() {
       <h1>{cocktail.name}</h1>
 
       <p>
-        <strong>Author:</strong>{" "}
-        <Link to={`/authors/${cocktail.author_id}`}>
-          {cocktail.author_nickname}
-        </Link>
-      </p>
-
-      <p>
         <strong>Category:</strong> {formatCocktailCategory(cocktail.category)}
       </p>
 
@@ -84,10 +87,6 @@ export default function PublicCocktailDetailsPage() {
       <p>
         <strong>Instructions:</strong> {cocktail.instructions}
       </p>
-
-      <div className="details-actions">
-        <ReportButton type="cocktail" id={cocktail.id} />
-      </div>
 
       <CommentList cocktailId={cocktail.id} type="public" />
     </div>

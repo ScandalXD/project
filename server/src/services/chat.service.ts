@@ -594,6 +594,7 @@ export const sendCocktailShareMessage = async (
   conversationId: number,
   cocktailId: string,
   cocktailType: ChatCocktailType,
+  content?: string | null,
   replyToMessageId?: number | null,
 ): Promise<ChatMessage> => {
   const metadata = await getCocktailShareMetadata(
@@ -604,7 +605,7 @@ export const sendCocktailShareMessage = async (
 
   return createMessage(senderId, conversationId, {
     messageType: "cocktail_share",
-    content: null,
+    content,
     replyToMessageId,
     metadata,
   });

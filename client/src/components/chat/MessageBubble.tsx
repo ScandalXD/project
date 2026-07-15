@@ -13,6 +13,7 @@ import {
   Trash,
   Trash2,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { ChatAttachmentMetadata, ChatMessage, CocktailShareMetadata } from "../../types/chat";
 import { isEnabledFlag } from "../../utils/booleanFlag";
 import { getImageUrl } from "../../utils/getImageUrl";
@@ -44,6 +45,18 @@ function isCocktailMetadata(metadata: ChatMessage["metadata"]): metadata is Cock
 
 function isAttachmentMetadata(metadata: ChatMessage["metadata"]): metadata is ChatAttachmentMetadata {
   return Boolean(metadata && "fileUrl" in metadata);
+}
+
+function getCocktailDetailsPath(cocktail: CocktailShareMetadata) {
+  if (cocktail.cocktailType === "catalog") {
+    return `/catalog/${cocktail.cocktailId}`;
+  }
+
+  if (cocktail.cocktailType === "public") {
+    return `/public-cocktails/${cocktail.cocktailId}`;
+  }
+
+  return `/my-cocktails/${cocktail.cocktailId}`;
 }
 
 function VoiceMessage({ attachment }: { attachment: ChatAttachmentMetadata }) {
@@ -265,18 +278,27 @@ export default function MessageBubble({
         )}
 
         {cocktail && (
-          <div className="message-cocktail-card">
-            {cocktail.cocktailImage && (
-              <img
-                src={getImageUrl(cocktail.cocktailImage)}
-                alt={cocktail.cocktailName}
-              />
+          <>
+            <Link
+              to={getCocktailDetailsPath(cocktail)}
+              className="message-cocktail-card message-cocktail-link"
+              title="Open cocktail"
+            >
+              {cocktail.cocktailImage && (
+                <img
+                  src={getImageUrl(cocktail.cocktailImage)}
+                  alt={cocktail.cocktailName}
+                />
+              )}
+              <div>
+                <strong>{cocktail.cocktailName}</strong>
+                <p>{cocktail.cocktailType} cocktail</p>
+              </div>
+            </Link>
+            {message.content && (
+              <p className="message-content">{message.content}</p>
             )}
-            <div>
-              <strong>{cocktail.cocktailName}</strong>
-              <p>{cocktail.cocktailType} cocktail</p>
-            </div>
-          </div>
+          </>
         )}
 
         {attachment && message.message_type === "image" && (

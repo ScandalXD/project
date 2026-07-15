@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { Bookmark } from "lucide-react";
 import { Link } from "react-router-dom";
-import { favoritesApi } from "../../api/favoritesApi";
+import { favoritesApi, type FavoriteType } from "../../api/favoritesApi";
 import CocktailCard from "../../components/cocktails/CocktailCard";
 import type { CocktailCardData, CocktailType } from "../../types/cocktail";
 
@@ -12,6 +13,7 @@ export default function FavoritesPage() {
   const [items, setItems] = useState<FavoriteItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -50,6 +52,35 @@ export default function FavoritesPage() {
     return "/";
   };
 
+  const removeFavorite = async (item: FavoriteItem) => {
+    const key = `${item.cocktail_type}-${item.id}`;
+
+    if (item.cocktail_type !== "catalog" && item.cocktail_type !== "public") {
+      return;
+    }
+
+    try {
+      setError("");
+      setRemovingId(key);
+
+      await favoritesApi.removeFavorite(
+        item.id,
+        item.cocktail_type as FavoriteType
+      );
+
+      setItems((prev) =>
+        prev.filter(
+          (favorite) =>
+            `${favorite.cocktail_type}-${favorite.id}` !== key
+        )
+      );
+    } catch {
+      setError("Failed to remove favorite.");
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="page-container">
@@ -81,15 +112,28 @@ export default function FavoritesPage() {
         <div className="empty-state">No favorites yet</div>
       ) : (
         <div className="catalog-grid">
-          {items.map((cocktail) => (
-            <Link
-              key={`${cocktail.cocktail_type}-${cocktail.id}`}
-              to={getDetailsPath(cocktail)}
-              className="cocktail-card-link"
-            >
-              <CocktailCard cocktail={cocktail} />
-            </Link>
-          ))}
+          {items.map((cocktail) => {
+            const key = `${cocktail.cocktail_type}-${cocktail.id}`;
+
+            return (
+              <div key={key} className="favorite-card-shell">
+                <Link to={getDetailsPath(cocktail)} className="cocktail-card-link">
+                  <CocktailCard cocktail={cocktail} />
+                </Link>
+
+                <button
+                  type="button"
+                  className="favorite-remove-icon"
+                  onClick={() => removeFavorite(cocktail)}
+                  disabled={removingId === key}
+                  aria-label="Remove from favorites"
+                  title="Remove from favorites"
+                >
+                  <Bookmark size={24} aria-hidden="true" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

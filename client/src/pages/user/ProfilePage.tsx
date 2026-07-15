@@ -1,4 +1,5 @@
 import { useEffect, useState, type SyntheticEvent } from "react";
+import { LogOut } from "lucide-react";
 import { profileApi } from "../../api/profileApi";
 import { useAuth } from "../../hooks/useAuth";
 import type { UpdateProfileRequest } from "../../types/user";
@@ -95,6 +96,11 @@ export default function ProfilePage() {
       setError("Failed to delete account.");
       setIsDeleteModalOpen(false);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = "/login";
   };
 
   return (
@@ -263,6 +269,19 @@ export default function ProfilePage() {
                 </div>
               </form>
             )}
+          </section>
+
+          <section className="profile-section profile-account-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleLogout}
+            >
+              <span className="profile-action-icon">
+                <LogOut size={17} aria-hidden="true" />
+              </span>
+              Logout
+            </Button>
           </section>
 
           {user?.role !== "superadmin" && (

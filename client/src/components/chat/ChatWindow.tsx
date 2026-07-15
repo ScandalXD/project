@@ -513,6 +513,7 @@ export default function ChatWindow({
       conversation.id,
       cocktailId,
       cocktailType,
+      null,
       replyTo?.id ?? null,
     );
     setReplyTo(null);

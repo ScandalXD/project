@@ -41,6 +41,7 @@ export const chatApi = {
     conversationId: number,
     cocktailId: string,
     cocktailType: ChatCocktailType,
+    content?: string | null,
     replyToMessageId?: number | null,
   ): Promise<ChatMessage> {
     const res = await api.post(
@@ -48,6 +49,7 @@ export const chatApi = {
       {
         cocktailId,
         cocktailType,
+        content,
         replyToMessageId,
       },
     );
