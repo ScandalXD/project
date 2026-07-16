@@ -160,6 +160,7 @@ export const initializeChatSocket = (httpServer: HttpServer) => {
           userId,
           Number(payload.conversationId),
           payload.content,
+          null,
           payload.replyToMessageId,
         );
 

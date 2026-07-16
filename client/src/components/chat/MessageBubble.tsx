@@ -14,7 +14,12 @@ import {
   Trash2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { ChatAttachmentMetadata, ChatMessage, CocktailShareMetadata } from "../../types/chat";
+import type {
+  ChatAttachmentMetadata,
+  ChatMessage,
+  CocktailShareMetadata,
+  CommentShareMetadata,
+} from "../../types/chat";
 import { isEnabledFlag } from "../../utils/booleanFlag";
 import { getImageUrl } from "../../utils/getImageUrl";
 import VoiceWaveform, {
@@ -45,6 +50,16 @@ function isCocktailMetadata(metadata: ChatMessage["metadata"]): metadata is Cock
 
 function isAttachmentMetadata(metadata: ChatMessage["metadata"]): metadata is ChatAttachmentMetadata {
   return Boolean(metadata && "fileUrl" in metadata);
+}
+
+function isCommentShareMetadata(
+  metadata: ChatMessage["metadata"],
+): metadata is CommentShareMetadata {
+  return Boolean(
+    metadata &&
+      "sharedType" in metadata &&
+      metadata.sharedType === "comment",
+  );
 }
 
 function getCocktailDetailsPath(cocktail: CocktailShareMetadata) {
@@ -121,6 +136,118 @@ function VoiceMessage({ attachment }: { attachment: ChatAttachmentMetadata }) {
   );
 }
 
+function SharePostLink({
+  to,
+  image,
+  title,
+  className = "",
+}: {
+  to: string;
+  image?: string | null;
+  title: string;
+  className?: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`message-share-post ${className}`.trim()}
+      title={`Open ${title}`}
+    >
+      {image ? (
+        <img src={getImageUrl(image)} alt={title} />
+      ) : (
+        <span>{title}</span>
+      )}
+    </Link>
+  );
+}
+
+function ShareNote({ content }: { content: string | null }) {
+  if (!content) {
+    return null;
+  }
+
+  return <p className="message-content message-share-note">{content}</p>;
+}
+
+function CommentSharePreview({
+  commentShare,
+}: {
+  commentShare: CommentShareMetadata;
+}) {
+  const postPath =
+    commentShare.postPath || commentShare.commentPath.split("#")[0];
+
+  return (
+    <div className="message-share-preview message-share-preview-comment">
+      <SharePostLink
+        to={postPath}
+        image={commentShare.postImage}
+        title={commentShare.postTitle || "Shared post"}
+        className="message-share-post-source"
+      />
+
+      <Link
+        to={commentShare.commentPath}
+        className="message-share-card"
+        title="Open shared comment"
+      >
+        <span className="message-share-avatar" aria-hidden="true">
+          {commentShare.commentAuthorNickname.charAt(0).toUpperCase()}
+        </span>
+        <span className="message-share-body">
+          <strong>{commentShare.commentAuthorNickname}</strong>{" "}
+          <span>{commentShare.commentContent}</span>
+        </span>
+      </Link>
+    </div>
+  );
+}
+
+function CocktailSharePreview({
+  cocktail,
+}: {
+  cocktail: CocktailShareMetadata;
+}) {
+  const cocktailPath = getCocktailDetailsPath(cocktail);
+
+  return (
+    <div className="message-share-preview">
+      {cocktail.cocktailType === "public" &&
+        cocktail.authorId &&
+        cocktail.authorNickname && (
+          <Link
+            to={`/authors/${cocktail.authorId}`}
+            className="message-share-author"
+            title="Open author profile"
+          >
+            <span className="message-share-author-avatar" aria-hidden="true">
+              {cocktail.authorNickname.charAt(0).toUpperCase()}
+            </span>
+            <strong>{cocktail.authorNickname}</strong>
+          </Link>
+        )}
+
+      <SharePostLink
+        to={cocktailPath}
+        image={cocktail.cocktailImage}
+        title={cocktail.cocktailName}
+      />
+
+      <Link
+        to={cocktailPath}
+        className="message-share-card message-share-card-cocktail"
+        title="Open cocktail"
+      >
+        <span className="message-share-body">
+          <strong>{cocktail.cocktailName}</strong>
+          <span>{cocktail.cocktailType} cocktail</span>
+        </span>
+      </Link>
+    </div>
+  );
+}
+
 export default function MessageBubble({
   message,
   isOwn,
@@ -145,6 +272,9 @@ export default function MessageBubble({
     ? message.metadata
     : null;
   const cocktail = isCocktailMetadata(message.metadata) ? message.metadata : null;
+  const commentShare = isCommentShareMetadata(message.metadata)
+    ? message.metadata
+    : null;
   const isPinned = isEnabledFlag(message.is_pinned);
   const forwardedNickname =
     message.metadata && "forwardedFromNickname" in message.metadata
@@ -262,7 +392,11 @@ export default function MessageBubble({
         </div>
       )}
 
-      <div className={`message-bubble ${isOwn ? "message-bubble-own" : ""}`}>
+      <div
+        className={`message-bubble ${isOwn ? "message-bubble-own" : ""} ${
+          commentShare || cocktail ? "message-bubble-share" : ""
+        }`}
+      >
         {forwardedNickname && (
           <p className="message-forwarded">Forwarded from {forwardedNickname}</p>
         )}
@@ -273,31 +407,21 @@ export default function MessageBubble({
           </div>
         )}
 
-        {message.message_type === "text" && (
+        {message.message_type === "text" && !commentShare && (
           <p className="message-content">{message.content}</p>
+        )}
+
+        {commentShare && (
+          <>
+            <CommentSharePreview commentShare={commentShare} />
+            <ShareNote content={message.content} />
+          </>
         )}
 
         {cocktail && (
           <>
-            <Link
-              to={getCocktailDetailsPath(cocktail)}
-              className="message-cocktail-card message-cocktail-link"
-              title="Open cocktail"
-            >
-              {cocktail.cocktailImage && (
-                <img
-                  src={getImageUrl(cocktail.cocktailImage)}
-                  alt={cocktail.cocktailName}
-                />
-              )}
-              <div>
-                <strong>{cocktail.cocktailName}</strong>
-                <p>{cocktail.cocktailType} cocktail</p>
-              </div>
-            </Link>
-            {message.content && (
-              <p className="message-content">{message.content}</p>
-            )}
+            <CocktailSharePreview cocktail={cocktail} />
+            <ShareNote content={message.content} />
           </>
         )}
 

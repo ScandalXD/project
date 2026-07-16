@@ -390,7 +390,11 @@ export default function PublicCocktailsPage() {
                       aria-label="Like cocktail"
                       title="Like"
                     >
-                      <Heart size={24} aria-hidden="true" />
+                      <Heart
+                        size={24}
+                        fill={likedIds.includes(id) ? "currentColor" : "none"}
+                        aria-hidden="true"
+                      />
                       <span>{likesCount[id] ?? 0}</span>
                     </button>
 

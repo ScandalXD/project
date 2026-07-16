@@ -1,31 +1,67 @@
-import { useState } from "react";
-import { commentsApi } from "../../api/commentsApi";
+import { useEffect, useState } from "react";
+import { Flag, Heart, MoreHorizontal, Send, Trash2 } from "lucide-react";
 import { adminApi } from "../../api/adminApi";
+import { commentsApi } from "../../api/commentsApi";
 import { reportApi } from "../../api/reportApi";
 import { useAuth } from "../../hooks/useAuth";
 import type { CommentItemData } from "../../types/comment";
-
 import Button from "../ui/Button";
 import Input from "../ui/Input";
 import Modal from "../ui/Modal";
+import CommentShareModal from "./CommentShareModal";
 
 interface CommentItemProps {
   comment: CommentItemData;
   onReload: () => Promise<void>;
+  targetCommentId?: number | null;
 }
 
-export default function CommentItem({ comment, onReload }: CommentItemProps) {
+function commentTreeContainsId(
+  comments: CommentItemData[] | undefined,
+  targetCommentId?: number | null,
+) {
+  if (!targetCommentId || !comments?.length) {
+    return false;
+  }
+
+  return comments.some(
+    (item) =>
+      Number(item.id) === Number(targetCommentId) ||
+      commentTreeContainsId(item.replies, targetCommentId),
+  );
+}
+
+function formatCommentAge(createdAt: string) {
+  const diffMs = Date.now() - new Date(createdAt).getTime();
+  const minuteMs = 60 * 1000;
+  const hourMs = 60 * minuteMs;
+  const dayMs = 24 * hourMs;
+
+  if (diffMs < minuteMs) return "now";
+  if (diffMs < hourMs) return `${Math.max(1, Math.floor(diffMs / minuteMs))} min`;
+  if (diffMs < dayMs) return `${Math.floor(diffMs / hourMs)} h`;
+
+  return `${Math.floor(diffMs / dayMs)} d`;
+}
+
+export default function CommentItem({
+  comment,
+  onReload,
+  targetCommentId,
+}: CommentItemProps) {
   const { isAuthenticated, user } = useAuth();
 
   const [replyText, setReplyText] = useState("");
   const [showReply, setShowReply] = useState(false);
-  const [showReplies, setShowReplies] = useState(false);
-
+  const [showReplies, setShowReplies] = useState(() =>
+    commentTreeContainsId(comment.replies, targetCommentId),
+  );
   const [isLiking, setIsLiking] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [deleteReason, setDeleteReason] = useState("");
 
@@ -33,6 +69,22 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
   const canDelete =
     isAuthenticated && (user?.id === comment.user_id || isAdmin);
   const canReport = isAuthenticated && user?.id !== comment.user_id;
+  const commentPath =
+    comment.cocktail_type === "public"
+      ? `/public-cocktails/${comment.cocktail_id}#comment-${comment.id}`
+      : `/catalog/${comment.cocktail_id}#comment-${comment.id}`;
+  const postPath =
+    comment.cocktail_type === "public"
+      ? `/public-cocktails/${comment.cocktail_id}`
+      : `/catalog/${comment.cocktail_id}`;
+  const authorInitial = comment.author_nickname.charAt(0).toUpperCase();
+  const isTargetComment = Number(comment.id) === Number(targetCommentId);
+
+  useEffect(() => {
+    if (commentTreeContainsId(comment.replies, targetCommentId)) {
+      setShowReplies(true);
+    }
+  }, [comment.replies, targetCommentId]);
 
   const handleToggleLike = async () => {
     if (!isAuthenticated || isLiking) return;
@@ -101,51 +153,106 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
       id={`comment-${comment.id}`}
       className={`comment-card ${
         comment.parent_comment_id ? "comment-card-reply" : ""
-      }`}
+      } ${isTargetComment ? "comment-card-target" : ""}`}
     >
-      <div className="comment-header">
-        <strong>{comment.author_nickname}</strong>
-
-        <span className="muted-text">
-          {new Date(comment.created_at).toLocaleString("pl-PL")}
-        </span>
+      <div className="comment-avatar" aria-hidden="true">
+        {authorInitial}
       </div>
 
-      <p className="comment-content">{comment.content}</p>
+      <div className="comment-main">
+        <div className="comment-text-line">
+          <p className="comment-content">
+            <strong className="comment-author-name">
+              {comment.author_nickname}
+            </strong>{" "}
+            <span className="comment-body-text">{comment.content}</span>
+          </p>
 
-      <div className="comment-actions">
-        <Button
-          variant={comment.is_liked_by_user ? "danger" : "secondary"}
-          disabled={!isAuthenticated || isLiking}
-          onClick={handleToggleLike}
-        >
-          ❤️ {comment.likes_count}
-        </Button>
-
-        {isAuthenticated && (
-          <Button variant="info" onClick={() => setShowReply((prev) => !prev)}>
-            Reply
-          </Button>
-        )}
-
-        {canDelete && (
           <Button
-            variant="danger"
-            disabled={isDeleting}
-            onClick={() => {
-              setShowDeleteModal(true);
-              setDeleteReason("");
-            }}
+            className="comment-like-button"
+            variant={comment.is_liked_by_user ? "danger" : "secondary"}
+            disabled={!isAuthenticated || isLiking}
+            onClick={handleToggleLike}
+            aria-label="Like comment"
+            title="Like"
           >
-            {isDeleting ? "Deleting..." : "Delete"}
+            <Heart
+              size={18}
+              fill={comment.is_liked_by_user ? "currentColor" : "none"}
+              aria-hidden="true"
+            />
           </Button>
-        )}
+        </div>
 
-        {canReport && (
-          <Button variant="warning" onClick={() => setShowReportModal(true)}>
-            Report
-          </Button>
-        )}
+        <div className="comment-meta-row">
+          <span title={new Date(comment.created_at).toLocaleString("pl-PL")}>
+            {formatCommentAge(comment.created_at)}
+          </span>
+          {comment.likes_count > 0 && <span>{comment.likes_count} likes</span>}
+          {isAuthenticated && (
+            <button type="button" onClick={() => setShowReply((prev) => !prev)}>
+              Reply
+            </button>
+          )}
+
+          <div className="comment-menu-wrap">
+            <button
+              type="button"
+              className="comment-menu-trigger"
+              onClick={() => setIsMenuOpen((open) => !open)}
+              aria-label="Open comment actions"
+              title="More"
+            >
+              <MoreHorizontal size={18} aria-hidden="true" />
+            </button>
+
+            {isMenuOpen && (
+              <div className="comment-menu-popover">
+                {isAuthenticated && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setShowShareModal(true);
+                    }}
+                  >
+                    <span>Share</span>
+                    <Send size={17} aria-hidden="true" />
+                  </button>
+                )}
+
+                {canReport && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setShowReportModal(true);
+                    }}
+                  >
+                    <span>Report</span>
+                    <Flag size={17} aria-hidden="true" />
+                  </button>
+                )}
+
+                {canDelete && (
+                  <button
+                    type="button"
+                    className="comment-menu-danger"
+                    disabled={isDeleting}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setShowDeleteModal(true);
+                      setDeleteReason("");
+                    }}
+                  >
+                    <span>{isDeleting ? "Deleting..." : "Delete"}</span>
+                    <Trash2 size={17} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {showReply && (
@@ -173,17 +280,23 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
           onClick={() => setShowReplies((prev) => !prev)}
         >
           {showReplies
-            ? "▲ Hide replies"
-            : `▼ ${comment.replies.length} ${
-                comment.replies.length === 1 ? "reply" : "replies"
-              }`}
+            ? "Hide replies"
+            : `View replies (${comment.replies.length})`}
         </button>
       )}
 
-      {showReplies &&
-        comment.replies?.map((reply) => (
-          <CommentItem key={reply.id} comment={reply} onReload={onReload} />
-        ))}
+      {showReplies && (
+        <div className="comment-replies-list">
+          {comment.replies?.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              onReload={onReload}
+              targetCommentId={targetCommentId}
+            />
+          ))}
+        </div>
+      )}
 
       {showDeleteModal && (
         <Modal
@@ -233,6 +346,18 @@ export default function CommentItem({ comment, onReload }: CommentItemProps) {
             )}
           </div>
         </Modal>
+      )}
+
+      {showShareModal && (
+        <CommentShareModal
+          authorNickname={comment.author_nickname}
+          commentContent={comment.content}
+          commentPath={commentPath}
+          postTitle={comment.cocktail_name || "Cocktail"}
+          postImage={comment.cocktail_image || null}
+          postPath={postPath}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
 
       {showReportModal && (

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
 import AdminCatalogForm from "../../components/cocktails/AdminCatalogForm";
 
@@ -43,6 +44,11 @@ export default function AdminCatalogCreatePage() {
   return (
     <div className="page-container catalog-form-page">
       <div className="card catalog-form-card">
+        <Link to="/admin" className="page-back-button admin-dashboard-back">
+          <ArrowLeft size={18} aria-hidden="true" />
+          <span>Dashboard</span>
+        </Link>
+
         <h1>Create Catalog Cocktail</h1>
 
         <p className="muted-text">

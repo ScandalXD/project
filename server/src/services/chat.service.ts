@@ -36,6 +36,84 @@ const parseMetadata = <T extends ChatMessage | ConversationListItem>(
   }
 };
 
+const enrichPublicCocktailShareAuthors = async (
+  messages: ChatMessage[],
+): Promise<ChatMessage[]> => {
+  const publicCocktailIds = Array.from(
+    new Set(
+      messages
+        .map((message) => {
+          const metadata = message.metadata;
+
+          if (
+            message.message_type !== "cocktail_share" ||
+            !metadata ||
+            typeof metadata !== "object" ||
+            !("cocktailType" in metadata) ||
+            metadata.cocktailType !== "public" ||
+            metadata.authorId
+          ) {
+            return null;
+          }
+
+          return String(metadata.cocktailId);
+        })
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+
+  if (publicCocktailIds.length === 0) {
+    return messages;
+  }
+
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT pc.id, pc.author_id, u.nickname AS author_nickname
+     FROM public_cocktails pc
+     JOIN users u ON pc.author_id = u.id
+     WHERE pc.id IN (?)`,
+    [publicCocktailIds],
+  );
+
+  const authorsByCocktailId = new Map(
+    rows.map((row) => [
+      String(row.id),
+      {
+        authorId: Number(row.author_id),
+        authorNickname: String(row.author_nickname),
+      },
+    ]),
+  );
+
+  return messages.map((message) => {
+    const metadata = message.metadata;
+
+    if (
+      message.message_type !== "cocktail_share" ||
+      !metadata ||
+      typeof metadata !== "object" ||
+      !("cocktailType" in metadata) ||
+      metadata.cocktailType !== "public"
+    ) {
+      return message;
+    }
+
+    const author = authorsByCocktailId.get(String(metadata.cocktailId));
+
+    if (!author) {
+      return message;
+    }
+
+    return {
+      ...message,
+      metadata: {
+        ...metadata,
+        authorId: metadata.authorId ?? author.authorId,
+        authorNickname: metadata.authorNickname ?? author.authorNickname,
+      },
+    };
+  });
+};
+
 const ensureInteger = (value: number, message: string) => {
   if (!Number.isInteger(value)) {
     throw new ServiceError(message, 400);
@@ -231,8 +309,16 @@ const notifyRecipient = async (
 const validateMessageContent = (
   messageType: ChatMessageType,
   content?: string | null,
+  metadata?: ChatMessageMetadata,
 ) => {
-  if (messageType === "text") {
+  const hasCommentShareMetadata =
+    metadata !== null &&
+    metadata !== undefined &&
+    typeof metadata === "object" &&
+    "sharedType" in metadata &&
+    metadata.sharedType === "comment";
+
+  if (messageType === "text" && !hasCommentShareMetadata) {
     if (!content || !content.trim()) {
       throw new ServiceError("Message content is required", 400);
     }
@@ -306,7 +392,7 @@ const createMessage = async (
     input.replyToMessageId,
   );
 
-  validateMessageContent(input.messageType, input.content);
+  validateMessageContent(input.messageType, input.content, input.metadata);
 
   const content = input.content?.trim() || null;
   const metadata = input.metadata ? JSON.stringify(input.metadata) : null;
@@ -511,18 +597,24 @@ export const getConversationMessages = async (
     [userId, conversationId],
   );
 
-  return withMessageState(userId, (rows as ChatMessage[]).map(parseMetadata));
+  const messages = await enrichPublicCocktailShareAuthors(
+    (rows as ChatMessage[]).map(parseMetadata),
+  );
+
+  return withMessageState(userId, messages);
 };
 
 export const sendTextMessage = async (
   senderId: number,
   conversationId: number,
-  content: string,
+  content?: string | null,
+  metadata?: ChatMessageMetadata,
   replyToMessageId?: number | null,
 ): Promise<ChatMessage> => {
   return createMessage(senderId, conversationId, {
     messageType: "text",
     content,
+    metadata,
     replyToMessageId,
   });
 };
@@ -552,7 +644,10 @@ const getCocktailShareMetadata = async (
 
   if (cocktailType === "public") {
     const [rows] = await db.query<RowDataPacket[]>(
-      "SELECT id, name, image FROM public_cocktails WHERE id = ?",
+      `SELECT pc.id, pc.name, pc.image, pc.author_id, u.nickname AS author_nickname
+       FROM public_cocktails pc
+       JOIN users u ON pc.author_id = u.id
+       WHERE pc.id = ?`,
       [Number(cocktailId)],
     );
 
@@ -565,6 +660,8 @@ const getCocktailShareMetadata = async (
       cocktailType,
       cocktailName: rows[0].name,
       cocktailImage: rows[0].image,
+      authorId: Number(rows[0].author_id),
+      authorNickname: rows[0].author_nickname,
     };
   }
 

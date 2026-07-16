@@ -27,6 +27,21 @@ export interface CocktailShareMetadata {
   cocktailType: ChatCocktailType;
   cocktailName: string;
   cocktailImage: string | null;
+  authorId?: number | null;
+  authorNickname?: string | null;
+  forwardedFromMessageId?: number;
+  forwardedFromUserId?: number;
+  forwardedFromNickname?: string;
+}
+
+export interface CommentShareMetadata {
+  sharedType: "comment";
+  commentAuthorNickname: string;
+  commentContent: string;
+  commentPath: string;
+  postTitle: string;
+  postImage: string | null;
+  postPath: string;
   forwardedFromMessageId?: number;
   forwardedFromUserId?: number;
   forwardedFromNickname?: string;
@@ -41,6 +56,7 @@ export interface MessageReactionSummary {
 export type ChatMessageMetadata =
   | ChatAttachmentMetadata
   | CocktailShareMetadata
+  | CommentShareMetadata
   | null;
 
 export interface Conversation {

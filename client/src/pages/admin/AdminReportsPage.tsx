@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { chatReportsApi } from "../../api/chatReportsApi";
 import { reportApi } from "../../api/reportApi";
@@ -309,70 +310,76 @@ export default function AdminReportsPage() {
         </p>
       )}
 
-      <div className="report-actions">
-        {report.target_type === "public_cocktail" && (
-          <Link
-            to={`/public-cocktails/${report.target_id}`}
-            className="admin-create-link"
-          >
-            View cocktail
-          </Link>
-        )}
+      <details className="report-action-panel">
+        <summary>
+          <span>Actions</span>
+        </summary>
 
-        {report.target_type === "comment" &&
-          report.comment_cocktail_type === "public" && (
+        <div className="report-actions">
+          {report.target_type === "public_cocktail" && (
             <Link
-              to={`/public-cocktails/${report.comment_cocktail_id}#comment-${report.target_id}`}
+              to={`/public-cocktails/${report.target_id}`}
               className="admin-create-link"
             >
-              View comment
+              View cocktail
             </Link>
           )}
 
-        {report.status === "open" && (
-          <>
+          {report.target_type === "comment" &&
+            report.comment_cocktail_type === "public" && (
+              <Link
+                to={`/public-cocktails/${report.comment_cocktail_id}#comment-${report.target_id}`}
+                className="admin-create-link"
+              >
+                View comment
+              </Link>
+            )}
+
+          {report.status === "open" && (
+            <>
+              <Button
+                variant="warning"
+                onClick={() => setRejectReportId(report.id)}
+              >
+                Reject report
+              </Button>
+
+              {report.target_type === "public_cocktail" && (
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    setContentAction({ type: "hideCocktail", reportId: report.id });
+                    setAdminReason("");
+                  }}
+                >
+                  Hide cocktail
+                </Button>
+              )}
+
+              {report.target_type === "comment" && (
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    setContentAction({ type: "deleteComment", reportId: report.id });
+                    setAdminReason("");
+                  }}
+                >
+                  Delete comment
+                </Button>
+              )}
+            </>
+          )}
+
+          {report.status !== "open" && (
             <Button
-              variant="warning"
-              onClick={() => setRejectReportId(report.id)}
+              variant="danger"
+              onClick={() => setDeleteContentReportId(report.id)}
             >
-              Reject report
+              Delete report
             </Button>
-
-            {report.target_type === "public_cocktail" && (
-              <Button
-                variant="danger"
-                onClick={() => {
-                  setContentAction({ type: "hideCocktail", reportId: report.id });
-                  setAdminReason("");
-                }}
-              >
-                Hide cocktail
-              </Button>
-            )}
-
-            {report.target_type === "comment" && (
-              <Button
-                variant="danger"
-                onClick={() => {
-                  setContentAction({ type: "deleteComment", reportId: report.id });
-                  setAdminReason("");
-                }}
-              >
-                Delete comment
-              </Button>
-            )}
-          </>
-        )}
-
-        {report.status !== "open" && (
-          <Button
-            variant="danger"
-            onClick={() => setDeleteContentReportId(report.id)}
-          >
-            Delete report
-          </Button>
-        )}
-      </div>
+          )}
+        </div>
+      </details>
     </div>
   );
 
@@ -406,56 +413,62 @@ export default function AdminReportsPage() {
         </p>
       )}
 
-      {report.status === "open" && (
-        <div className="admin-card-actions">
-          <Button
-            variant="secondary"
-            onClick={() => openChatActionModal(report, "dismiss")}
-          >
-            Dismiss
-          </Button>
-          {report.message_id && (
+      <details className="report-action-panel">
+        <summary>
+          <span>Actions</span>
+        </summary>
+
+        {report.status === "open" && (
+          <div className="report-actions">
+            <Button
+              variant="secondary"
+              onClick={() => openChatActionModal(report, "dismiss")}
+            >
+              Dismiss
+            </Button>
+            {report.message_id && (
+              <Button
+                variant="danger"
+                onClick={() => openChatActionModal(report, "deleteMessage")}
+              >
+                Delete message
+              </Button>
+            )}
+            <Button
+              variant="warning"
+              onClick={() => openChatActionModal(report, "warn")}
+            >
+              Warn
+            </Button>
+            <Button onClick={() => openChatActionModal(report, "mute")}>
+              Mute
+            </Button>
             <Button
               variant="danger"
-              onClick={() => openChatActionModal(report, "deleteMessage")}
+              onClick={() => openChatActionModal(report, "temporaryBan")}
             >
-              Delete message
+              Temp ban
             </Button>
-          )}
-          <Button
-            variant="warning"
-            onClick={() => openChatActionModal(report, "warn")}
-          >
-            Warn
-          </Button>
-          <Button onClick={() => openChatActionModal(report, "mute")}>
-            Mute
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => openChatActionModal(report, "temporaryBan")}
-          >
-            Temp ban
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => openChatActionModal(report, "permanentBan")}
-          >
-            Permanent ban
-          </Button>
-        </div>
-      )}
+            <Button
+              variant="danger"
+              onClick={() => openChatActionModal(report, "permanentBan")}
+            >
+              Permanent ban
+            </Button>
+          </div>
+        )}
 
-      {report.status !== "open" && (
-        <div className="admin-card-actions">
-          <Button
-            variant="danger"
-            onClick={() => setDeleteChatReportId(report.id)}
-          >
-            Delete report
-          </Button>
-        </div>
-      )}
+        {report.status !== "open" && (
+          <div className="report-actions">
+            <Button
+              variant="danger"
+              onClick={() => setDeleteChatReportId(report.id)}
+            >
+              Delete report
+            </Button>
+          </div>
+        )}
+      </details>
     </div>
   );
 
@@ -465,6 +478,11 @@ export default function AdminReportsPage() {
 
   return (
     <div className="page-container">
+      <Link to="/admin" className="page-back-button admin-dashboard-back">
+        <ArrowLeft size={18} aria-hidden="true" />
+        <span>Dashboard</span>
+      </Link>
+
       <div className="admin-page-header">
         <h1>Admin Reports</h1>
 

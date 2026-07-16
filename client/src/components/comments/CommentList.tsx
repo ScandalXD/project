@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { commentsApi } from "../../api/commentsApi";
 import { useAuth } from "../../hooks/useAuth";
 import type { CommentCocktailType, CommentItemData } from "../../types/comment";
@@ -12,10 +13,14 @@ interface CommentListProps {
 
 export default function CommentList({ cocktailId, type }: CommentListProps) {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
 
   const [comments, setComments] = useState<CommentItemData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const targetCommentId = location.hash.startsWith("#comment-")
+    ? Number(location.hash.replace("#comment-", ""))
+    : null;
 
   const loadComments = async () => {
     try {
@@ -33,6 +38,20 @@ export default function CommentList({ cocktailId, type }: CommentListProps) {
   useEffect(() => {
     loadComments();
   }, [cocktailId, type]);
+
+  useEffect(() => {
+    const hash = location.hash;
+
+    if (!hash || comments.length === 0) return;
+
+    const scrollToComment = () => {
+      const element = document.querySelector(hash);
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+
+    window.setTimeout(scrollToComment, 100);
+    window.setTimeout(scrollToComment, 350);
+  }, [comments, location.hash]);
 
   const handleAddComment = async (content: string) => {
     await commentsApi.addComment({
@@ -69,6 +88,7 @@ export default function CommentList({ cocktailId, type }: CommentListProps) {
               key={comment.id}
               comment={comment}
               onReload={loadComments}
+              targetCommentId={targetCommentId}
             />
           ))}
         </div>

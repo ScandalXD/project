@@ -20,7 +20,10 @@ import {
   setConversationPinned,
   unpinMessage,
 } from "../services/chat.service";
-import { ChatCocktailType } from "../models/Chat.model";
+import {
+  ChatCocktailType,
+  ChatMessageMetadata,
+} from "../models/Chat.model";
 import {
   emitConversationRemoved,
   emitMessageSent,
@@ -122,7 +125,11 @@ export const sendTextMessageHandler = async (
   req: Request<
     { id: string },
     {},
-    { content: string; replyToMessageId?: number | null }
+    {
+      content?: string | null;
+      metadata?: ChatMessageMetadata;
+      replyToMessageId?: number | null;
+    }
   >,
   res: Response,
 ) => {
@@ -135,6 +142,7 @@ export const sendTextMessageHandler = async (
       req.user.id,
       Number(req.params.id),
       req.body.content,
+      req.body.metadata,
       req.body.replyToMessageId,
     );
 

@@ -27,6 +27,14 @@ interface ChatSidebarProps {
 function getConversationPreview(conversation: ConversationListItem) {
   if (!conversation.last_message_id) return "No messages yet";
   if (conversation.last_message_type === "cocktail_share") return "Cocktail shared";
+  if (
+    conversation.last_message_metadata &&
+    typeof conversation.last_message_metadata === "object" &&
+    "sharedType" in conversation.last_message_metadata &&
+    conversation.last_message_metadata.sharedType === "comment"
+  ) {
+    return "Comment shared";
+  }
   if (conversation.last_message_type === "image") return "Image";
   if (conversation.last_message_type === "voice") return "Voice message";
   if (conversation.last_message_type === "file") return "File";

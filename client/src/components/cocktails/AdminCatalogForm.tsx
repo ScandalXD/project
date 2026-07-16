@@ -104,7 +104,7 @@ export default function AdminCatalogForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
+    <form onSubmit={handleSubmit} className="catalog-form">
       {mode === "create" && (
         <input
           type="text"
@@ -113,11 +113,7 @@ export default function AdminCatalogForm({
           value={form.id}
           onChange={handleChange}
           required
-          style={{
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #d1d5db",
-          }}
+          className="app-input"
         />
       )}
 
@@ -128,22 +124,14 @@ export default function AdminCatalogForm({
         value={form.name}
         onChange={handleChange}
         required
-        style={{
-          padding: "12px",
-          borderRadius: "10px",
-          border: "1px solid #d1d5db",
-        }}
+        className="app-input"
       />
 
       <select
         name="category"
         value={form.category}
         onChange={handleChange}
-        style={{
-          padding: "12px",
-          borderRadius: "10px",
-          border: "1px solid #d1d5db",
-        }}
+        className="app-select cocktail-form-select"
       >
         <option value="Alkoholowy">Alcoholic</option>
         <option value="Bezalkoholowy">Non-alcoholic</option>
@@ -156,12 +144,7 @@ export default function AdminCatalogForm({
         onChange={handleChange}
         required
         rows={4}
-        style={{
-          padding: "12px",
-          borderRadius: "10px",
-          border: "1px solid #d1d5db",
-          resize: "vertical",
-        }}
+        className="app-textarea"
       />
 
       <textarea
@@ -171,57 +154,29 @@ export default function AdminCatalogForm({
         onChange={handleChange}
         required
         rows={5}
-        style={{
-          padding: "12px",
-          borderRadius: "10px",
-          border: "1px solid #d1d5db",
-          resize: "vertical",
-        }}
+        className="app-textarea"
       />
 
       {mode === "edit" && form.currentImage && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "220px 1fr",
-            gap: "16px",
-            alignItems: "start",
-          }}
-        >
+        <div className="cocktail-form-image-row">
           <div>
-            <p style={{ marginTop: 0, marginBottom: "8px" }}>Current image</p>
-            <div
-              style={{
-                width: "220px",
-                height: "160px",
-                borderRadius: "12px",
-                overflow: "hidden",
-                border: "1px solid #d1d5db",
-                background: "#f3f4f6",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <p className="cocktail-form-label">Current image</p>
+            <div className="cocktail-form-image-preview">
               <img
                 src={getImageUrl(form.currentImage)}
                 alt="Current catalog cocktail"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  objectFit: "contain",
-                }}
+                className="cocktail-form-image"
               />
             </div>
           </div>
 
           <div>
-            <p style={{ marginTop: 0, marginBottom: "8px" }}>Choose new file</p>
+            <p className="cocktail-form-label">Choose new file</p>
             <input
               type="file"
               accept="image/*"
               onChange={handleImageChange}
-              style={{ padding: "8px 0" }}
+              className="cocktail-form-file"
             />
           </div>
         </div>
@@ -232,24 +187,16 @@ export default function AdminCatalogForm({
           type="file"
           accept="image/*"
           onChange={handleImageChange}
-          style={{ padding: "8px 0" }}
+          className="cocktail-form-file"
         />
       )}
 
-      {error && <p style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
+      {error && <p className="error-text cocktail-form-error">{error}</p>}
 
       <button
         type="submit"
         disabled={isSubmitting || (mode === "edit" && !isChanged)}
-        style={{
-          border: "none",
-          background: "#111827",
-          color: "#ffffff",
-          padding: "12px",
-          borderRadius: "10px",
-          cursor: isSubmitting || (mode === "edit" && !isChanged) ? "not-allowed" : "pointer",
-          opacity: isSubmitting || (mode === "edit" && !isChanged) ? 0.6 : 1,
-        }}
+        className="cocktail-form-submit"
       >
         {isSubmitting ? "Saving..." : mode === "edit" ? "Save changes" : "Create catalog cocktail"}
       </button>

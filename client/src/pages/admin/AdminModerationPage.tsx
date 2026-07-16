@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
 import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
@@ -54,6 +55,11 @@ export default function AdminModerationPage() {
 
   return (
     <div className="page-container">
+      <Link to="/admin" className="page-back-button admin-dashboard-back">
+        <ArrowLeft size={18} aria-hidden="true" />
+        <span>Dashboard</span>
+      </Link>
+
       <div className="admin-page-header">
         <h1>Admin Moderation</h1>
       </div>

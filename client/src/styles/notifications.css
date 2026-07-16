@@ -74,3 +74,30 @@
 .notification-mention {
   background: #ede9fe;
 }
+
+@media (max-width: 760px) {
+  .notifications-panel {
+    max-width: 100%;
+  }
+
+  .notifications-actions {
+    gap: 8px;
+  }
+
+  .notifications-actions .app-button {
+    width: auto;
+    min-width: 140px;
+  }
+
+  .notifications-grid {
+    gap: 10px;
+  }
+
+  .notification-card {
+    overflow-wrap: anywhere;
+  }
+
+  .notification-title {
+    line-height: 1.35;
+  }
+}

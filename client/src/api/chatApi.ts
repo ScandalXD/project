@@ -1,6 +1,7 @@
 import { api } from "./axios";
 import type {
   ChatCocktailType,
+  ChatMessageMetadata,
   ChatMessage,
   ConversationListItem,
 } from "../types/chat";
@@ -23,13 +24,15 @@ export const chatApi = {
 
   async sendTextMessage(
     conversationId: number,
-    content: string,
+    content?: string | null,
     replyToMessageId?: number | null,
+    metadata?: ChatMessageMetadata,
   ): Promise<ChatMessage> {
     const res = await api.post(
       `/chat/conversations/${conversationId}/messages/text`,
       {
         content,
+        metadata,
         replyToMessageId,
       },
     );

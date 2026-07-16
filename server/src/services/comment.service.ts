@@ -176,9 +176,15 @@ export const getComments = async (
     `SELECT
         cc.*,
         u.nickname AS author_nickname,
+        COALESCE(catalog.name, public_cocktails.name) AS cocktail_name,
+        COALESCE(catalog.image, public_cocktails.image) AS cocktail_image,
         COUNT(cl.comment_id) AS likes_count
      FROM cocktail_comments cc
      JOIN users u ON cc.user_id = u.id
+     LEFT JOIN catalog_cocktails catalog
+       ON cc.cocktail_type = 'catalog' AND catalog.id = cc.cocktail_id
+     LEFT JOIN public_cocktails
+       ON cc.cocktail_type = 'public' AND public_cocktails.id = CAST(cc.cocktail_id AS UNSIGNED)
      LEFT JOIN comment_likes cl ON cc.id = cl.comment_id
      WHERE cc.cocktail_id = ? AND cc.cocktail_type = ?
      GROUP BY
@@ -189,7 +195,11 @@ export const getComments = async (
        cc.content,
        cc.parent_comment_id,
        cc.created_at,
-       u.nickname
+       u.nickname,
+       catalog.name,
+       catalog.image,
+       public_cocktails.name,
+       public_cocktails.image
      ORDER BY cc.created_at ASC`,
     [cocktailId, cocktailType],
   );
@@ -221,6 +231,8 @@ export const getComments = async (
         : Number(comment.parent_comment_id),
     created_at: comment.created_at,
     author_nickname: comment.author_nickname,
+    cocktail_name: comment.cocktail_name,
+    cocktail_image: comment.cocktail_image,
     likes_count: Number(comment.likes_count),
     is_liked_by_user: currentUserId
       ? likedCommentIds.has(Number(comment.id))
