@@ -30,6 +30,25 @@ const getFriendshipBetweenUsers = async (
   return rows[0] as Friendship;
 };
 
+const havePrivateConversation = async (
+  userId: number,
+  otherUserId: number,
+): Promise<boolean> => {
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT c.id
+     FROM conversations c
+     JOIN conversation_participants cp1
+       ON cp1.conversation_id = c.id AND cp1.user_id = ?
+     JOIN conversation_participants cp2
+       ON cp2.conversation_id = c.id AND cp2.user_id = ?
+     WHERE c.type = 'private'
+     LIMIT 1`,
+    [userId, otherUserId],
+  );
+
+  return rows.length > 0;
+};
+
 const ensureValidUserId = (userId: number) => {
   if (!Number.isInteger(userId)) {
     throw new ServiceError("Invalid user id", 400);
@@ -276,6 +295,10 @@ export const blockUser = async (
        SET requester_id = ?,
            receiver_id = ?,
            status = 'blocked',
+           status_before_block = CASE
+             WHEN status = 'blocked' THEN status_before_block
+             ELSE status
+           END,
            blocked_by = ?,
            responded_at = NOW()
        WHERE id = ?`,
@@ -297,20 +320,45 @@ export const unblockUser = async (
 ): Promise<void> => {
   ensureValidUserId(blockedUserId);
 
-  const [result] = await db.query<ResultSetHeader>(
-    `DELETE FROM friendships
+  const [rows] = await db.query<RowDataPacket[]>(
+    `SELECT *
+     FROM friendships
      WHERE status = 'blocked'
        AND blocked_by = ?
        AND (
          (requester_id = ? AND receiver_id = ?)
          OR (requester_id = ? AND receiver_id = ?)
-       )`,
+       )
+     LIMIT 1`,
     [userId, userId, blockedUserId, blockedUserId, userId],
   );
 
-  if (result.affectedRows === 0) {
+  if (rows.length === 0) {
     throw new ServiceError("Blocked user not found", 404);
   }
+
+  const friendship = rows[0] as Friendship;
+  const shouldRestoreFriendship =
+    friendship.status_before_block === "accepted" ||
+    (friendship.status_before_block === null &&
+      (await havePrivateConversation(userId, blockedUserId)));
+
+  if (shouldRestoreFriendship) {
+    await db.query<ResultSetHeader>(
+      `UPDATE friendships
+       SET status = 'accepted',
+           status_before_block = NULL,
+           blocked_by = NULL,
+           responded_at = NOW()
+       WHERE id = ?`,
+      [friendship.id],
+    );
+    return;
+  }
+
+  await db.query<ResultSetHeader>("DELETE FROM friendships WHERE id = ?", [
+    friendship.id,
+  ]);
 };
 
 export const getFriendRequests = async (

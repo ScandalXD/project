@@ -5,6 +5,7 @@ export interface Friendship {
   requester_id: number;
   receiver_id: number;
   status: FriendshipStatus;
+  status_before_block: Exclude<FriendshipStatus, "blocked"> | null;
   blocked_by: number | null;
   created_at: string;
   responded_at: string | null;

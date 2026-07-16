@@ -509,6 +509,8 @@ export const getUserConversations = async (
        other_user.nickname AS other_user_nickname,
        COALESCE(ucs.is_online, FALSE) AS is_online,
        ucs.last_seen_at,
+       friendship.status AS friendship_status,
+       friendship.blocked_by AS friendship_blocked_by,
        lm.id AS last_message_id,
        lm.message_type AS last_message_type,
        lm.content AS last_message_content,
@@ -526,6 +528,15 @@ export const getUserConversations = async (
      JOIN conversation_participants other
        ON other.conversation_id = c.id AND other.user_id != ?
      JOIN users other_user ON other_user.id = other.user_id
+     LEFT JOIN friendships friendship
+       ON (
+         friendship.requester_id = me.user_id
+         AND friendship.receiver_id = other.user_id
+       )
+       OR (
+         friendship.requester_id = other.user_id
+         AND friendship.receiver_id = me.user_id
+       )
      LEFT JOIN user_chat_status ucs ON ucs.user_id = other_user.id
      LEFT JOIN messages lm
        ON lm.id = (
@@ -553,6 +564,8 @@ export const getUserConversations = async (
        other_user.nickname,
        ucs.is_online,
        ucs.last_seen_at,
+       friendship.status,
+       friendship.blocked_by,
        lm.id,
        lm.message_type,
        lm.content,

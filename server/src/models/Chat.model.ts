@@ -71,6 +71,8 @@ export interface ConversationListItem extends Conversation {
   other_user_nickname: string;
   is_online: number | boolean;
   last_seen_at: string | null;
+  friendship_status: "pending" | "accepted" | "rejected" | "blocked" | null;
+  friendship_blocked_by: number | null;
   last_message_id: number | null;
   last_message_type: ChatMessageType | null;
   last_message_content: string | null;

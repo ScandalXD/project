@@ -152,6 +152,7 @@ CREATE TABLE friendships (
   requester_id BIGINT NOT NULL,
   receiver_id BIGINT NOT NULL,
   status ENUM('pending', 'accepted', 'rejected', 'blocked') NOT NULL DEFAULT 'pending',
+  status_before_block ENUM('pending', 'accepted', 'rejected') NULL,
   blocked_by BIGINT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   responded_at DATETIME NULL,

@@ -40,12 +40,16 @@ export const getFavorites = async (userId: number): Promise<Favorite[]> => {
       COALESCE(c.category, p.category) AS category,
       COALESCE(c.ingredients, p.ingredients) AS ingredients,
       COALESCE(c.instructions, p.instructions) AS instructions,
-      COALESCE(c.image, p.image) AS image
+      COALESCE(c.image, p.image) AS image,
+      p.author_id AS author_id,
+      u.nickname AS author_nickname
     FROM favorites f
     LEFT JOIN catalog_cocktails c
       ON f.cocktail_type = 'catalog' AND f.cocktail_id = c.id
     LEFT JOIN public_cocktails p
       ON f.cocktail_type = 'public' AND f.cocktail_id = p.id
+    LEFT JOIN users u
+      ON f.cocktail_type = 'public' AND p.author_id = u.id
     WHERE f.user_id = ?
       AND (
         (f.cocktail_type = 'catalog' AND c.id IS NOT NULL)
