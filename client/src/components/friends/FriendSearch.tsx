@@ -1,8 +1,8 @@
+import { Search, UserPlus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { friendsApi } from "../../api/friendsApi";
 import type { FriendSearchResult } from "../../types/friend";
 import Button from "../ui/Button";
-import EmptyState from "../ui/EmptyState";
 import Input from "../ui/Input";
 
 interface FriendSearchProps {
@@ -70,31 +70,39 @@ export default function FriendSearch({ onChanged }: FriendSearchProps) {
   };
 
   return (
-    <section className="friends-panel card">
+    <section className="friends-panel friends-panel-search card">
       <div className="friends-panel-header">
         <div>
-          <h2>Find Friends</h2>
-          <p className="muted-text">Search users by nickname.</p>
+          <h2>Find people</h2>
         </div>
       </div>
 
       <form className="friends-search-form" onSubmit={handleSearch}>
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Nickname"
-        />
+        <div className="friends-search-input-wrap">
+          <Search size={18} aria-hidden="true" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Nickname"
+          />
 
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Searching..." : "Search"}
-        </Button>
+          <Button
+            type="submit"
+            className="friends-search-submit"
+            disabled={isLoading}
+            aria-label="Search users"
+            title="Search"
+          >
+            <Search size={18} aria-hidden="true" />
+          </Button>
+        </div>
       </form>
 
       {message && <p className="success-text friends-message">{message}</p>}
       {error && <p className="error-text friends-message">{error}</p>}
 
       {results.length === 0 ? (
-        <EmptyState text="No users searched yet" />
+        <p className="friends-inline-empty">Search by nickname</p>
       ) : (
         <div className="friends-list">
           {results.map((user) => {
@@ -115,10 +123,14 @@ export default function FriendSearch({ onChanged }: FriendSearchProps) {
                 </div>
 
                 <Button
+                  className="friend-icon-action"
                   disabled={!canSendRequest}
                   onClick={() => handleSendRequest(user.id)}
+                  aria-label={`Add ${user.nickname}`}
+                  title="Add friend"
                 >
-                  Add
+                  <UserPlus size={17} aria-hidden="true" />
+                  <span>Add</span>
                 </Button>
               </div>
             );

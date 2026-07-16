@@ -1,6 +1,6 @@
+import { Ban, MessageCircle, UserMinus } from "lucide-react";
 import type { Friendship } from "../../types/friend";
 import Button from "../ui/Button";
-import EmptyState from "../ui/EmptyState";
 
 interface FriendsListProps {
   friends: Friendship[];
@@ -20,16 +20,16 @@ export default function FriendsList({
   onUnblock,
 }: FriendsListProps) {
   return (
-    <section className="friends-panel card">
+    <section className="friends-panel friends-panel-main card">
       <div className="friends-panel-header">
         <div>
-          <h2>Your Friends</h2>
-          <p className="muted-text">Manage friends and blocked users.</p>
+          <h2>Friends</h2>
         </div>
+        <span className="friends-count-pill">{friends.length}</span>
       </div>
 
       {friends.length === 0 ? (
-        <EmptyState text="No friends yet" />
+        <p className="friends-inline-empty">No friends yet</p>
       ) : (
         <div className="friends-list">
           {friends.map((friendship) => (
@@ -45,22 +45,30 @@ export default function FriendsList({
 
               {friendship.friend_id && (
                 <div className="friend-actions">
-                  <Button onClick={() => onMessage(Number(friendship.friend_id))}>
-                    Message
+                  <Button
+                    onClick={() => onMessage(Number(friendship.friend_id))}
+                    aria-label={`Message ${friendship.friend_nickname}`}
+                    title="Message"
+                  >
+                    <MessageCircle size={16} aria-hidden="true" />
                   </Button>
 
                   <Button
                     variant="secondary"
                     onClick={() => onRemove(Number(friendship.friend_id))}
+                    aria-label={`Remove ${friendship.friend_nickname}`}
+                    title="Remove friend"
                   >
-                    Remove
+                    <UserMinus size={16} aria-hidden="true" />
                   </Button>
 
                   <Button
                     variant="danger"
                     onClick={() => onBlock(Number(friendship.friend_id))}
+                    aria-label={`Block ${friendship.friend_nickname}`}
+                    title="Block user"
                   >
-                    Block
+                    <Ban size={16} aria-hidden="true" />
                   </Button>
                 </div>
               )}
@@ -69,15 +77,18 @@ export default function FriendsList({
         </div>
       )}
 
-      <div className="friends-blocked-section">
-        <h3 className="friends-subtitle">Blocked Users</h3>
+      <details className="friends-blocked-section">
+        <summary>
+          <span>Blocked users</span>
+          <span className="friends-count-pill">{blockedUsers.length}</span>
+        </summary>
 
         {blockedUsers.length === 0 ? (
-          <EmptyState text="No blocked users" />
+          <p className="friends-inline-empty">No blocked users</p>
         ) : (
           <div className="friends-list">
             {blockedUsers.map((friendship) => (
-              <div key={friendship.id} className="friend-row">
+              <div key={friendship.id} className="friend-row friend-row-blocked">
                 <div className="friend-avatar" aria-hidden="true">
                   {(friendship.receiver_nickname ?? "?").charAt(0).toUpperCase()}
                 </div>
@@ -87,14 +98,19 @@ export default function FriendsList({
                   <p className="muted-text">Blocked</p>
                 </div>
 
-                <Button onClick={() => onUnblock(friendship.receiver_id)}>
-                  Unblock
-                </Button>
+                <div className="friend-actions">
+                  <Button
+                    className="friend-unblock-button"
+                    onClick={() => onUnblock(friendship.receiver_id)}
+                  >
+                    Unblock
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </details>
     </section>
   );
 }

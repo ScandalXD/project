@@ -1,6 +1,6 @@
+import { Check, Clock, X } from "lucide-react";
 import type { Friendship } from "../../types/friend";
 import Button from "../ui/Button";
-import EmptyState from "../ui/EmptyState";
 
 interface FriendRequestsProps {
   incoming: Friendship[];
@@ -16,20 +16,25 @@ export default function FriendRequests({
   onReject,
 }: FriendRequestsProps) {
   return (
-    <section className="friends-panel card">
+    <section className="friends-panel friends-panel-requests card">
       <div className="friends-panel-header">
         <div>
           <h2>Requests</h2>
-          <p className="muted-text">Incoming and outgoing friend requests.</p>
         </div>
+        <span className="friends-count-pill">
+          {incoming.length + outgoing.length}
+        </span>
       </div>
 
       <div className="friends-columns">
-        <div>
-          <h3 className="friends-subtitle">Incoming</h3>
+        <div className="friends-request-group">
+          <h3 className="friends-subtitle">
+            <Check size={16} aria-hidden="true" />
+            Incoming
+          </h3>
 
           {incoming.length === 0 ? (
-            <EmptyState text="No incoming requests" />
+            <p className="friends-inline-empty">No incoming requests</p>
           ) : (
             <div className="friends-list">
               {incoming.map((request) => (
@@ -44,12 +49,22 @@ export default function FriendRequests({
                   </div>
 
                   <div className="friend-actions">
-                    <Button onClick={() => onAccept(request.id)}>Accept</Button>
+                    <Button
+                      className="friend-request-accept"
+                      onClick={() => onAccept(request.id)}
+                      aria-label={`Accept request from ${request.requester_nickname}`}
+                      title="Accept"
+                    >
+                      <Check size={16} aria-hidden="true" />
+                    </Button>
                     <Button
                       variant="secondary"
+                      className="friend-request-reject"
                       onClick={() => onReject(request.id)}
+                      aria-label={`Reject request from ${request.requester_nickname}`}
+                      title="Reject"
                     >
-                      Reject
+                      <X size={16} aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -58,11 +73,14 @@ export default function FriendRequests({
           )}
         </div>
 
-        <div>
-          <h3 className="friends-subtitle">Outgoing</h3>
+        <div className="friends-request-group">
+          <h3 className="friends-subtitle">
+            <Clock size={16} aria-hidden="true" />
+            Outgoing
+          </h3>
 
           {outgoing.length === 0 ? (
-            <EmptyState text="No outgoing requests" />
+            <p className="friends-inline-empty">No outgoing requests</p>
           ) : (
             <div className="friends-list">
               {outgoing.map((request) => (

@@ -69,37 +69,30 @@ export default function FriendsPage() {
 
   return (
     <div className="page-container friends-page">
-      <div className="section-header friends-page-header">
-        <div>
-          <h1>Friends</h1>
-          <p className="muted-text">
-            Find users, manage requests, and keep your friend list tidy.
-          </p>
-        </div>
-      </div>
-
       {message && <p className="success-text">{message}</p>}
       {error && <p className="error-text">{error}</p>}
 
       <div className="friends-layout">
-        <FriendSearch onChanged={loadFriendsData} />
+        <aside className="friends-side-stack">
+          <FriendSearch onChanged={loadFriendsData} />
 
-        <FriendRequests
-          incoming={requests.incoming}
-          outgoing={requests.outgoing}
-          onAccept={(friendshipId) =>
-            runAction(
-              () => friendsApi.acceptFriendRequest(friendshipId),
-              "Friend request accepted.",
-            )
-          }
-          onReject={(friendshipId) =>
-            runAction(
-              () => friendsApi.rejectFriendRequest(friendshipId),
-              "Friend request rejected.",
-            )
-          }
-        />
+          <FriendRequests
+            incoming={requests.incoming}
+            outgoing={requests.outgoing}
+            onAccept={(friendshipId) =>
+              runAction(
+                () => friendsApi.acceptFriendRequest(friendshipId),
+                "Friend request accepted.",
+              )
+            }
+            onReject={(friendshipId) =>
+              runAction(
+                () => friendsApi.rejectFriendRequest(friendshipId),
+                "Friend request rejected.",
+              )
+            }
+          />
+        </aside>
 
         <FriendsList
           friends={friends}
