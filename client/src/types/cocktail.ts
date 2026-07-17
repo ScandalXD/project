@@ -20,6 +20,7 @@ export interface PublicCocktail extends BaseCocktail {
   id: number;
   author_id?: number;
   author_nickname?: string;
+  author_avatar?: string | null;
   source_cocktail_id?: number;
 }
 
@@ -37,6 +38,7 @@ export interface CocktailCardData extends BaseCocktail {
   type: CocktailType;
   author_id?: number;
   author_nickname?: string;
+  author_avatar?: string | null;
 }
 
 export interface CreateCocktailRequest {

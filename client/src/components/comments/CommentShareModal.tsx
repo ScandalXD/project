@@ -4,9 +4,11 @@ import { chatApi } from "../../api/chatApi";
 import { friendsApi } from "../../api/friendsApi";
 import type { Friendship } from "../../types/friend";
 import Input from "../ui/Input";
+import UserAvatar from "../ui/UserAvatar";
 
 interface CommentShareModalProps {
   authorNickname: string;
+  authorAvatar?: string | null;
   commentContent: string;
   commentPath: string;
   postTitle: string;
@@ -17,6 +19,7 @@ interface CommentShareModalProps {
 
 export default function CommentShareModal({
   authorNickname,
+  authorAvatar,
   commentContent,
   commentPath,
   postTitle,
@@ -62,6 +65,7 @@ export default function CommentShareModal({
         {
           sharedType: "comment",
           commentAuthorNickname: authorNickname,
+          commentAuthorAvatar: authorAvatar ?? null,
           commentContent,
           commentPath,
           postTitle,
@@ -126,14 +130,18 @@ export default function CommentShareModal({
                   )
                 }
               >
-                <span className="share-friend-avatar">
-                  {(friend.friend_nickname || "?").charAt(0).toUpperCase()}
+                <span className="share-friend-avatar-wrap">
+                  <UserAvatar
+                    nickname={friend.friend_nickname}
+                    avatar={friend.friend_avatar}
+                    className="share-friend-avatar"
+                  />
+                  {isSelected && (
+                    <span className="share-friend-check" aria-hidden="true">
+                      <CheckCircle2 size={14} />
+                    </span>
+                  )}
                 </span>
-                {isSelected && (
-                  <span className="share-friend-check" aria-hidden="true">
-                    ✓
-                  </span>
-                )}
                 <span>{friend.friend_nickname}</span>
               </button>
             );

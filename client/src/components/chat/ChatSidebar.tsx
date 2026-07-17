@@ -12,6 +12,7 @@ import type { ConversationListItem } from "../../types/chat";
 import { isEnabledFlag } from "../../utils/booleanFlag";
 import EmptyState from "../ui/EmptyState";
 import Input from "../ui/Input";
+import UserAvatar from "../ui/UserAvatar";
 import OnlineBadge from "./OnlineBadge";
 
 interface ChatSidebarProps {
@@ -110,9 +111,11 @@ export default function ChatSidebar({
                   className="chat-conversation-select"
                   onClick={() => onSelect(conversation.id)}
                 >
-                  <span className="chat-avatar" aria-hidden="true">
-                    {conversation.other_user_nickname.charAt(0).toUpperCase()}
-                  </span>
+                  <UserAvatar
+                    nickname={conversation.other_user_nickname}
+                    avatar={conversation.other_user_avatar}
+                    className="chat-avatar"
+                  />
 
                   <span className="chat-conversation-main">
                     <span className="chat-conversation-title-row">

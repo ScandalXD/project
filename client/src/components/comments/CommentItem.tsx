@@ -8,6 +8,7 @@ import type { CommentItemData } from "../../types/comment";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
 import Modal from "../ui/Modal";
+import UserAvatar from "../ui/UserAvatar";
 import CommentShareModal from "./CommentShareModal";
 
 interface CommentItemProps {
@@ -77,7 +78,6 @@ export default function CommentItem({
     comment.cocktail_type === "public"
       ? `/public-cocktails/${comment.cocktail_id}`
       : `/catalog/${comment.cocktail_id}`;
-  const authorInitial = comment.author_nickname.charAt(0).toUpperCase();
   const isTargetComment = Number(comment.id) === Number(targetCommentId);
 
   useEffect(() => {
@@ -155,9 +155,11 @@ export default function CommentItem({
         comment.parent_comment_id ? "comment-card-reply" : ""
       } ${isTargetComment ? "comment-card-target" : ""}`}
     >
-      <div className="comment-avatar" aria-hidden="true">
-        {authorInitial}
-      </div>
+      <UserAvatar
+        nickname={comment.author_nickname}
+        avatar={comment.author_avatar}
+        className="comment-avatar"
+      />
 
       <div className="comment-main">
         <div className="comment-text-line">
@@ -351,6 +353,7 @@ export default function CommentItem({
       {showShareModal && (
         <CommentShareModal
           authorNickname={comment.author_nickname}
+          authorAvatar={comment.author_avatar}
           commentContent={comment.content}
           commentPath={commentPath}
           postTitle={comment.cocktail_name || "Cocktail"}

@@ -52,7 +52,7 @@ const enrichPublicCocktailShareAuthors = async (
             typeof metadata !== "object" ||
             !("cocktailType" in metadata) ||
             metadata.cocktailType !== "public" ||
-            metadata.authorId
+            (metadata.authorId && metadata.authorAvatar)
           ) {
             return null;
           }
@@ -68,7 +68,7 @@ const enrichPublicCocktailShareAuthors = async (
   }
 
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT pc.id, pc.author_id, u.nickname AS author_nickname
+    `SELECT pc.id, pc.author_id, u.nickname AS author_nickname, u.avatar AS author_avatar
      FROM public_cocktails pc
      JOIN users u ON pc.author_id = u.id
      WHERE pc.id IN (?)`,
@@ -81,6 +81,7 @@ const enrichPublicCocktailShareAuthors = async (
       {
         authorId: Number(row.author_id),
         authorNickname: String(row.author_nickname),
+        authorAvatar: row.author_avatar ?? null,
       },
     ]),
   );
@@ -110,6 +111,7 @@ const enrichPublicCocktailShareAuthors = async (
         ...metadata,
         authorId: metadata.authorId ?? author.authorId,
         authorNickname: metadata.authorNickname ?? author.authorNickname,
+        authorAvatar: metadata.authorAvatar ?? author.authorAvatar,
       },
     };
   });
@@ -434,7 +436,7 @@ const createMessage = async (
   await notifyRecipient(recipientId, senderId, input.messageType);
 
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT m.*, u.nickname AS sender_nickname
+    `SELECT m.*, u.nickname AS sender_nickname, u.avatar AS sender_avatar
      FROM messages m
      JOIN users u ON m.sender_id = u.id
      WHERE m.id = ?`,
@@ -508,6 +510,7 @@ export const getUserConversations = async (
        c.*,
        other_user.id AS other_user_id,
        other_user.nickname AS other_user_nickname,
+       other_user.avatar AS other_user_avatar,
        COALESCE(ucs.is_online, FALSE) AS is_online,
        ucs.last_seen_at,
        friendship.status AS friendship_status,
@@ -563,6 +566,7 @@ export const getUserConversations = async (
        c.id,
        other_user.id,
        other_user.nickname,
+       other_user.avatar,
        ucs.is_online,
        ucs.last_seen_at,
        friendship.status,
@@ -591,6 +595,7 @@ export const getConversationMessages = async (
     `SELECT
        m.*,
        u.nickname AS sender_nickname,
+       u.avatar AS sender_avatar,
        reply.content AS reply_content,
        reply.message_type AS reply_message_type,
        EXISTS (
@@ -658,7 +663,7 @@ const getCocktailShareMetadata = async (
 
   if (cocktailType === "public") {
     const [rows] = await db.query<RowDataPacket[]>(
-      `SELECT pc.id, pc.name, pc.image, pc.author_id, u.nickname AS author_nickname
+      `SELECT pc.id, pc.name, pc.image, pc.author_id, u.nickname AS author_nickname, u.avatar AS author_avatar
        FROM public_cocktails pc
        JOIN users u ON pc.author_id = u.id
        WHERE pc.id = ?`,
@@ -676,6 +681,7 @@ const getCocktailShareMetadata = async (
       cocktailImage: rows[0].image,
       authorId: Number(rows[0].author_id),
       authorNickname: rows[0].author_nickname,
+      authorAvatar: rows[0].author_avatar,
     };
   }
 
@@ -893,7 +899,7 @@ const getVisibleMessageForUser = async (
   ensureInteger(messageId, "Invalid message id");
 
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT m.*, u.nickname AS sender_nickname
+    `SELECT m.*, u.nickname AS sender_nickname, u.avatar AS sender_avatar
      FROM messages m
      JOIN users u ON m.sender_id = u.id
      JOIN conversation_participants cp

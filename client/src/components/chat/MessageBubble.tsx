@@ -22,6 +22,7 @@ import type {
 } from "../../types/chat";
 import { isEnabledFlag } from "../../utils/booleanFlag";
 import { getImageUrl } from "../../utils/getImageUrl";
+import UserAvatar from "../ui/UserAvatar";
 import VoiceWaveform, {
   compactWaveformLevels,
   formatVoiceTime,
@@ -192,9 +193,11 @@ function CommentSharePreview({
         className="message-share-card"
         title="Open shared comment"
       >
-        <span className="message-share-avatar" aria-hidden="true">
-          {commentShare.commentAuthorNickname.charAt(0).toUpperCase()}
-        </span>
+        <UserAvatar
+          nickname={commentShare.commentAuthorNickname}
+          avatar={commentShare.commentAuthorAvatar}
+          className="message-share-avatar"
+        />
         <span className="message-share-body">
           <strong>{commentShare.commentAuthorNickname}</strong>{" "}
           <span>{commentShare.commentContent}</span>
@@ -221,9 +224,11 @@ function CocktailSharePreview({
             className="message-share-author"
             title="Open author profile"
           >
-            <span className="message-share-author-avatar" aria-hidden="true">
-              {cocktail.authorNickname.charAt(0).toUpperCase()}
-            </span>
+            <UserAvatar
+              nickname={cocktail.authorNickname}
+              avatar={cocktail.authorAvatar}
+              className="message-share-author-avatar"
+            />
             <strong>{cocktail.authorNickname}</strong>
           </Link>
         )}
@@ -387,9 +392,11 @@ export default function MessageBubble({
       {isOwn && messageToolbar}
 
       {!isOwn && (
-        <div className="message-avatar" aria-hidden="true">
-          {message.sender_nickname?.charAt(0).toUpperCase() || "?"}
-        </div>
+        <UserAvatar
+          nickname={message.sender_nickname}
+          avatar={message.sender_avatar}
+          className="message-avatar"
+        />
       )}
 
       <div

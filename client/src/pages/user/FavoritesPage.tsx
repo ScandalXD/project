@@ -3,6 +3,7 @@ import { Bookmark, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { favoritesApi, type FavoriteType } from "../../api/favoritesApi";
 import CocktailCard from "../../components/cocktails/CocktailCard";
+import UserAvatar from "../../components/ui/UserAvatar";
 import type { CocktailCardData, CocktailType } from "../../types/cocktail";
 import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
@@ -140,7 +141,6 @@ export default function FavoritesPage() {
 
   const renderPublicFavorite = (cocktail: FavoriteItem) => {
     const authorName = cocktail.author_nickname || "User";
-    const authorInitial = authorName.charAt(0).toUpperCase();
 
     return (
       <div
@@ -157,7 +157,11 @@ export default function FavoritesPage() {
               }
               className="public-post-author"
             >
-              <span className="public-post-avatar">{authorInitial}</span>
+              <UserAvatar
+                nickname={authorName}
+                avatar={cocktail.author_avatar}
+                className="public-post-avatar"
+              />
               <span>
                 <strong>{authorName}</strong>
               </span>

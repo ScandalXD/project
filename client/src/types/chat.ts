@@ -33,6 +33,7 @@ export interface CocktailShareMetadata {
   cocktailImage: string | null;
   authorId?: number | null;
   authorNickname?: string | null;
+  authorAvatar?: string | null;
   forwardedFromMessageId?: number;
   forwardedFromUserId?: number;
   forwardedFromNickname?: string;
@@ -41,6 +42,7 @@ export interface CocktailShareMetadata {
 export interface CommentShareMetadata {
   sharedType: "comment";
   commentAuthorNickname: string;
+  commentAuthorAvatar?: string | null;
   commentContent: string;
   commentPath: string;
   postTitle: string;
@@ -64,6 +66,7 @@ export interface ConversationListItem {
   updated_at: string;
   other_user_id: number;
   other_user_nickname: string;
+  other_user_avatar?: string | null;
   is_online: boolean | number;
   last_seen_at: string | null;
   friendship_status: "pending" | "accepted" | "rejected" | "blocked" | null;
@@ -94,6 +97,7 @@ export interface ChatMessage {
   is_pinned?: boolean | number;
   reactions?: MessageReactionSummary[];
   sender_nickname?: string;
+  sender_avatar?: string | null;
   reply_content?: string | null;
   reply_message_type?: ChatMessageType | null;
 }

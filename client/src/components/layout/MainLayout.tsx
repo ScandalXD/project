@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import UserAvatar from "../ui/UserAvatar";
 
 const navItems = [
   { to: "/catalog", label: "Catalog", icon: BookOpen },
@@ -110,9 +111,11 @@ export default function MainLayout() {
                 title="Profile"
                 onClick={closeMobileNav}
               >
-                <span className="app-user-avatar" aria-hidden="true">
-                  {user?.nickname?.charAt(0).toUpperCase()}
-                </span>
+                <UserAvatar
+                  nickname={user?.nickname}
+                  avatar={user?.avatar}
+                  className="app-user-avatar"
+                />
                 <span>{user?.nickname}</span>
               </NavLink>
             </>

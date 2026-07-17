@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { User } from "../models/User.model";
 import { generateToken } from "../services/token.service";
+import { deleteUploadedFile } from "../utils/file.util";
 
 interface UpdateProfileBody {
   nickname?: string;
@@ -24,7 +25,7 @@ export const getProfile = async (req: Request, res: Response) => {
     const userId = Number(req.user.id);
 
     const [rows] = await db.query<RowDataPacket[]>(
-      "SELECT id, email, nickname, role, created_at, is_active FROM users WHERE id = ?",
+      "SELECT id, email, nickname, avatar, role, created_at, is_active FROM users WHERE id = ?",
       [userId]
     );
 
@@ -99,7 +100,7 @@ export const updateProfile = async (
     );
 
     const [rows] = await db.query<RowDataPacket[]>(
-      "SELECT id, email, nickname, role, created_at, is_active FROM users WHERE id = ?",
+      "SELECT id, email, nickname, avatar, role, created_at, is_active FROM users WHERE id = ?",
       [userId]
     );
 
@@ -119,6 +120,56 @@ export const updateProfile = async (
   } catch (error) {
     console.error("updateProfile error:", error);
     res.status(500).json({ message: "Failed to update profile" });
+  }
+};
+
+export const updateAvatar = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ message: "Avatar image is required" });
+  }
+
+  const userId = Number(req.user.id);
+  const avatarPath = `/uploads/avatars/${req.file.filename}`;
+
+  try {
+    const [rows] = await db.query<RowDataPacket[]>(
+      "SELECT avatar FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      await deleteUploadedFile(avatarPath);
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const oldAvatar = rows[0].avatar as string | null;
+
+    await db.query<ResultSetHeader>(
+      "UPDATE users SET avatar = ? WHERE id = ?",
+      [avatarPath, userId]
+    );
+
+    if (oldAvatar && oldAvatar !== avatarPath) {
+      await deleteUploadedFile(oldAvatar);
+    }
+
+    const [updatedRows] = await db.query<RowDataPacket[]>(
+      "SELECT id, email, nickname, avatar, role, created_at, is_active FROM users WHERE id = ?",
+      [userId]
+    );
+
+    res.json({
+      message: "Avatar updated",
+      user: updatedRows[0] as Omit<User, "password_hash">,
+    });
+  } catch (error) {
+    await deleteUploadedFile(avatarPath);
+    console.error("updateAvatar error:", error);
+    res.status(500).json({ message: "Failed to update avatar" });
   }
 };
 

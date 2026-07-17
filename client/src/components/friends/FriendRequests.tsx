@@ -1,6 +1,7 @@
 import { Check, Clock, X } from "lucide-react";
 import type { Friendship } from "../../types/friend";
 import Button from "../ui/Button";
+import UserAvatar from "../ui/UserAvatar";
 
 interface FriendRequestsProps {
   incoming: Friendship[];
@@ -39,9 +40,11 @@ export default function FriendRequests({
             <div className="friends-list">
               {incoming.map((request) => (
                 <div key={request.id} className="friend-row">
-                  <div className="friend-avatar" aria-hidden="true">
-                    {(request.requester_nickname ?? "?").charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar
+                    nickname={request.requester_nickname}
+                    avatar={request.requester_avatar}
+                    className="friend-avatar"
+                  />
 
                   <div className="friend-row-main">
                     <h3>{request.requester_nickname}</h3>
@@ -85,9 +88,11 @@ export default function FriendRequests({
             <div className="friends-list">
               {outgoing.map((request) => (
                 <div key={request.id} className="friend-row">
-                  <div className="friend-avatar" aria-hidden="true">
-                    {(request.receiver_nickname ?? "?").charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar
+                    nickname={request.receiver_nickname}
+                    avatar={request.receiver_avatar}
+                    className="friend-avatar"
+                  />
 
                   <div className="friend-row-main">
                     <h3>{request.receiver_nickname}</h3>

@@ -176,6 +176,7 @@ export const getComments = async (
     `SELECT
         cc.*,
         u.nickname AS author_nickname,
+        u.avatar AS author_avatar,
         COALESCE(catalog.name, public_cocktails.name) AS cocktail_name,
         COALESCE(catalog.image, public_cocktails.image) AS cocktail_image,
         COUNT(cl.comment_id) AS likes_count
@@ -196,6 +197,7 @@ export const getComments = async (
        cc.parent_comment_id,
        cc.created_at,
        u.nickname,
+       u.avatar,
        catalog.name,
        catalog.image,
        public_cocktails.name,
@@ -231,6 +233,7 @@ export const getComments = async (
         : Number(comment.parent_comment_id),
     created_at: comment.created_at,
     author_nickname: comment.author_nickname,
+    author_avatar: comment.author_avatar,
     cocktail_name: comment.cocktail_name,
     cocktail_image: comment.cocktail_image,
     likes_count: Number(comment.likes_count),

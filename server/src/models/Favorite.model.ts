@@ -6,5 +6,6 @@ export interface Favorite {
   cocktail_type: CocktailType;
   author_id?: number | null;
   author_nickname?: string | null;
+  author_avatar?: string | null;
   created_at: string;
 }

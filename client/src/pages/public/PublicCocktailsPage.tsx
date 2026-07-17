@@ -22,6 +22,7 @@ import type { PublicCocktail } from "../../types/cocktail";
 import CocktailShareModal from "../../components/cocktails/CocktailShareModal";
 import EmptyState from "../../components/ui/EmptyState";
 import Input from "../../components/ui/Input";
+import UserAvatar from "../../components/ui/UserAvatar";
 import ReportModal from "../../components/reports/ReportModal";
 
 function normalizeFavorites(data: any, type: "catalog" | "public") {
@@ -280,7 +281,6 @@ export default function PublicCocktailsPage() {
           {filteredItems.map((item) => {
             const id = String(item.id);
             const authorName = item.author_nickname || "User";
-            const authorInitial = authorName.charAt(0).toUpperCase();
 
             return (
               <article
@@ -296,7 +296,11 @@ export default function PublicCocktailsPage() {
                     }
                     className="public-post-author"
                   >
-                    <span className="public-post-avatar">{authorInitial}</span>
+                    <UserAvatar
+                      nickname={authorName}
+                      avatar={item.author_avatar}
+                      className="public-post-avatar"
+                    />
                     <span>
                       <strong>{authorName}</strong>
                       {item.created_at && (

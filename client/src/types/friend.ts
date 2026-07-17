@@ -4,6 +4,7 @@ export type FriendshipDirection = "incoming" | "outgoing" | null;
 export interface FriendSearchResult {
   id: number;
   nickname: string;
+  avatar?: string | null;
   relationship_status: FriendshipStatus | null;
   relationship_direction: FriendshipDirection;
 }
@@ -18,9 +19,12 @@ export interface Friendship {
   responded_at: string | null;
   updated_at: string;
   requester_nickname?: string;
+  requester_avatar?: string | null;
   receiver_nickname?: string;
+  receiver_avatar?: string | null;
   friend_id?: number;
   friend_nickname?: string;
+  friend_avatar?: string | null;
 }
 
 export interface FriendRequestsResponse {

@@ -54,7 +54,7 @@ export const getCatalogCocktails = async (): Promise<CatalogCocktail[]> => {
 
 export const getPublicCocktails = async (): Promise<PublicCocktail[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT pc.*, u.nickname AS author_nickname
+    `SELECT pc.*, u.nickname AS author_nickname, u.avatar AS author_avatar
      FROM public_cocktails pc
      JOIN users u ON pc.author_id = u.id
      ORDER BY pc.created_at DESC`,
@@ -279,7 +279,7 @@ export const getPublicCocktailsByAuthor = async (
   }
 
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT pc.*, u.nickname AS author_nickname
+    `SELECT pc.*, u.nickname AS author_nickname, u.avatar AS author_avatar
      FROM public_cocktails pc
      JOIN users u ON pc.author_id = u.id
      WHERE pc.author_id = ?

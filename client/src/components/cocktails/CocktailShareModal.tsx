@@ -5,6 +5,7 @@ import { friendsApi } from "../../api/friendsApi";
 import { useAuth } from "../../hooks/useAuth";
 import type { ChatCocktailType } from "../../types/chat";
 import type { Friendship } from "../../types/friend";
+import UserAvatar from "../ui/UserAvatar";
 
 interface CocktailShareModalProps {
   cocktailId: string | number;
@@ -139,8 +140,12 @@ export default function CocktailShareModal({
                 onClick={() => toggleSelectedFriend(friend.friend_id)}
                 disabled={sharingFriendId === friend.friend_id}
               >
-                <span className="share-friend-avatar">
-                  {name.charAt(0).toUpperCase()}
+                <span className="share-friend-avatar-wrap">
+                  <UserAvatar
+                    nickname={name}
+                    avatar={friend.friend_avatar}
+                    className="share-friend-avatar"
+                  />
                   {isSelected && (
                     <span className="share-friend-check">
                       <Check size={14} aria-hidden="true" />

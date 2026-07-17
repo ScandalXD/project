@@ -59,7 +59,7 @@ const getExistingUser = async (userId: number) => {
   ensureValidUserId(userId);
 
   const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT id, nickname FROM users WHERE id = ? AND is_active = TRUE",
+    "SELECT id, nickname, avatar FROM users WHERE id = ? AND is_active = TRUE",
     [userId],
   );
 
@@ -67,7 +67,7 @@ const getExistingUser = async (userId: number) => {
     throw new ServiceError("User not found", 404);
   }
 
-  return rows[0] as { id: number; nickname: string };
+  return rows[0] as { id: number; nickname: string; avatar: string | null };
 };
 
 export const searchUsersForFriends = async (
@@ -84,6 +84,7 @@ export const searchUsersForFriends = async (
     `SELECT
        u.id,
        u.nickname,
+       u.avatar,
        f.status AS relationship_status,
        CASE
          WHEN f.requester_id = ? THEN 'outgoing'
@@ -368,7 +369,7 @@ export const getFriendRequests = async (
   outgoing: Friendship[];
 }> => {
   const [incomingRows] = await db.query<RowDataPacket[]>(
-    `SELECT f.*, u.nickname AS requester_nickname
+    `SELECT f.*, u.nickname AS requester_nickname, u.avatar AS requester_avatar
      FROM friendships f
      JOIN users u ON f.requester_id = u.id
      WHERE f.receiver_id = ?
@@ -378,7 +379,7 @@ export const getFriendRequests = async (
   );
 
   const [outgoingRows] = await db.query<RowDataPacket[]>(
-    `SELECT f.*, u.nickname AS receiver_nickname
+    `SELECT f.*, u.nickname AS receiver_nickname, u.avatar AS receiver_avatar
      FROM friendships f
      JOIN users u ON f.receiver_id = u.id
      WHERE f.requester_id = ?
@@ -401,7 +402,8 @@ export const getFriends = async (userId: number): Promise<Friendship[]> => {
          WHEN f.requester_id = ? THEN f.receiver_id
          ELSE f.requester_id
        END AS friend_id,
-       friend.nickname AS friend_nickname
+       friend.nickname AS friend_nickname,
+       friend.avatar AS friend_avatar
      FROM friendships f
      JOIN users friend
        ON friend.id = CASE
@@ -421,7 +423,7 @@ export const getBlockedUsers = async (
   userId: number,
 ): Promise<Friendship[]> => {
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT f.*, u.nickname AS receiver_nickname
+    `SELECT f.*, u.nickname AS receiver_nickname, u.avatar AS receiver_avatar
      FROM friendships f
      JOIN users u ON f.receiver_id = u.id
      WHERE f.blocked_by = ?

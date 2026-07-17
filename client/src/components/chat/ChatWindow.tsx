@@ -36,6 +36,7 @@ import Button from "../ui/Button";
 import EmptyState from "../ui/EmptyState";
 import Input from "../ui/Input";
 import Modal from "../ui/Modal";
+import UserAvatar from "../ui/UserAvatar";
 import MessageBubble from "./MessageBubble";
 import OnlineBadge from "./OnlineBadge";
 import ReportMessageModal from "./ReportMessageModal";
@@ -760,9 +761,11 @@ export default function ChatWindow({
           </button>
         )}
 
-        <div className="chat-avatar" aria-hidden="true">
-          {conversation.other_user_nickname.charAt(0).toUpperCase()}
-        </div>
+        <UserAvatar
+          nickname={conversation.other_user_nickname}
+          avatar={conversation.other_user_avatar}
+          className="chat-avatar"
+        />
 
         <div className="chat-window-user">
           <div>
@@ -1149,9 +1152,11 @@ export default function ChatWindow({
                 type="button"
                 onClick={() => handleForwardMessage(item.id)}
               >
-                <span className="chat-avatar" aria-hidden="true">
-                  {item.other_user_nickname.charAt(0).toUpperCase()}
-                </span>
+                <UserAvatar
+                  nickname={item.other_user_nickname}
+                  avatar={item.other_user_avatar}
+                  className="chat-avatar"
+                />
                 <span>{item.other_user_nickname}</span>
               </button>
             ))}

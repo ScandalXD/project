@@ -30,6 +30,7 @@ export const registerUser = async (
     nickname,
     password_hash: hash,
     role: "user",
+    avatar: null,
     created_at: new Date().toISOString(),
     is_active: true,
   };

@@ -4,6 +4,7 @@ import { friendsApi } from "../../api/friendsApi";
 import type { FriendSearchResult } from "../../types/friend";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
+import UserAvatar from "../ui/UserAvatar";
 
 interface FriendSearchProps {
   onChanged: () => Promise<void>;
@@ -113,9 +114,11 @@ export default function FriendSearch({ onChanged }: FriendSearchProps) {
 
             return (
               <div key={user.id} className="friend-row">
-                <div className="friend-avatar" aria-hidden="true">
-                  {user.nickname.charAt(0).toUpperCase()}
-                </div>
+                <UserAvatar
+                  nickname={user.nickname}
+                  avatar={user.avatar}
+                  className="friend-avatar"
+                />
 
                 <div className="friend-row-main">
                   <h3>{user.nickname}</h3>

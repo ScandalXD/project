@@ -1,5 +1,5 @@
 import { api } from "./axios";
-import type { ChangePasswordRequest ,UpdateProfileRequest, User } from "../types/user";
+import type { ChangePasswordRequest, UpdateProfileRequest, User } from "../types/user";
 
 export const profileApi = {
   async getProfile(): Promise<User> {
@@ -9,6 +9,18 @@ export const profileApi = {
 
   async updateProfile(data: UpdateProfileRequest): Promise<{ user: User; token?: string }> {
     const response = await api.put<{ user: User; token?: string }>("/profile", data);
+    return response.data;
+  },
+
+  async updateAvatar(file: File): Promise<{ user: User }> {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const response = await api.put<{ user: User }>("/profile/avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
 

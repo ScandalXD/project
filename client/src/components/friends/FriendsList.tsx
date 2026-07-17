@@ -1,6 +1,7 @@
 import { Ban, MessageCircle, UserMinus } from "lucide-react";
 import type { Friendship } from "../../types/friend";
 import Button from "../ui/Button";
+import UserAvatar from "../ui/UserAvatar";
 
 interface FriendsListProps {
   friends: Friendship[];
@@ -34,9 +35,11 @@ export default function FriendsList({
         <div className="friends-list">
           {friends.map((friendship) => (
             <div key={friendship.id} className="friend-row">
-              <div className="friend-avatar" aria-hidden="true">
-                {(friendship.friend_nickname ?? "?").charAt(0).toUpperCase()}
-              </div>
+              <UserAvatar
+                nickname={friendship.friend_nickname}
+                avatar={friendship.friend_avatar}
+                className="friend-avatar"
+              />
 
               <div className="friend-row-main">
                 <h3>{friendship.friend_nickname}</h3>
@@ -89,9 +92,11 @@ export default function FriendsList({
           <div className="friends-list">
             {blockedUsers.map((friendship) => (
               <div key={friendship.id} className="friend-row friend-row-blocked">
-                <div className="friend-avatar" aria-hidden="true">
-                  {(friendship.receiver_nickname ?? "?").charAt(0).toUpperCase()}
-                </div>
+                <UserAvatar
+                  nickname={friendship.receiver_nickname}
+                  avatar={friendship.receiver_avatar}
+                  className="friend-avatar"
+                />
 
                 <div className="friend-row-main">
                   <h3>{friendship.receiver_nickname}</h3>

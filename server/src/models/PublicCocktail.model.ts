@@ -9,4 +9,5 @@ export interface PublicCocktail {
   image: string | null;
   created_at: string;
   author_nickname?: string;
+  author_avatar?: string | null;
 }
