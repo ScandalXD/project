@@ -35,6 +35,7 @@ export interface UserCocktail extends BaseCocktail {
 
 export interface CocktailCardData extends BaseCocktail {
   type: CocktailType;
+  author_id?: number;
   author_nickname?: string;
 }
 

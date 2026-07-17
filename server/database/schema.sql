@@ -238,7 +238,7 @@ CREATE TABLE messages (
   conversation_id BIGINT NOT NULL,
   sender_id BIGINT NOT NULL,
   reply_to_message_id BIGINT NULL,
-  message_type ENUM('text', 'cocktail_share', 'image', 'file', 'voice', 'system') NOT NULL,
+  message_type ENUM('text', 'cocktail_share', 'image', 'video', 'file', 'voice', 'system') NOT NULL,
   content TEXT NULL,
   metadata JSON NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -2,9 +2,15 @@ export type ChatMessageType =
   | "text"
   | "cocktail_share"
   | "image"
+  | "video"
   | "file"
   | "voice"
   | "system";
+
+export type ChatAttachmentMessageType = Extract<
+  ChatMessageType,
+  "image" | "video" | "file" | "voice"
+>;
 
 export type ChatCocktailType = "catalog" | "public" | "user";
 
@@ -60,6 +66,8 @@ export interface ConversationListItem {
   other_user_nickname: string;
   is_online: boolean | number;
   last_seen_at: string | null;
+  friendship_status: "pending" | "accepted" | "rejected" | "blocked" | null;
+  friendship_blocked_by: number | null;
   last_message_id: number | null;
   last_message_type: ChatMessageType | null;
   last_message_content: string | null;

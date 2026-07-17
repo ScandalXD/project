@@ -104,7 +104,7 @@ export default function AdminCatalogForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="catalog-form">
+    <form onSubmit={handleSubmit} className="cocktail-form admin-catalog-form">
       {mode === "create" && (
         <input
           type="text"

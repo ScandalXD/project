@@ -17,6 +17,7 @@ import OnlineBadge from "./OnlineBadge";
 interface ChatSidebarProps {
   conversations: ConversationListItem[];
   activeConversationId: number | null;
+  currentUserId: number;
   onSelect: (conversationId: number) => void;
   onTogglePin: (conversation: ConversationListItem) => Promise<void>;
   onToggleRead: (conversation: ConversationListItem) => Promise<void>;
@@ -44,6 +45,7 @@ function getConversationPreview(conversation: ConversationListItem) {
 export default function ChatSidebar({
   conversations,
   activeConversationId,
+  currentUserId,
   onSelect,
   onTogglePin,
   onToggleRead,
@@ -91,6 +93,9 @@ export default function ChatSidebar({
         <div className="chat-conversation-list">
           {filteredConversations.map((conversation) => {
             const isPinned = isEnabledFlag(conversation.is_pinned);
+            const isBlockedByOtherUser =
+              conversation.friendship_status === "blocked" &&
+              Number(conversation.friendship_blocked_by) !== currentUserId;
 
             return (
               <div
@@ -132,10 +137,16 @@ export default function ChatSidebar({
                       {getConversationPreview(conversation)}
                     </span>
 
-                    <OnlineBadge
-                      isOnline={conversation.is_online}
-                      lastSeenAt={conversation.last_seen_at}
-                    />
+                    {isBlockedByOtherUser ? (
+                      <span className="chat-online-badge">
+                        Last seen a long time ago
+                      </span>
+                    ) : (
+                      <OnlineBadge
+                        isOnline={conversation.is_online}
+                        lastSeenAt={conversation.last_seen_at}
+                      />
+                    )}
                   </span>
                 </button>
 

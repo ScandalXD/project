@@ -432,6 +432,17 @@ export default function MessageBubble({
           </div>
         )}
 
+        {attachment && message.message_type === "video" && (
+          <div className="message-attachment message-video-attachment">
+            <video
+              src={getImageUrl(attachment.fileUrl)}
+              controls
+              preload="metadata"
+            />
+            {message.content && <p>{message.content}</p>}
+          </div>
+        )}
+
         {attachment && message.message_type === "voice" && (
           <VoiceMessage attachment={attachment} />
         )}

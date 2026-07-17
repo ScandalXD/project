@@ -1,5 +1,6 @@
 import { api } from "./axios";
 import type {
+  ChatAttachmentMessageType,
   ChatCocktailType,
   ChatMessageMetadata,
   ChatMessage,
@@ -63,7 +64,7 @@ export const chatApi = {
   async sendAttachment(
     conversationId: number,
     file: File,
-    messageType: "image" | "file" | "voice",
+    messageType: ChatAttachmentMessageType,
     content?: string,
     replyToMessageId?: number | null,
     durationSeconds?: number | null,

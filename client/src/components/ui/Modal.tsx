@@ -6,11 +6,18 @@ type ModalProps = {
   children: ReactNode;
   onClose: () => void;
   footer?: ReactNode;
+  className?: string;
 };
 
-export default function Modal({ title, children, onClose, footer }: ModalProps) {
+export default function Modal({
+  title,
+  children,
+  onClose,
+  footer,
+  className = "",
+}: ModalProps) {
   return (
-    <div className="modal-backdrop">
+    <div className={`modal-backdrop ${className}`.trim()}>
       <div className="modal-card">
         <div className="modal-header">
           <h3>{title}</h3>

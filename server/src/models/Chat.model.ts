@@ -4,9 +4,15 @@ export type ChatMessageType =
   | "text"
   | "cocktail_share"
   | "image"
+  | "video"
   | "file"
   | "voice"
   | "system";
+
+export type ChatAttachmentMessageType = Extract<
+  ChatMessageType,
+  "image" | "video" | "file" | "voice"
+>;
 
 export type ChatCocktailType = "catalog" | "public" | "user";
 

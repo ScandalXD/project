@@ -9,10 +9,12 @@ import { useSocket } from "../../hooks/useSocket";
 import type { ChatMessage, ConversationListItem } from "../../types/chat";
 import { isEnabledFlag } from "../../utils/booleanFlag";
 
+const LAST_CHAT_CONVERSATION_KEY = "cocktailapp:lastChatConversationId";
+
 export default function ChatPage() {
   const { user, token } = useAuth();
   const { socket, isConnected, error: socketError } = useSocket(token);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -41,12 +43,18 @@ export default function ChatPage() {
       setConversations(data);
 
       const conversationIdFromUrl = Number(searchParams.get("conversationId"));
+      const conversationIdFromStorage = Number(
+        window.sessionStorage.getItem(LAST_CHAT_CONVERSATION_KEY),
+      );
+      const preferredConversationId =
+        conversationIdFromUrl || conversationIdFromStorage;
       const hasConversationFromUrl = data.some(
-        (conversation) => conversation.id === conversationIdFromUrl,
+        (conversation) => conversation.id === preferredConversationId,
       );
 
       if (hasConversationFromUrl) {
-        setActiveConversationId(conversationIdFromUrl);
+        setActiveConversationId(preferredConversationId);
+        setIsMobileConversationOpen(true);
       } else if (!activeConversationId && data.length > 0) {
         setActiveConversationId(data[0].id);
       }
@@ -223,10 +231,17 @@ export default function ChatPage() {
   const handleSelectConversation = (conversationId: number) => {
     setActiveConversationId(conversationId);
     setIsMobileConversationOpen(true);
+    window.sessionStorage.setItem(
+      LAST_CHAT_CONVERSATION_KEY,
+      String(conversationId),
+    );
+    setSearchParams({ conversationId: String(conversationId) });
   };
 
   const handleBackToChats = () => {
     setIsMobileConversationOpen(false);
+    window.sessionStorage.removeItem(LAST_CHAT_CONVERSATION_KEY);
+    setSearchParams({});
   };
 
   const handleTogglePin = async (conversation: ConversationListItem) => {
@@ -301,6 +316,7 @@ export default function ChatPage() {
             <ChatSidebar
               conversations={conversations}
               activeConversationId={activeConversationId}
+              currentUserId={user.id}
               onSelect={handleSelectConversation}
               onTogglePin={handleTogglePin}
               onToggleRead={handleToggleRead}
@@ -326,6 +342,10 @@ export default function ChatPage() {
                   : ""
               }
               onBack={handleBackToChats}
+              onDeleteConversation={(conversationId) =>
+                setPendingDelete({ conversationId, mode: "me" })
+              }
+              isMobileOpen={isMobileConversationOpen}
               onMessagesChanged={handleMessagesChanged}
             />
           </>

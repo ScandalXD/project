@@ -21,6 +21,7 @@ import {
   unpinMessage,
 } from "../services/chat.service";
 import {
+  ChatAttachmentMessageType,
   ChatCocktailType,
   ChatMessageMetadata,
 } from "../models/Chat.model";
@@ -191,7 +192,7 @@ export const sendAttachmentMessageHandler = async (
     { id: string },
     {},
     {
-      messageType: "image" | "file" | "voice";
+      messageType: ChatAttachmentMessageType;
       content?: string | null;
       replyToMessageId?: string | number | null;
       durationSeconds?: string | number | null;

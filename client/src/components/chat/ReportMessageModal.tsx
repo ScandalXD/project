@@ -39,6 +39,7 @@ export default function ReportMessageModal({
     <Modal
       title={title}
       onClose={onClose}
+      className="report-modal-backdrop"
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>

@@ -1,8 +1,18 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import {
   ArrowLeft,
+  Ban,
+  Flag,
   GlassWater,
   Mic,
+  MoreVertical,
   Paperclip,
   Pin,
   Smile,
@@ -13,7 +23,9 @@ import {
 import type { Socket } from "socket.io-client";
 import { chatApi } from "../../api/chatApi";
 import { chatReportsApi } from "../../api/chatReportsApi";
+import { friendsApi } from "../../api/friendsApi";
 import type {
+  ChatAttachmentMessageType,
   ChatCocktailType,
   ChatMessage,
   ConversationListItem,
@@ -43,13 +55,30 @@ interface ChatWindowProps {
   isSocketConnected: boolean;
   typingLabel: string;
   onBack?: () => void;
+  onDeleteConversation?: (conversationId: number) => void;
+  isMobileOpen?: boolean;
   onMessagesChanged: () => Promise<void>;
 }
 
-const QUICK_MESSAGE_EMOJIS = ["😀", "😂", "❤️", "👍", "🔥", "👏"];
+const QUICK_MESSAGE_EMOJIS = [
+  "\u{1F600}",
+  "\u{1F602}",
+  "\u{2764}\u{FE0F}",
+  "\u{1F44D}",
+  "\u{1F525}",
+  "\u{1F44F}",
+];
 
 function getDateKey(value: string) {
   return new Date(value).toLocaleDateString("pl-PL");
+}
+
+function isSameCalendarDay(first: Date, second: Date) {
+  return (
+    first.getFullYear() === second.getFullYear() &&
+    first.getMonth() === second.getMonth() &&
+    first.getDate() === second.getDate()
+  );
 }
 
 function formatDateDivider(value: string) {
@@ -59,21 +88,16 @@ function formatDateDivider(value: string) {
 
   yesterday.setDate(today.getDate() - 1);
 
-  const isSameDay = (first: Date, second: Date) =>
-    first.getFullYear() === second.getFullYear() &&
-    first.getMonth() === second.getMonth() &&
-    first.getDate() === second.getDate();
-
   const time = date.toLocaleTimeString("pl-PL", {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  if (isSameDay(date, today)) {
+  if (isSameCalendarDay(date, today)) {
     return time;
   }
 
-  if (isSameDay(date, yesterday)) {
+  if (isSameCalendarDay(date, yesterday)) {
     return `Yesterday, ${time}`;
   }
 
@@ -87,7 +111,9 @@ function formatDateDivider(value: string) {
 }
 
 function formatSeenAgo(value: string) {
-  const diffMs = Date.now() - new Date(value).getTime();
+  const date = new Date(value);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
   const diffMinutes = Math.max(1, Math.floor(diffMs / 60000));
 
   if (diffMinutes < 60) {
@@ -95,7 +121,39 @@ function formatSeenAgo(value: string) {
   }
 
   const diffHours = Math.floor(diffMinutes / 60);
-  return `Seen ${diffHours} h. ago`;
+
+  if (diffHours < 24) {
+    return `Seen ${diffHours} h. ago`;
+  }
+
+  const yesterday = new Date(now);
+  const dayBeforeYesterday = new Date(now);
+
+  yesterday.setDate(now.getDate() - 1);
+  dayBeforeYesterday.setDate(now.getDate() - 2);
+
+  if (isSameCalendarDay(date, yesterday)) {
+    return "Seen yesterday";
+  }
+
+  if (isSameCalendarDay(date, dayBeforeYesterday)) {
+    return "Seen the day before yesterday";
+  }
+
+  return `Seen ${date.toLocaleDateString("pl-PL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })}`;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  const apiError = error as {
+    response?: { data?: { message?: string } };
+    message?: string;
+  };
+
+  return apiError.response?.data?.message || apiError.message || fallback;
 }
 
 function getPinnedMessagePreview(message: ChatMessage) {
@@ -109,6 +167,7 @@ function getPinnedMessagePreview(message: ChatMessage) {
   }
 
   if (message.message_type === "image") return message.content || "Image";
+  if (message.message_type === "video") return message.content || "Video";
   if (message.message_type === "voice") return "Voice message";
   if (message.message_type === "file") {
     const fileName =
@@ -132,6 +191,8 @@ export default function ChatWindow({
   isSocketConnected,
   typingLabel,
   onBack,
+  onDeleteConversation,
+  isMobileOpen = false,
   onMessagesChanged,
 }: ChatWindowProps) {
   const [content, setContent] = useState("");
@@ -140,10 +201,12 @@ export default function ChatWindow({
   const [reportMessage, setReportMessage] = useState<ChatMessage | null>(null);
   const [forwardMessage, setForwardMessage] = useState<ChatMessage | null>(null);
   const [isReportUserOpen, setIsReportUserOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isShareCocktailOpen, setIsShareCocktailOpen] = useState(false);
   const [isComposerEmojiOpen, setIsComposerEmojiOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [attachmentType, setAttachmentType] = useState<"image" | "file" | "voice">("file");
+  const [attachmentType, setAttachmentType] =
+    useState<ChatAttachmentMessageType>("file");
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [recordingLevels, setRecordingLevels] = useState<number[]>(
@@ -153,7 +216,12 @@ export default function ChatWindow({
   const [draftVoiceLevels, setDraftVoiceLevels] = useState<number[]>(
     createEmptyWaveformLevels(),
   );
+  const [areMessagesReady, setAreMessagesReady] = useState(true);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const lastConversationIdRef = useRef<number | null>(null);
+  const lastMobileOpenRef = useRef(false);
+  const scrollSettleTimeoutRef = useRef<number | null>(null);
   const typingTimeoutRef = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -166,9 +234,88 @@ export default function ChatWindow({
     createEmptyWaveformLevels(),
   );
 
+  const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
+    const container = messagesContainerRef.current;
+
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior,
+      });
+      return;
+    }
+
+    bottomRef.current?.scrollIntoView({ behavior });
+  };
+
+  useLayoutEffect(() => {
+    if (!conversation || isLoading) {
+      setAreMessagesReady(true);
+      return;
+    }
+
+    const isNewConversation = lastConversationIdRef.current !== conversation.id;
+    const isOpeningMobileConversation = isMobileOpen && !lastMobileOpenRef.current;
+    const shouldPrepareScroll = isNewConversation || isOpeningMobileConversation;
+
+    lastConversationIdRef.current = conversation.id;
+    lastMobileOpenRef.current = isMobileOpen;
+    const behavior: ScrollBehavior = shouldPrepareScroll ? "auto" : "smooth";
+
+    if (shouldPrepareScroll) {
+      setAreMessagesReady(false);
+      scrollToBottom("auto");
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      scrollToBottom(behavior);
+
+      if (shouldPrepareScroll) {
+        setAreMessagesReady(true);
+      }
+    });
+
+    if (scrollSettleTimeoutRef.current) {
+      window.clearTimeout(scrollSettleTimeoutRef.current);
+    }
+
+    const settleDelays = [80, 220, 500];
+    const settleTimeoutIds = settleDelays.map((delay, index) =>
+      window.setTimeout(() => {
+        scrollToBottom("auto");
+
+        if (index === settleDelays.length - 1) {
+          setAreMessagesReady(true);
+        }
+      }, delay),
+    );
+
+    scrollSettleTimeoutRef.current =
+      settleTimeoutIds[settleTimeoutIds.length - 1] ?? null;
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      settleTimeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    };
+  }, [conversation?.id, isLoading, isMobileOpen, messages.length]);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length, conversation?.id]);
+    const container = messagesContainerRef.current;
+    if (!container || !conversation || isLoading) return;
+
+    let frameId = 0;
+    const observer = new ResizeObserver(() => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => scrollToBottom("auto"));
+    });
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [conversation?.id, isLoading]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0] ?? null;
@@ -178,6 +325,8 @@ export default function ChatWindow({
 
     if (selected.type.startsWith("image/")) {
       setAttachmentType("image");
+    } else if (selected.type.startsWith("video/")) {
+      setAttachmentType("video");
     } else if (selected.type.startsWith("audio/")) {
       setAttachmentType("voice");
     } else {
@@ -315,6 +464,9 @@ export default function ChatWindow({
       if (recordingTimerRef.current) {
         window.clearInterval(recordingTimerRef.current);
       }
+      if (scrollSettleTimeoutRef.current) {
+        window.clearTimeout(scrollSettleTimeoutRef.current);
+      }
       if (mediaRecorderRef.current?.state === "recording") {
         mediaRecorderRef.current.stop();
       }
@@ -373,12 +525,8 @@ export default function ChatWindow({
       setFile(null);
       setDraftVoiceDuration(0);
       setReplyTo(null);
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Failed to send message.",
-      );
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to send message."));
     }
   };
 
@@ -388,8 +536,8 @@ export default function ChatWindow({
     try {
       await chatApi.deleteMessage(messageId);
       await onMessagesChanged();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to delete message.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to delete message."));
     }
   };
 
@@ -399,10 +547,8 @@ export default function ChatWindow({
     try {
       await chatApi.deleteMessageForEveryone(messageId);
       await onMessagesChanged();
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message || "Failed to delete message for everyone.",
-      );
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to delete message for everyone."));
     }
   };
 
@@ -422,8 +568,8 @@ export default function ChatWindow({
         details,
       });
       setReportMessage(null);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to report message.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to report message."));
     }
   };
 
@@ -443,8 +589,8 @@ export default function ChatWindow({
         details,
       });
       setIsReportUserOpen(false);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to report user.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to report user."));
     }
   };
 
@@ -520,11 +666,57 @@ export default function ChatWindow({
     await onMessagesChanged();
   };
 
+  const handleUnblockUser = async () => {
+    if (!conversation) return;
+
+    try {
+      setError("");
+      await friendsApi.unblockUser(conversation.other_user_id);
+      await onMessagesChanged();
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to unblock user."));
+    }
+  };
+
+  const handleBlockUser = async () => {
+    if (!conversation) return;
+
+    try {
+      setError("");
+      setIsUserMenuOpen(false);
+      await friendsApi.blockUser(conversation.other_user_id);
+      resetComposerDraft();
+      await onMessagesChanged();
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to block user."));
+    }
+  };
+
   const clearAttachment = () => {
     setFile(null);
     setDraftVoiceDuration(0);
     setDraftVoiceLevels(createEmptyWaveformLevels());
   };
+
+  const resetComposerDraft = () => {
+    setContent("");
+    setReplyTo(null);
+    setIsComposerEmojiOpen(false);
+    clearAttachment();
+
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  useEffect(() => {
+    setError("");
+    setIsUserMenuOpen(false);
+    setIsReportUserOpen(false);
+    setIsShareCocktailOpen(false);
+    setForwardMessage(null);
+    resetComposerDraft();
+  }, [conversation?.id]);
 
   const lastMessage = messages[messages.length - 1] ?? null;
   const pinnedMessages = messages.filter(
@@ -543,6 +735,15 @@ export default function ChatWindow({
       </section>
     );
   }
+
+  const isConversationBlocked = conversation.friendship_status === "blocked";
+  const didCurrentUserBlock =
+    isConversationBlocked &&
+    Number(conversation.friendship_blocked_by) === currentUserId;
+  const wasCurrentUserBlocked =
+    isConversationBlocked &&
+    Number(conversation.friendship_blocked_by) !== currentUserId;
+  const canSendMessages = conversation.friendship_status === "accepted";
 
   return (
     <section className="chat-window">
@@ -566,18 +767,55 @@ export default function ChatWindow({
         <div className="chat-window-user">
           <div>
             <h2>{conversation.other_user_nickname}</h2>
-            <OnlineBadge
-              isOnline={conversation.is_online}
-              lastSeenAt={conversation.last_seen_at}
-            />
+            {wasCurrentUserBlocked ? (
+              <span className="chat-online-badge">
+                Last seen a long time ago
+              </span>
+            ) : (
+              <OnlineBadge
+                isOnline={conversation.is_online}
+                lastSeenAt={conversation.last_seen_at}
+              />
+            )}
           </div>
 
-          <Button
-            variant="secondary"
-            onClick={() => setIsReportUserOpen(true)}
-          >
-            Report user
-          </Button>
+          <div className="chat-user-menu">
+            <Button
+              variant="secondary"
+              className="chat-report-user-button"
+              onClick={() => setIsUserMenuOpen((open) => !open)}
+              aria-label="User actions"
+              title="User actions"
+            >
+              <MoreVertical size={18} aria-hidden="true" />
+            </Button>
+
+            {isUserMenuOpen && (
+              <div className="chat-user-menu-popover">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    setIsReportUserOpen(true);
+                  }}
+                >
+                  <Flag size={17} aria-hidden="true" />
+                  Report
+                </button>
+
+                {!didCurrentUserBlock && (
+                  <button
+                    type="button"
+                    className="chat-user-menu-danger"
+                    onClick={handleBlockUser}
+                  >
+                    <Ban size={17} aria-hidden="true" />
+                    Block
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -621,7 +859,14 @@ export default function ChatWindow({
         </div>
       )}
 
-      <div className="chat-messages">
+      <div
+        className={
+          areMessagesReady
+            ? "chat-messages"
+            : "chat-messages chat-messages-preparing"
+        }
+        ref={messagesContainerRef}
+      >
         {isLoading ? (
           <EmptyState text="Loading messages..." />
         ) : messages.length === 0 ? (
@@ -671,152 +916,199 @@ export default function ChatWindow({
         </div>
       )}
 
-      {typingLabel && <div className="typing-indicator">{typingLabel}</div>}
+      {canSendMessages ? (
+        <>
+          {typingLabel && <div className="typing-indicator">{typingLabel}</div>}
 
-      {replyTo && (
-        <div className="chat-reply-box">
-          <span>
-            Replying to {replyTo.sender_nickname}:{" "}
-            {replyTo.content || replyTo.message_type}
-          </span>
-          <button type="button" onClick={() => setReplyTo(null)}>
-            Clear
-          </button>
-        </div>
-      )}
-
-      {file && (
-        attachmentType === "voice" ? (
-          <div className="voice-draft-panel">
-            <VoiceWaveform
-              levels={draftVoiceLevels}
-              className="voice-draft-wave"
-              barClassName="voice-recording-bar"
-            />
-            <span className="voice-draft-time">
-              {formatVoiceTime(draftVoiceDuration)}
-            </span>
-            <button
-              type="button"
-              onClick={clearAttachment}
-              title="Remove voice message"
-              aria-label="Remove voice message"
-            >
-              <Trash2 size={17} aria-hidden="true" />
-            </button>
-          </div>
-        ) : (
-          <div className="chat-reply-box">
-            <span>
-              {attachmentType}: {file.name}
-            </span>
-            <button type="button" onClick={clearAttachment}>
-              Clear
-            </button>
-          </div>
-        )
-      )}
-
-      {isRecording && (
-        <div className="voice-recording-panel">
-          <span className="voice-recording-dot" aria-hidden="true" />
-          <span className="voice-recording-time">
-            {formatVoiceTime(recordingSeconds)}
-          </span>
-          <VoiceWaveform
-            levels={recordingLevels}
-            className="voice-recording-wave"
-            barClassName="voice-recording-bar"
-          />
-          <Button
-            type="button"
-            variant="danger"
-            className="chat-composer-icon-button"
-            onClick={stopVoiceRecording}
-            title="Stop recording"
-            aria-label="Stop recording"
-          >
-            <Square size={17} aria-hidden="true" />
-          </Button>
-        </div>
-      )}
-
-      <form className="chat-composer" onSubmit={handleSubmit}>
-        <Button
-          type="button"
-          variant="secondary"
-          className="chat-composer-icon-button"
-          onClick={() => setIsShareCocktailOpen(true)}
-          title="Share cocktail"
-          aria-label="Share cocktail"
-        >
-          <GlassWater size={18} aria-hidden="true" />
-        </Button>
-
-        <label className="chat-file-button">
-          <Paperclip size={18} aria-hidden="true" />
-          <span className="sr-only">Attach file</span>
-          <input type="file" onChange={handleFileChange} />
-        </label>
-
-        <div className="chat-composer-emoji-wrap">
-          <Button
-            type="button"
-            variant="secondary"
-            className="chat-composer-icon-button"
-            onClick={() => setIsComposerEmojiOpen((open) => !open)}
-            title="Add emoji"
-            aria-label="Add emoji"
-          >
-            <Smile size={18} aria-hidden="true" />
-          </Button>
-
-          {isComposerEmojiOpen && (
-            <div className="chat-composer-emoji-popover">
-              {QUICK_MESSAGE_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => {
-                    setContent((value) => `${value}${emoji}`);
-                    setIsComposerEmojiOpen(false);
-                  }}
-                >
-                  {emoji}
-                </button>
-              ))}
+          {replyTo && (
+            <div className="chat-reply-box">
+              <span>
+                Replying to {replyTo.sender_nickname}:{" "}
+                {replyTo.content || replyTo.message_type}
+              </span>
+              <button type="button" onClick={() => setReplyTo(null)}>
+                Clear
+              </button>
             </div>
           )}
-        </div>
 
-        <Button
-          type="button"
-          variant={isRecording ? "danger" : "secondary"}
-          className="chat-composer-icon-button"
-          onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
-          title={isRecording ? "Stop recording" : "Record voice message"}
-          aria-label={isRecording ? "Stop recording" : "Record voice message"}
-        >
-          {isRecording ? (
-            <Square size={17} aria-hidden="true" />
-          ) : (
-            <Mic size={18} aria-hidden="true" />
+          {file && (
+            attachmentType === "voice" ? (
+              <div className="voice-draft-panel">
+                <VoiceWaveform
+                  levels={draftVoiceLevels}
+                  className="voice-draft-wave"
+                  barClassName="voice-recording-bar"
+                />
+                <span className="voice-draft-time">
+                  {formatVoiceTime(draftVoiceDuration)}
+                </span>
+                <button
+                  type="button"
+                  onClick={clearAttachment}
+                  title="Remove voice message"
+                  aria-label="Remove voice message"
+                >
+                  <Trash2 size={17} aria-hidden="true" />
+                </button>
+              </div>
+            ) : (
+              <div className="chat-reply-box">
+                <span>
+                  {attachmentType}: {file.name}
+                </span>
+                <button type="button" onClick={clearAttachment}>
+                  Clear
+                </button>
+              </div>
+            )
           )}
-        </Button>
 
-        <Input
-          value={content}
-          onChange={(event) => {
-            setContent(event.target.value);
-            emitTyping();
-          }}
-          placeholder={file ? "Optional caption" : "Write a message"}
-        />
+          {isRecording && (
+            <div className="voice-recording-panel">
+              <span className="voice-recording-dot" aria-hidden="true" />
+              <span className="voice-recording-time">
+                {formatVoiceTime(recordingSeconds)}
+              </span>
+              <VoiceWaveform
+                levels={recordingLevels}
+                className="voice-recording-wave"
+                barClassName="voice-recording-bar"
+              />
+              <Button
+                type="button"
+                variant="danger"
+                className="chat-composer-icon-button"
+                onClick={stopVoiceRecording}
+                title="Stop recording"
+                aria-label="Stop recording"
+              >
+                <Square size={17} aria-hidden="true" />
+              </Button>
+            </div>
+          )}
 
-        <Button type="submit" disabled={!file && !content.trim()}>
-          Send
-        </Button>
-      </form>
+          <form className="chat-composer" onSubmit={handleSubmit}>
+            <Button
+              type="button"
+              variant="secondary"
+              className="chat-composer-icon-button"
+              onClick={() => setIsShareCocktailOpen(true)}
+              title="Share cocktail"
+              aria-label="Share cocktail"
+            >
+              <GlassWater size={18} aria-hidden="true" />
+            </Button>
+
+            <label className="chat-file-button">
+              <Paperclip size={18} aria-hidden="true" />
+              <span className="sr-only">Attach file</span>
+              <input type="file" onChange={handleFileChange} />
+            </label>
+
+            <div className="chat-composer-emoji-wrap">
+              <Button
+                type="button"
+                variant="secondary"
+                className="chat-composer-icon-button"
+                onClick={() => setIsComposerEmojiOpen((open) => !open)}
+                title="Add emoji"
+                aria-label="Add emoji"
+              >
+                <Smile size={18} aria-hidden="true" />
+              </Button>
+
+              {isComposerEmojiOpen && (
+                <div className="chat-composer-emoji-popover">
+                  {QUICK_MESSAGE_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => {
+                        setContent((value) => `${value}${emoji}`);
+                        setIsComposerEmojiOpen(false);
+                      }}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Button
+              type="button"
+              variant={isRecording ? "danger" : "secondary"}
+              className="chat-composer-icon-button"
+              onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+              title={isRecording ? "Stop recording" : "Record voice message"}
+              aria-label={isRecording ? "Stop recording" : "Record voice message"}
+            >
+              {isRecording ? (
+                <Square size={17} aria-hidden="true" />
+              ) : (
+                <Mic size={18} aria-hidden="true" />
+              )}
+            </Button>
+
+            <Input
+              value={content}
+              onChange={(event) => {
+                setContent(event.target.value);
+                emitTyping();
+              }}
+              placeholder={file ? "Optional caption" : "Write a message"}
+            />
+
+            <Button type="submit" disabled={!file && !content.trim()}>
+              Send
+            </Button>
+          </form>
+        </>
+      ) : (
+        <div className="chat-blocked-panel">
+          {didCurrentUserBlock ? (
+            <>
+              <strong>You blocked this account</strong>
+              <span>
+                You cannot send messages or share cocktails with{" "}
+                {conversation.other_user_nickname}.
+              </span>
+              <div className="chat-blocked-actions">
+                <button
+                  type="button"
+                  className="chat-blocked-action-button"
+                  onClick={handleUnblockUser}
+                >
+                  Unblock
+                </button>
+                {onDeleteConversation && (
+                  <button
+                    type="button"
+                    className="chat-blocked-action-button chat-blocked-action-danger"
+                    onClick={() => onDeleteConversation(conversation.id)}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <strong>
+                {wasCurrentUserBlocked
+                  ? "This user is unavailable"
+                  : "You can only message accepted friends"}
+              </strong>
+              <span>
+                {wasCurrentUserBlocked
+                  ? "You cannot send messages to this account."
+                  : "Add this user as a friend again to continue chatting."}
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       {reportMessage && (
         <ReportMessageModal

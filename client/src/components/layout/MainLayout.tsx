@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
 const navItems = [
@@ -39,8 +39,15 @@ export default function MainLayout() {
           to={isAuthenticated ? "/catalog" : "/login"}
           className="app-brand"
           onClick={closeMobileNav}
+          aria-label="CocktailApp"
         >
-          CocktailApp
+          <img
+            src="/icon-192.png"
+            alt=""
+            className="app-brand-logo"
+            aria-hidden="true"
+          />
+          <span className="app-brand-text">CocktailApp</span>
         </Link>
 
         {isAuthenticated && (
@@ -109,10 +116,7 @@ export default function MainLayout() {
                 <span>{user?.nickname}</span>
               </NavLink>
             </>
-          ) : (
-            <>
-            </>
-          )}
+          ) : null}
         </nav>
       </header>
 

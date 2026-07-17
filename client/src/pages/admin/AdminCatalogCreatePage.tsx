@@ -42,7 +42,7 @@ export default function AdminCatalogCreatePage() {
   };
 
   return (
-    <div className="page-container catalog-form-page">
+    <div className="page-container catalog-form-page admin-catalog-form-page">
       <div className="card catalog-form-card">
         <Link to="/admin" className="page-back-button admin-dashboard-back">
           <ArrowLeft size={18} aria-hidden="true" />

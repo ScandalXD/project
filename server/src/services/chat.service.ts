@@ -1,6 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { db } from "../config/db";
 import {
+  ChatAttachmentMessageType,
   ChatCocktailType,
   ChatMessage,
   ChatMessageMetadata,
@@ -725,18 +726,22 @@ export const sendAttachmentMessage = async (
   senderId: number,
   conversationId: number,
   file: Express.Multer.File,
-  messageType: "image" | "file" | "voice",
+  messageType: ChatAttachmentMessageType,
   content?: string | null,
   replyToMessageId?: number | null,
   durationSeconds?: number | null,
   waveformLevels?: number[] | null,
 ): Promise<ChatMessage> => {
-  if (!["image", "file", "voice"].includes(messageType)) {
+  if (!["image", "video", "file", "voice"].includes(messageType)) {
     throw new ServiceError("Invalid attachment message type", 400);
   }
 
   if (messageType === "image" && !file.mimetype.startsWith("image/")) {
     throw new ServiceError("Attachment is not an image", 400);
+  }
+
+  if (messageType === "video" && !file.mimetype.startsWith("video/")) {
+    throw new ServiceError("Attachment is not a video", 400);
   }
 
   if (messageType === "voice" && !file.mimetype.startsWith("audio/")) {
