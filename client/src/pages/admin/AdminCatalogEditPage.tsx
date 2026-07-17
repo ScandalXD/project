@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
 import AdminCatalogForm from "../../components/cocktails/AdminCatalogForm";
+import FormPage from "../../components/ui/FormPage";
 import type { CatalogCocktail } from "../../types/cocktail";
 
 export default function AdminCatalogEditPage() {
@@ -53,40 +53,41 @@ export default function AdminCatalogEditPage() {
   };
 
   if (error) {
-    return <p className="error-text">{error}</p>;
+    return (
+      <div className="page-container catalog-form-page admin-catalog-form-page">
+        <div className="empty-state error-text">{error}</div>
+      </div>
+    );
   }
 
   if (!item) {
-    return <p className="muted-text">Loading...</p>;
+    return (
+      <div className="page-container catalog-form-page admin-catalog-form-page">
+        <div className="empty-state">Loading...</div>
+      </div>
+    );
   }
 
   return (
-    <div className="page-container catalog-form-page admin-catalog-form-page">
-      <div className="card catalog-form-card">
-        <Link to="/admin" className="page-back-button admin-dashboard-back">
-          <ArrowLeft size={18} aria-hidden="true" />
-          <span>Dashboard</span>
-        </Link>
-
-        <h1>Edit Catalog Cocktail</h1>
-
-        <p className="muted-text">
-          Zaktualizuj dane koktajlu katalogowego.
-        </p>
-
-        <AdminCatalogForm
-          mode="edit"
-          initialData={{
-            name: item.name,
-            category: item.category as "Alkoholowy" | "Bezalkoholowy",
-            ingredients: item.ingredients,
-            instructions: item.instructions,
-            currentImage: item.image ?? null,
-          }}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-        />
-      </div>
-    </div>
+    <FormPage
+      title="Edit Catalog Cocktail"
+      description="Update the catalog cocktail details and save the changes."
+      backTo="/admin"
+      backLabel="Dashboard"
+      className="admin-catalog-form-page"
+    >
+      <AdminCatalogForm
+        mode="edit"
+        initialData={{
+          name: item.name,
+          category: item.category as "Alkoholowy" | "Bezalkoholowy",
+          ingredients: item.ingredients,
+          instructions: item.instructions,
+          currentImage: item.image ?? null,
+        }}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
+    </FormPage>
   );
 }

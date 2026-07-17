@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import Button from "../ui/Button";
+import Textarea from "../ui/Textarea";
 
 interface CommentFormProps {
   onSubmit: (content: string) => Promise<void>;
@@ -32,12 +33,11 @@ export default function CommentForm({
 
   return (
     <form onSubmit={handleSubmit} className="comment-form">
-      <textarea
+      <Textarea
         value={content}
         onChange={(event) => setContent(event.target.value)}
         placeholder={placeholder}
         rows={3}
-        className="app-textarea"
       />
 
       <Button type="submit" disabled={isSubmitting} className="comment-form-submit">

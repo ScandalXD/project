@@ -22,6 +22,7 @@ import type { PublicCocktail } from "../../types/cocktail";
 import CocktailShareModal from "../../components/cocktails/CocktailShareModal";
 import EmptyState from "../../components/ui/EmptyState";
 import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
 import UserAvatar from "../../components/ui/UserAvatar";
 import ReportModal from "../../components/reports/ReportModal";
 
@@ -260,15 +261,14 @@ export default function PublicCocktailsPage() {
             placeholder="Search cocktails..."
           />
 
-          <select
-            className="app-select"
+          <Select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
             <option value="all">All categories</option>
             <option value="Alkoholowy">Alcoholic</option>
             <option value="Bezalkoholowy">Non-alcoholic</option>
-          </select>
+          </Select>
         </div>
       </div>
 

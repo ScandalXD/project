@@ -10,6 +10,7 @@ import { getImageUrl } from "../../utils/getImageUrl";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
 import Modal from "../ui/Modal";
+import Select from "../ui/Select";
 
 type ShareableCocktail = {
   id: string;
@@ -122,8 +123,7 @@ export default function ShareCocktailModal({
           placeholder="Search cocktails"
         />
 
-        <select
-          className="app-select"
+        <Select
           value={activeType}
           onChange={(event) =>
             setActiveType(event.target.value as ChatCocktailType | "all")
@@ -133,7 +133,7 @@ export default function ShareCocktailModal({
           <option value="catalog">Catalog</option>
           <option value="public">Public</option>
           <option value="user">My cocktails</option>
-        </select>
+        </Select>
 
         {error && <p className="error-text">{error}</p>}
 

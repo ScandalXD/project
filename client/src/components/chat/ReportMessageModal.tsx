@@ -3,6 +3,7 @@ import type { ChatReportReason } from "../../types/chatReport";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
 import Modal from "../ui/Modal";
+import Select from "../ui/Select";
 
 const reasons: Array<{ value: ChatReportReason; label: string }> = [
   { value: "spam", label: "Spam" },
@@ -52,8 +53,8 @@ export default function ReportMessageModal({
       }
     >
       <div className="modal-form">
-        <select
-          className="app-select report-reason-select"
+        <Select
+          className="report-reason-select"
           value={reason}
           onChange={(event) => setReason(event.target.value as ChatReportReason)}
         >
@@ -62,7 +63,7 @@ export default function ReportMessageModal({
               {item.label}
             </option>
           ))}
-        </select>
+        </Select>
 
         <Input
           value={details}

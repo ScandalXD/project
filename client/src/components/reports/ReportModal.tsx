@@ -1,5 +1,6 @@
 import Button from "../ui/Button";
 import Modal from "../ui/Modal";
+import Textarea from "../ui/Textarea";
 
 interface ReportModalProps {
   type: "cocktail" | "comment";
@@ -45,12 +46,11 @@ export default function ReportModal({
           Describe why you want to report this {type}.
         </p>
 
-        <textarea
+        <Textarea
           value={reason}
           onChange={(event) => onReasonChange(event.target.value)}
           placeholder="Report reason"
           rows={4}
-          className="app-textarea"
         />
 
         {error && <p className="error-text">{error}</p>}

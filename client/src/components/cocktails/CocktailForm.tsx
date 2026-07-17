@@ -3,7 +3,11 @@ import type {
   CocktailCategory,
   CreateCocktailRequest,
 } from "../../types/cocktail";
-import { getImageUrl } from "../../utils/getImageUrl";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import Select from "../ui/Select";
+import Textarea from "../ui/Textarea";
+import CocktailImageField from "./CocktailImageField";
 
 interface CocktailFormProps {
   onSubmit: (data: CreateCocktailRequest) => Promise<void>;
@@ -95,85 +99,53 @@ export default function CocktailForm({
 
   return (
     <form onSubmit={handleSubmit} className="cocktail-form">
-      <input
+      <Input
         type="text"
         name="name"
         placeholder="Cocktail name"
         value={form.name}
         onChange={handleChange}
         required
-        className="app-input"
       />
 
-      <select
+      <Select
         name="category"
         value={form.category}
         onChange={handleChange}
-        className="app-select cocktail-form-select"
+        className="cocktail-form-select"
       >
         <option value="Alkoholowy">Alcoholic</option>
         <option value="Bezalkoholowy">Non-alcoholic</option>
-      </select>
+      </Select>
 
-      <textarea
+      <Textarea
         name="ingredients"
         placeholder="Ingredients"
         value={form.ingredients}
         onChange={handleChange}
         required
         rows={4}
-        className="app-textarea"
       />
 
-      <textarea
+      <Textarea
         name="instructions"
         placeholder="Instructions"
         value={form.instructions}
         onChange={handleChange}
         required
         rows={5}
-        className="app-textarea"
       />
 
-      {mode === "edit" && form.currentImage && (
-        <div className="cocktail-form-image-row">
-          <div>
-            <p className="cocktail-form-label">Current image</p>
-
-            <div className="cocktail-form-image-preview">
-              <img
-                src={getImageUrl(form.currentImage)}
-                alt="Current cocktail"
-                className="cocktail-form-image"
-              />
-            </div>
-          </div>
-
-          <div>
-            <p className="cocktail-form-label">Choose new file</p>
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="cocktail-form-file"
-            />
-          </div>
-        </div>
-      )}
-
-      {mode === "create" && (
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleImageChange}
-          className="cocktail-form-file"
-        />
-      )}
+      <CocktailImageField
+        mode={mode}
+        currentImage={form.currentImage}
+        imageName={image?.name}
+        onChange={handleImageChange}
+      />
 
       {error && <p className="error-text cocktail-form-error">{error}</p>}
 
-      <button
+      <Button
         type="submit"
         disabled={isDisabled}
         className="cocktail-form-submit"
@@ -183,7 +155,7 @@ export default function CocktailForm({
           : mode === "edit"
             ? "Save changes"
             : "Create cocktail"}
-      </button>
+      </Button>
     </form>
   );
 }

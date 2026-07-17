@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
 import AdminCatalogForm from "../../components/cocktails/AdminCatalogForm";
+import FormPage from "../../components/ui/FormPage";
 
 export default function AdminCatalogCreatePage() {
   const navigate = useNavigate();
@@ -42,27 +42,19 @@ export default function AdminCatalogCreatePage() {
   };
 
   return (
-    <div className="page-container catalog-form-page admin-catalog-form-page">
-      <div className="card catalog-form-card">
-        <Link to="/admin" className="page-back-button admin-dashboard-back">
-          <ArrowLeft size={18} aria-hidden="true" />
-          <span>Dashboard</span>
-        </Link>
-
-        <h1>Create Catalog Cocktail</h1>
-
-        <p className="muted-text">
-          Add a new cocktail to the catalog.
-        </p>
-
-        {message && <p className="success-text">{message}</p>}
-
-        <AdminCatalogForm
-          mode="create"
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-        />
-      </div>
-    </div>
+    <FormPage
+      title="Create Catalog Cocktail"
+      description="Add a new cocktail to the catalog."
+      backTo="/admin"
+      backLabel="Dashboard"
+      message={message}
+      className="admin-catalog-form-page"
+    >
+      <AdminCatalogForm
+        mode="create"
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
+    </FormPage>
   );
 }

@@ -1,5 +1,9 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import { getImageUrl } from "../../utils/getImageUrl";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import Select from "../ui/Select";
+import Textarea from "../ui/Textarea";
+import CocktailImageField from "./CocktailImageField";
 
 interface AdminCatalogFormProps {
   mode: "create" | "edit";
@@ -106,100 +110,70 @@ export default function AdminCatalogForm({
   return (
     <form onSubmit={handleSubmit} className="cocktail-form admin-catalog-form">
       {mode === "create" && (
-        <input
+        <Input
           type="text"
           name="id"
           placeholder="id, e.g. mojito"
           value={form.id}
           onChange={handleChange}
           required
-          className="app-input"
         />
       )}
 
-      <input
+      <Input
         type="text"
         name="name"
         placeholder="Cocktail name"
         value={form.name}
         onChange={handleChange}
         required
-        className="app-input"
       />
 
-      <select
+      <Select
         name="category"
         value={form.category}
         onChange={handleChange}
-        className="app-select cocktail-form-select"
+        className="cocktail-form-select"
       >
         <option value="Alkoholowy">Alcoholic</option>
         <option value="Bezalkoholowy">Non-alcoholic</option>
-      </select>
+      </Select>
 
-      <textarea
+      <Textarea
         name="ingredients"
         placeholder="Ingredients"
         value={form.ingredients}
         onChange={handleChange}
         required
         rows={4}
-        className="app-textarea"
       />
 
-      <textarea
+      <Textarea
         name="instructions"
         placeholder="Instructions"
         value={form.instructions}
         onChange={handleChange}
         required
         rows={5}
-        className="app-textarea"
       />
 
-      {mode === "edit" && form.currentImage && (
-        <div className="cocktail-form-image-row">
-          <div>
-            <p className="cocktail-form-label">Current image</p>
-            <div className="cocktail-form-image-preview">
-              <img
-                src={getImageUrl(form.currentImage)}
-                alt="Current catalog cocktail"
-                className="cocktail-form-image"
-              />
-            </div>
-          </div>
-
-          <div>
-            <p className="cocktail-form-label">Choose new file</p>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="cocktail-form-file"
-            />
-          </div>
-        </div>
-      )}
-
-      {mode === "create" && (
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleImageChange}
-          className="cocktail-form-file"
-        />
-      )}
+      <CocktailImageField
+        mode={mode}
+        currentImage={form.currentImage}
+        currentImageAlt="Current catalog cocktail"
+        imageName={image?.name}
+        onChange={handleImageChange}
+      />
 
       {error && <p className="error-text cocktail-form-error">{error}</p>}
 
-      <button
+      <Button
         type="submit"
         disabled={isSubmitting || (mode === "edit" && !isChanged)}
         className="cocktail-form-submit"
       >
         {isSubmitting ? "Saving..." : mode === "edit" ? "Save changes" : "Create catalog cocktail"}
-      </button>
+      </Button>
     </form>
   );
 }

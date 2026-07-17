@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import CocktailForm from "../../components/cocktails/CocktailForm";
+import FormPage from "../../components/ui/FormPage";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import type { CreateCocktailRequest } from "../../types/cocktail";
 
@@ -27,27 +27,14 @@ export default function CreateCocktailPage() {
   };
 
   return (
-    <div className="page-container catalog-form-page">
-      <button
-        type="button"
-        className="page-back-button"
-        onClick={() => navigate("/my-cocktails")}
-      >
-        <ArrowLeft size={18} aria-hidden="true" />
-        <span>My Cocktails</span>
-      </button>
-
-      <div className="card catalog-form-card">
-        <h1>Create Cocktail</h1>
-
-        <p className="muted-text">
-          Add your own cocktail to the app.
-        </p>
-
-        {message && <p className="success-text">{message}</p>}
-
-        <CocktailForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
-      </div>
-    </div>
+    <FormPage
+      title="Create Cocktail"
+      description="Add your own cocktail to the app."
+      backTo="/my-cocktails"
+      backLabel="My Cocktails"
+      message={message}
+    >
+      <CocktailForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+    </FormPage>
   );
 }

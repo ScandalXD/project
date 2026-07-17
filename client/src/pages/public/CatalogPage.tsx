@@ -12,6 +12,7 @@ import type { CatalogCocktail } from "../../types/cocktail";
 import CocktailShareModal from "../../components/cocktails/CocktailShareModal";
 import EmptyState from "../../components/ui/EmptyState";
 import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
 
 function normalizeFavorites(data: any, type: "catalog" | "public") {
   const list = Array.isArray(data) ? data : data.favorites || data.items || [];
@@ -168,15 +169,14 @@ export default function CatalogPage() {
             placeholder="Search cocktails..."
           />
 
-          <select
-            className="app-select"
+          <Select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
             <option value="all">All categories</option>
             <option value="Alkoholowy">Alcoholic</option>
             <option value="Bezalkoholowy">Non-alcoholic</option>
-          </select>
+          </Select>
         </div>
       </div>
 

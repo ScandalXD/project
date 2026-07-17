@@ -3,6 +3,7 @@ import { Bookmark, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { favoritesApi, type FavoriteType } from "../../api/favoritesApi";
 import CocktailCard from "../../components/cocktails/CocktailCard";
+import Select from "../../components/ui/Select";
 import UserAvatar from "../../components/ui/UserAvatar";
 import type { CocktailCardData, CocktailType } from "../../types/cocktail";
 import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
@@ -273,8 +274,8 @@ export default function FavoritesPage() {
                 />
               </label>
 
-              <select
-                className="app-select favorites-category-select"
+              <Select
+                className="favorites-category-select"
                 value={category}
                 onChange={(event) =>
                   setCategory(event.target.value as FavoriteCategoryFilter)
@@ -283,7 +284,7 @@ export default function FavoritesPage() {
                 <option value="all">All categories</option>
                 <option value="Alkoholowy">Alcoholic</option>
                 <option value="Bezalkoholowy">Non-alcoholic</option>
-              </select>
+              </Select>
             </div>
           </div>
 

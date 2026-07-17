@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import Input from "../../components/ui/Input";
 import Modal from "../../components/ui/Modal";
+import Select from "../../components/ui/Select";
 import type { ChatReport } from "../../types/chatReport";
 import type { ReportItem, ReportStatus } from "../../types/report";
 
@@ -487,8 +488,7 @@ export default function AdminReportsPage() {
         <h1>Admin Reports</h1>
 
         <div className="reports-filter-row">
-          <select
-            className="app-select"
+          <Select
             value={status}
             onChange={(event) =>
               setStatus(event.target.value as ReportStatus | "all")
@@ -498,10 +498,9 @@ export default function AdminReportsPage() {
             <option value="reviewed">Reviewed</option>
             <option value="rejected">Rejected</option>
             <option value="all">All</option>
-          </select>
+          </Select>
 
-          <select
-            className="app-select"
+          <Select
             value={reportType}
             onChange={(event) =>
               setReportType(event.target.value as ReportTypeFilter)
@@ -510,7 +509,7 @@ export default function AdminReportsPage() {
             <option value="all">All types</option>
             <option value="content">Content reports</option>
             <option value="chat">Chat reports</option>
-          </select>
+          </Select>
         </div>
       </div>
 
