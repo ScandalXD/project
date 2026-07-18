@@ -1,83 +1,89 @@
+import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import MainLayout from "../components/layout/MainLayout";
 import GuestRoute from "../routes/GuestRoute";
 import ProtectedRoute from "../routes/ProtectedRoute";
-import LoginPage from "../pages/auth/LoginPage";
-import RegisterPage from "../pages/auth/RegisterPage";
-import NotFoundPage from "../pages/NotFoundPage";
-import ProfilePage from "../pages/user/ProfilePage";
-import CatalogPage from "../pages/public/CatalogPage";
-import PublicCocktailsPage from "../pages/public/PublicCocktailsPage";
-import MyCocktailsPage from "../pages/user/MyCocktailsPage";
-import CreateCocktailPage from "../pages/user/CreateCocktailPage";
-import EditCocktailPage from "../pages/user/EditCocktailPage";
-import MyCocktailDetailsPage from "../pages/user/MyCocktailDetailsPage";
-import CatalogCocktailDetailsPage from "../pages/public/CatalogCocktailDetailsPage";
-import PublicCocktailDetailsPage from "../pages/public/PublicCocktailDetailsPage";
-import FavoritesPage from "../pages/user/FavoritesPage";
-import NotificationsPage from "../pages/user/NotificationsPage";
-import FriendsPage from "../pages/user/FriendsPage";
-import ChatPage from "../pages/user/ChatPage";
-import AuthorProfilePage from "../pages/public/AuthorProfilePage";
 import AdminRoute from "../routes/AdminRoute";
-import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
-import AdminModerationPage from "../pages/admin/AdminModerationPage";
-import AdminUsersPage from "../pages/admin/AdminUsersPage";
-import AdminCatalogPage from "../pages/admin/AdminCatalogPage";
-import AdminReportsPage from "../pages/admin/AdminReportsPage";
-import AdminCatalogCreatePage from "../pages/admin/AdminCatalogCreatePage";
-import AdminCatalogEditPage from "../pages/admin/AdminCatalogEditPage";
-import AdminCommentsPage from "../pages/admin/AdminCommentsPage";
-import AdminPublicPage from "../pages/admin/AdminPublicPage";
+
+const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
+const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
+const NotFoundPage = lazy(() => import("../pages/NotFoundPage"));
+const ProfilePage = lazy(() => import("../pages/user/ProfilePage"));
+const CatalogPage = lazy(() => import("../pages/public/CatalogPage"));
+const PublicCocktailsPage = lazy(() => import("../pages/public/PublicCocktailsPage"));
+const MyCocktailsPage = lazy(() => import("../pages/user/MyCocktailsPage"));
+const CreateCocktailPage = lazy(() => import("../pages/user/CreateCocktailPage"));
+const EditCocktailPage = lazy(() => import("../pages/user/EditCocktailPage"));
+const MyCocktailDetailsPage = lazy(() => import("../pages/user/MyCocktailDetailsPage"));
+const CatalogCocktailDetailsPage = lazy(() => import("../pages/public/CatalogCocktailDetailsPage"));
+const PublicCocktailDetailsPage = lazy(() => import("../pages/public/PublicCocktailDetailsPage"));
+const FavoritesPage = lazy(() => import("../pages/user/FavoritesPage"));
+const NotificationsPage = lazy(() => import("../pages/user/NotificationsPage"));
+const FriendsPage = lazy(() => import("../pages/user/FriendsPage"));
+const ChatPage = lazy(() => import("../pages/user/ChatPage"));
+const AuthorProfilePage = lazy(() => import("../pages/public/AuthorProfilePage"));
+const AdminDashboardPage = lazy(() => import("../pages/admin/AdminDashboardPage"));
+const AdminModerationPage = lazy(() => import("../pages/admin/AdminModerationPage"));
+const AdminUsersPage = lazy(() => import("../pages/admin/AdminUsersPage"));
+const AdminCatalogPage = lazy(() => import("../pages/admin/AdminCatalogPage"));
+const AdminReportsPage = lazy(() => import("../pages/admin/AdminReportsPage"));
+const AdminCatalogCreatePage = lazy(() => import("../pages/admin/AdminCatalogCreatePage"));
+const AdminCatalogEditPage = lazy(() => import("../pages/admin/AdminCatalogEditPage"));
+const AdminCommentsPage = lazy(() => import("../pages/admin/AdminCommentsPage"));
+const AdminPublicPage = lazy(() => import("../pages/admin/AdminPublicPage"));
+
+function page(element: ReactNode) {
+  return <Suspense fallback={<div className="route-loading">Loading...</div>}>{element}</Suspense>;
+}
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <MainLayout />,
-    errorElement: <NotFoundPage />,
+    errorElement: page(<NotFoundPage />),
     children: [
       { index: true, element: <Navigate to="/catalog" replace /> },
 
       {
         element: <GuestRoute />,
         children: [
-          { path: "login", element: <LoginPage /> },
-          { path: "register", element: <RegisterPage /> },
+          { path: "login", element: page(<LoginPage />) },
+          { path: "register", element: page(<RegisterPage />) },
         ],
       },
 
       {
         element: <ProtectedRoute />,
         children: [
-          { path: "catalog", element: <CatalogPage /> },
-          { path: "catalog/:id", element: <CatalogCocktailDetailsPage /> },
-          { path: "public-cocktails", element: <PublicCocktailsPage /> },
-          { path: "public-cocktails/:id", element: <PublicCocktailDetailsPage /> },
-          { path: "authors/:authorId", element: <AuthorProfilePage /> },
-          { path: "profile", element: <ProfilePage /> },
-          { path: "my-cocktails", element: <MyCocktailsPage /> },
-          { path: "my-cocktails/create", element: <CreateCocktailPage /> },
-          { path: "my-cocktails/:id/edit", element: <EditCocktailPage /> },
-          { path: "my-cocktails/:id", element: <MyCocktailDetailsPage /> },
-          { path: "favorites", element: <FavoritesPage /> },
-          { path: "friends", element: <FriendsPage /> },
-          { path: "chat", element: <ChatPage /> },
-          { path: "notifications", element: <NotificationsPage /> },
+          { path: "catalog", element: page(<CatalogPage />) },
+          { path: "catalog/:id", element: page(<CatalogCocktailDetailsPage />) },
+          { path: "public-cocktails", element: page(<PublicCocktailsPage />) },
+          { path: "public-cocktails/:id", element: page(<PublicCocktailDetailsPage />) },
+          { path: "authors/:authorId", element: page(<AuthorProfilePage />) },
+          { path: "profile", element: page(<ProfilePage />) },
+          { path: "my-cocktails", element: page(<MyCocktailsPage />) },
+          { path: "my-cocktails/create", element: page(<CreateCocktailPage />) },
+          { path: "my-cocktails/:id/edit", element: page(<EditCocktailPage />) },
+          { path: "my-cocktails/:id", element: page(<MyCocktailDetailsPage />) },
+          { path: "favorites", element: page(<FavoritesPage />) },
+          { path: "friends", element: page(<FriendsPage />) },
+          { path: "chat", element: page(<ChatPage />) },
+          { path: "notifications", element: page(<NotificationsPage />) },
         ],
       },
 
       {
         element: <AdminRoute />,
         children: [
-          { path: "admin", element: <AdminDashboardPage /> },
-          { path: "admin/moderation", element: <AdminModerationPage /> },
-          { path: "admin/public", element: <AdminPublicPage /> },
-          { path: "admin/catalog", element: <AdminCatalogPage /> },
-          { path: "admin/catalog/create", element: <AdminCatalogCreatePage /> },
-          { path: "admin/catalog/:id/edit", element: <AdminCatalogEditPage /> },
-          { path: "admin/users", element: <AdminUsersPage /> },
-          { path: "admin/reports", element: <AdminReportsPage /> },
-          { path: "admin/comments", element: <AdminCommentsPage /> },
+          { path: "admin", element: page(<AdminDashboardPage />) },
+          { path: "admin/moderation", element: page(<AdminModerationPage />) },
+          { path: "admin/public", element: page(<AdminPublicPage />) },
+          { path: "admin/catalog", element: page(<AdminCatalogPage />) },
+          { path: "admin/catalog/create", element: page(<AdminCatalogCreatePage />) },
+          { path: "admin/catalog/:id/edit", element: page(<AdminCatalogEditPage />) },
+          { path: "admin/users", element: page(<AdminUsersPage />) },
+          { path: "admin/reports", element: page(<AdminReportsPage />) },
+          { path: "admin/comments", element: page(<AdminCommentsPage />) },
           { path: "admin/chat-reports", element: <Navigate to="/admin/reports" replace /> },
         ],
       },
