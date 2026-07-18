@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import Button from "../../components/ui/Button";
+import BackButton from "../../components/ui/BackButton";
 import EmptyState from "../../components/ui/EmptyState";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/ui/Input";
@@ -50,10 +49,7 @@ export default function AdminPublicPage() {
 
   return (
     <div className="page-container">
-      <Link to="/admin" className="page-back-button admin-dashboard-back">
-        <ArrowLeft size={18} aria-hidden="true" />
-        <span>Dashboard</span>
-      </Link>
+      <BackButton to="/admin" label="Dashboard" />
 
       <div className="admin-page-header">
         <h1>Admin Public Cocktails</h1>

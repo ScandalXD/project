@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
 import { adminApi } from "../../api/adminApi";
 
+import BackButton from "../../components/ui/BackButton";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import Modal from "../../components/ui/Modal";
@@ -57,10 +56,7 @@ export default function AdminCommentsPage() {
 
   return (
     <div className="page-container">
-      <Link to="/admin" className="page-back-button admin-dashboard-back">
-        <ArrowLeft size={18} aria-hidden="true" />
-        <span>Dashboard</span>
-      </Link>
+      <BackButton to="/admin" label="Dashboard" />
 
       <div className="admin-page-header">
         <h1>All Comments</h1>

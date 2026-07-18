@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
 import CommentList from "../../components/comments/CommentList";
+import BackButton from "../../components/ui/BackButton";
 import type { PublicCocktail } from "../../types/cocktail";
 
 export default function PublicCocktailDetailsPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const [cocktail, setCocktail] = useState<PublicCocktail | null>(null);
   const [error, setError] = useState("");
@@ -55,14 +54,7 @@ export default function PublicCocktailDetailsPage() {
 
   return (
     <div className="page-container details-page">
-      <button
-        type="button"
-        className="page-back-button"
-        onClick={() => navigate("/public-cocktails")}
-      >
-        <ArrowLeft size={18} aria-hidden="true" />
-        <span>Public Cocktails</span>
-      </button>
+      <BackButton to="/public-cocktails" label="Public Cocktails" />
 
       {cocktail.image && (
         <div className="details-image-wrap">

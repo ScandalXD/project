@@ -34,6 +34,7 @@ import type { ChatReportReason } from "../../types/chatReport";
 import { isEnabledFlag } from "../../utils/booleanFlag";
 import Button from "../ui/Button";
 import EmptyState from "../ui/EmptyState";
+import IconActionButton from "../ui/IconActionButton";
 import Input from "../ui/Input";
 import Modal from "../ui/Modal";
 import UserAvatar from "../ui/UserAvatar";
@@ -750,15 +751,13 @@ export default function ChatWindow({
     <section className="chat-window">
       <div className="chat-window-header">
         {onBack && (
-          <button
-            type="button"
+          <IconActionButton
             className="chat-mobile-back"
             onClick={onBack}
-            aria-label="Back to chats"
-            title="Back to chats"
+            label="Back to chats"
           >
             <ArrowLeft size={19} aria-hidden="true" />
-          </button>
+          </IconActionButton>
         )}
 
         <UserAvatar
@@ -783,15 +782,13 @@ export default function ChatWindow({
           </div>
 
           <div className="chat-user-menu">
-            <Button
-              variant="secondary"
+            <IconActionButton
               className="chat-report-user-button"
               onClick={() => setIsUserMenuOpen((open) => !open)}
-              aria-label="User actions"
-              title="User actions"
+              label="User actions"
             >
               <MoreVertical size={18} aria-hidden="true" />
-            </Button>
+            </IconActionButton>
 
             {isUserMenuOpen && (
               <div className="chat-user-menu-popover">

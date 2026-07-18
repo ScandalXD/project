@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { chatReportsApi } from "../../api/chatReportsApi";
 import { reportApi } from "../../api/reportApi";
 import RejectReportModal from "../../components/reports/RejectReportModal";
+import BackButton from "../../components/ui/BackButton";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import Input from "../../components/ui/Input";
@@ -479,10 +479,7 @@ export default function AdminReportsPage() {
 
   return (
     <div className="page-container">
-      <Link to="/admin" className="page-back-button admin-dashboard-back">
-        <ArrowLeft size={18} aria-hidden="true" />
-        <span>Dashboard</span>
-      </Link>
+      <BackButton to="/admin" label="Dashboard" />
 
       <div className="admin-page-header">
         <h1>Admin Reports</h1>
