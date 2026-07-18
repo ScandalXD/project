@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import { Bookmark, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { favoritesApi, type FavoriteType } from "../../api/favoritesApi";
 import CocktailCard from "../../components/cocktails/CocktailCard";
+import {
+  CocktailCardImage,
+  CocktailCardSummary,
+  FavoriteRemoveButton,
+} from "../../components/cocktails/CocktailCardParts";
 import Select from "../../components/ui/Select";
 import UserAvatar from "../../components/ui/UserAvatar";
 import type { CocktailCardData, CocktailType } from "../../types/cocktail";
-import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
-import { getImageUrl } from "../../utils/getImageUrl";
 
 interface FavoriteItem extends CocktailCardData {
   cocktail_type: CocktailType;
@@ -127,16 +130,10 @@ export default function FavoritesPage() {
     const key = getFavoriteKey(cocktail);
 
     return (
-      <button
-        type="button"
-        className="favorite-remove-icon"
+      <FavoriteRemoveButton
         onClick={() => removeFavorite(cocktail)}
         disabled={removingId === key}
-        aria-label="Remove from favorites"
-        title="Remove from favorites"
-      >
-        <Bookmark size={24} aria-hidden="true" />
-      </button>
+      />
     );
   };
 
@@ -170,28 +167,8 @@ export default function FavoritesPage() {
           </div>
 
           <Link to={getDetailsPath(cocktail)} className="cocktail-card-main">
-            <div className="cocktail-card-image-wrap">
-              {cocktail.image ? (
-                <img
-                  src={getImageUrl(cocktail.image)}
-                  alt={cocktail.name}
-                  className="cocktail-card-image"
-                />
-              ) : (
-                <span className="muted-text">No image</span>
-              )}
-            </div>
-
-            <div className="cocktail-card-body">
-              <div className="cocktail-card-title-row">
-                <h3 className="cocktail-card-title">{cocktail.name}</h3>
-                <span className="category-badge">
-                  {formatCocktailCategory(cocktail.category)}
-                </span>
-              </div>
-
-              <p className="cocktail-preview">{cocktail.ingredients}</p>
-            </div>
+            <CocktailCardImage cocktail={cocktail} />
+            <CocktailCardSummary cocktail={cocktail} showInstructions={false} />
           </Link>
         </article>
 
