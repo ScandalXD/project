@@ -1,0 +1,44 @@
+/* Auth */
+.auth-page {
+  max-width: 420px;
+  padding-top: 40px;
+}
+
+.auth-card {
+  padding: 24px;
+}
+
+.auth-title {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-message {
+  margin: 0;
+}
+
+.auth-link-text {
+  margin-top: 16px;
+}
+
+
+@media (max-width: 760px) {
+  .auth-page {
+    max-width: 100%;
+    padding-top: 18px;
+  }
+
+  .auth-card {
+    padding: 20px;
+  }
+
+  .auth-title {
+    font-size: 30px;
+  }
+
+}

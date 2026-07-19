@@ -3,6 +3,9 @@ import ReactDOM from "react-dom/client";
 import App from "./app/App";
 import { Providers } from "./app/providers";
 import "./styles/globals.css";
+import "./styles/auth.css";
+import "./styles/profile.css";
+import "./styles/comments.css";
 import "./styles/chat.css";
 import "./styles/notifications.css";
 
