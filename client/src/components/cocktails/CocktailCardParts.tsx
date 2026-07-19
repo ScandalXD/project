@@ -13,7 +13,9 @@ interface CocktailCardSummaryProps {
     "name" | "category" | "ingredients" | "instructions" | "author_nickname"
   >;
   showAuthor?: boolean;
+  showIngredientsLabel?: boolean;
   showInstructions?: boolean;
+  previewLimit?: number;
 }
 
 interface FavoriteRemoveButtonProps {
@@ -40,8 +42,16 @@ export function CocktailCardImage({ cocktail }: CocktailCardImageProps) {
 export function CocktailCardSummary({
   cocktail,
   showAuthor = false,
+  showIngredientsLabel,
   showInstructions = true,
+  previewLimit,
 }: CocktailCardSummaryProps) {
+  const ingredients =
+    previewLimit && cocktail.ingredients.length > previewLimit
+      ? `${cocktail.ingredients.slice(0, previewLimit)}...`
+      : cocktail.ingredients;
+  const shouldShowIngredientsLabel = showIngredientsLabel ?? showInstructions;
+
   return (
     <div className="cocktail-card-body">
       <div className="cocktail-card-title-row">
@@ -58,8 +68,8 @@ export function CocktailCardSummary({
       )}
 
       <p className="cocktail-preview">
-        {showInstructions && <strong>Ingredients: </strong>}
-        {cocktail.ingredients}
+        {shouldShowIngredientsLabel && <strong>Ingredients: </strong>}
+        {ingredients}
       </p>
 
       {showInstructions && (

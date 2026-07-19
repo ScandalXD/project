@@ -1,43 +1,20 @@
 import { useEffect, useState } from "react";
-import {
-  Bookmark,
-  Copy,
-  Flag,
-  Heart,
-  MessageCircle,
-  MoreHorizontal,
-  Send,
-  Share2,
-} from "lucide-react";
-import { Link } from "react-router-dom";
+import { Copy, Flag, MoreHorizontal, Share2 } from "lucide-react";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import { favoritesApi } from "../../api/favoritesApi";
 import { likesApi } from "../../api/likesApi";
 import { reportApi } from "../../api/reportApi";
-import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
-import { getImageUrl } from "../../utils/getImageUrl";
 import { useAuth } from "../../hooks/useAuth";
 import type { PublicCocktail } from "../../types/cocktail";
+import { normalizeFavorites } from "../../utils/normalizeFavorites";
 
+import CocktailCard from "../../components/cocktails/CocktailCard";
+import CocktailSocialActions from "../../components/cocktails/CocktailSocialActions";
 import CocktailShareModal from "../../components/cocktails/CocktailShareModal";
 import EmptyState from "../../components/ui/EmptyState";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
-import UserAvatar from "../../components/ui/UserAvatar";
 import ReportModal from "../../components/reports/ReportModal";
-
-function normalizeFavorites(data: any, type: "catalog" | "public") {
-  const list = Array.isArray(data) ? data : data.favorites || data.items || [];
-
-  return list
-    .filter((f: any) => {
-      const favoriteType = f.cocktail_type || f.cocktailType || f.type;
-      return favoriteType === type;
-    })
-    .map((f: any) =>
-      String(f.cocktail_id || f.cocktailId || f.cocktailIdValue || f.id)
-    );
-}
 
 function formatPostAge(value?: string) {
   if (!value) return "";
@@ -280,163 +257,86 @@ export default function PublicCocktailsPage() {
         <div className="catalog-grid">
           {filteredItems.map((item) => {
             const id = String(item.id);
-            const authorName = item.author_nickname || "User";
+            const authorMeta = item.created_at ? (
+              <span className="public-post-time">
+                {" "}
+                - {formatPostAge(item.created_at)}
+              </span>
+            ) : null;
+            const authorPath = item.author_id
+              ? `/authors/${item.author_id}`
+              : `/public-cocktails/${item.id}`;
+            const headerActions = (
+              <div className="public-post-menu">
+                <button
+                  type="button"
+                  className="public-post-menu-trigger"
+                  onClick={() =>
+                    setActiveMenuId((current) =>
+                      current === item.id ? null : item.id
+                    )
+                  }
+                  aria-label="Open cocktail actions"
+                  title="More"
+                >
+                  <MoreHorizontal size={22} aria-hidden="true" />
+                </button>
 
-            return (
-              <article
-                key={item.id}
-                className="cocktail-card public-post-card"
-              >
-                <div className="public-post-header">
-                  <Link
-                    to={
-                      item.author_id
-                        ? `/authors/${item.author_id}`
-                        : `/public-cocktails/${item.id}`
-                    }
-                    className="public-post-author"
-                  >
-                    <UserAvatar
-                      nickname={authorName}
-                      avatar={item.author_avatar}
-                      className="public-post-avatar"
-                    />
-                    <span>
-                      <strong>{authorName}</strong>
-                      {item.created_at && (
-                        <span className="public-post-time">
-                          {" "}
-                          - {formatPostAge(item.created_at)}
-                        </span>
-                      )}
-                    </span>
-                  </Link>
-
-                  <div className="public-post-menu">
+                {activeMenuId === item.id && (
+                  <div className="public-post-menu-popover">
+                    <button type="button" onClick={() => openShareModal(item)}>
+                      <span>Share</span>
+                      <Share2 size={18} aria-hidden="true" />
+                    </button>
                     <button
                       type="button"
-                      className="public-post-menu-trigger"
-                      onClick={() =>
-                        setActiveMenuId((current) =>
-                          current === item.id ? null : item.id
-                        )
-                      }
-                      aria-label="Open cocktail actions"
-                      title="More"
+                      onClick={() => handleCopyLink(Number(item.id))}
                     >
-                      <MoreHorizontal size={22} aria-hidden="true" />
+                      <span>Copy link</span>
+                      <Copy size={18} aria-hidden="true" />
                     </button>
-
-                    {activeMenuId === item.id && (
-                      <div className="public-post-menu-popover">
-                        <button
-                          type="button"
-                          onClick={() => openShareModal(item)}
-                        >
-                          <span>Share</span>
-                          <Share2 size={18} aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyLink(Number(item.id))}
-                        >
-                          <span>Copy link</span>
-                          <Copy size={18} aria-hidden="true" />
-                        </button>
-                        {isAuthenticated && (
-                          <button
-                            type="button"
-                            className="public-post-menu-danger"
-                            onClick={() => openReportModal(Number(item.id))}
-                          >
-                            <span>Report</span>
-                            <Flag size={18} aria-hidden="true" />
-                          </button>
-                        )}
-                      </div>
+                    {isAuthenticated && (
+                      <button
+                        type="button"
+                        className="public-post-menu-danger"
+                        onClick={() => openReportModal(Number(item.id))}
+                      >
+                        <span>Report</span>
+                        <Flag size={18} aria-hidden="true" />
+                      </button>
                     )}
                   </div>
-                </div>
-
-                <Link
-                  to={`/public-cocktails/${item.id}`}
-                  className="cocktail-card-main"
-                >
-                  {item.image && (
-                    <img
-                      src={getImageUrl(item.image)}
-                      alt={item.name}
-                      className="cocktail-card-image"
-                    />
-                  )}
-
-                  <div className="cocktail-card-body">
-                    <h3>{item.name}</h3>
-
-                    <p className="muted-text">
-                      {formatCocktailCategory(item.category)}
-                    </p>
-
-                    <p className="cocktail-preview public-post-caption">
-                      {item.ingredients.length > 120
-                        ? `${item.ingredients.slice(0, 120)}...`
-                        : item.ingredients}
-                    </p>
-                  </div>
-                </Link>
-
-                {isAuthenticated && (
-                  <div className="cocktail-social-actions">
-                    <button
-                      type="button"
-                      className={likedIds.includes(id) ? "is-active" : ""}
-                      onClick={() => toggleLike(Number(item.id))}
-                      aria-label="Like cocktail"
-                      title="Like"
-                    >
-                      <Heart
-                        size={24}
-                        fill={likedIds.includes(id) ? "currentColor" : "none"}
-                        aria-hidden="true"
-                      />
-                      <span>{likesCount[id] ?? 0}</span>
-                    </button>
-
-                    <Link
-                      to={`/public-cocktails/${item.id}`}
-                      aria-label="Open comments"
-                      title="Comments"
-                    >
-                      <MessageCircle size={24} aria-hidden="true" />
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => openShareModal(item)}
-                      aria-label="Share cocktail"
-                      title="Share"
-                    >
-                      <Send size={24} aria-hidden="true" />
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`cocktail-save-action ${
-                        favorites.includes(id) ? "is-active" : ""
-                      }`}
-                      onClick={() => toggleFavorite(Number(item.id))}
-                      aria-label={
-                        favorites.includes(id)
-                          ? "Remove from favorites"
-                          : "Save to favorites"
-                      }
-                      title={favorites.includes(id) ? "Saved" : "Save"}
-                    >
-                      <Bookmark size={24} aria-hidden="true" />
-                    </button>
-                  </div>
                 )}
-              </article>
+              </div>
+            );
+
+            return (
+              <CocktailCard
+                key={item.id}
+                cocktail={{ ...item, type: "public" }}
+                authorMeta={authorMeta}
+                authorPath={authorPath}
+                className="public-post-card"
+                headerActions={headerActions}
+                previewLimit={120}
+                showAuthorHeader
+                showIngredientsLabel={false}
+                showInstructions={false}
+                to={`/public-cocktails/${item.id}`}
+                actions={
+                  isAuthenticated ? (
+                    <CocktailSocialActions
+                      commentsTo={`/public-cocktails/${item.id}`}
+                      isFavorite={favorites.includes(id)}
+                      isLiked={likedIds.includes(id)}
+                      likesCount={likesCount[id] ?? 0}
+                      onFavoriteToggle={() => toggleFavorite(Number(item.id))}
+                      onLikeToggle={() => toggleLike(Number(item.id))}
+                      onShare={() => openShareModal(item)}
+                    />
+                  ) : null
+                }
+              />
             );
           })}
         </div>

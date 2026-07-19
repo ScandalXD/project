@@ -1,31 +1,17 @@
 import { useEffect, useState } from "react";
-import { Bookmark, Heart, MessageCircle, Send } from "lucide-react";
-import { Link } from "react-router-dom";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import { favoritesApi } from "../../api/favoritesApi";
 import { likesApi } from "../../api/likesApi";
-import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
-import { getImageUrl } from "../../utils/getImageUrl";
 import { useAuth } from "../../hooks/useAuth";
 import type { CatalogCocktail } from "../../types/cocktail";
+import { normalizeFavorites } from "../../utils/normalizeFavorites";
 
+import CocktailCard from "../../components/cocktails/CocktailCard";
+import CocktailSocialActions from "../../components/cocktails/CocktailSocialActions";
 import CocktailShareModal from "../../components/cocktails/CocktailShareModal";
 import EmptyState from "../../components/ui/EmptyState";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
-
-function normalizeFavorites(data: any, type: "catalog" | "public") {
-  const list = Array.isArray(data) ? data : data.favorites || data.items || [];
-
-  return list
-    .filter((f: any) => {
-      const favoriteType = f.cocktail_type || f.cocktailType || f.type;
-      return favoriteType === type;
-    })
-    .map((f: any) =>
-      String(f.cocktail_id || f.cocktailId || f.cocktailIdValue || f.id)
-    );
-}
 
 export default function CatalogPage() {
   const { isAuthenticated } = useAuth();
@@ -190,86 +176,28 @@ export default function CatalogPage() {
             const id = String(item.id);
 
             return (
-              <article key={item.id} className="cocktail-card">
-                <Link
-                  to={`/catalog/${item.id}`}
-                  className="cocktail-card-main"
-                >
-                  {item.image && (
-                    <img
-                      src={getImageUrl(item.image)}
-                      alt={item.name}
-                      className="cocktail-card-image"
+              <CocktailCard
+                key={item.id}
+                cocktail={{ ...item, type: "catalog" }}
+                previewLimit={120}
+                showAuthor={false}
+                showIngredientsLabel={false}
+                showInstructions={false}
+                to={`/catalog/${item.id}`}
+                actions={
+                  isAuthenticated ? (
+                    <CocktailSocialActions
+                      commentsTo={`/catalog/${item.id}`}
+                      isFavorite={favorites.includes(id)}
+                      isLiked={likedIds.includes(id)}
+                      likesCount={likesCount[id] ?? 0}
+                      onFavoriteToggle={() => toggleFavorite(String(item.id))}
+                      onLikeToggle={() => toggleLike(String(item.id))}
+                      onShare={() => setShareCocktail(item)}
                     />
-                  )}
-
-                  <div className="cocktail-card-body">
-                    <h3>{item.name}</h3>
-
-                    <p className="muted-text">
-                      {formatCocktailCategory(item.category)}
-                    </p>
-
-                    <p className="cocktail-preview">
-                      {item.ingredients.length > 120
-                        ? `${item.ingredients.slice(0, 120)}...`
-                        : item.ingredients}
-                    </p>
-                  </div>
-                </Link>
-
-                {isAuthenticated && (
-                  <div className="cocktail-social-actions">
-                    <button
-                      type="button"
-                      className={likedIds.includes(id) ? "is-active" : ""}
-                      onClick={() => toggleLike(String(item.id))}
-                      aria-label="Like cocktail"
-                      title="Like"
-                    >
-                      <Heart
-                        size={24}
-                        fill={likedIds.includes(id) ? "currentColor" : "none"}
-                        aria-hidden="true"
-                      />
-                      <span>{likesCount[id] ?? 0}</span>
-                    </button>
-
-                    <Link
-                      to={`/catalog/${item.id}`}
-                      aria-label="Open comments"
-                      title="Comments"
-                    >
-                      <MessageCircle size={24} aria-hidden="true" />
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => setShareCocktail(item)}
-                      aria-label="Share cocktail"
-                      title="Share"
-                    >
-                      <Send size={24} aria-hidden="true" />
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`cocktail-save-action ${
-                        favorites.includes(id) ? "is-active" : ""
-                      }`}
-                      onClick={() => toggleFavorite(String(item.id))}
-                      aria-label={
-                        favorites.includes(id)
-                          ? "Remove from favorites"
-                          : "Save to favorites"
-                      }
-                      title={favorites.includes(id) ? "Saved" : "Save"}
-                    >
-                      <Bookmark size={24} aria-hidden="true" />
-                    </button>
-                  </div>
-                )}
-              </article>
+                  ) : null
+                }
+              />
             );
           })}
         </div>

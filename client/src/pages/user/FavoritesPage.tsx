@@ -1,15 +1,9 @@
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
-import { Link } from "react-router-dom";
 import { favoritesApi, type FavoriteType } from "../../api/favoritesApi";
 import CocktailCard from "../../components/cocktails/CocktailCard";
-import {
-  CocktailCardImage,
-  CocktailCardSummary,
-  FavoriteRemoveButton,
-} from "../../components/cocktails/CocktailCardParts";
+import { FavoriteRemoveButton } from "../../components/cocktails/CocktailCardParts";
 import Select from "../../components/ui/Select";
-import UserAvatar from "../../components/ui/UserAvatar";
 import type { CocktailCardData, CocktailType } from "../../types/cocktail";
 
 interface FavoriteItem extends CocktailCardData {
@@ -138,39 +132,24 @@ export default function FavoritesPage() {
   };
 
   const renderPublicFavorite = (cocktail: FavoriteItem) => {
-    const authorName = cocktail.author_nickname || "User";
-
     return (
       <div
         key={getFavoriteKey(cocktail)}
         className="favorite-card-shell"
       >
-        <article className="cocktail-card favorite-public-card">
-          <div className="public-post-header">
-            <Link
-              to={
-                cocktail.author_id
-                  ? `/authors/${cocktail.author_id}`
-                  : getDetailsPath(cocktail)
-              }
-              className="public-post-author"
-            >
-              <UserAvatar
-                nickname={authorName}
-                avatar={cocktail.author_avatar}
-                className="public-post-avatar"
-              />
-              <span>
-                <strong>{authorName}</strong>
-              </span>
-            </Link>
-          </div>
-
-          <Link to={getDetailsPath(cocktail)} className="cocktail-card-main">
-            <CocktailCardImage cocktail={cocktail} />
-            <CocktailCardSummary cocktail={cocktail} showInstructions={false} />
-          </Link>
-        </article>
+        <CocktailCard
+          cocktail={cocktail}
+          authorPath={
+            cocktail.author_id
+              ? `/authors/${cocktail.author_id}`
+              : getDetailsPath(cocktail)
+          }
+          className="favorite-public-card"
+          showAuthorHeader
+          showIngredientsLabel={false}
+          showInstructions={false}
+          to={getDetailsPath(cocktail)}
+        />
 
         {renderRemoveButton(cocktail)}
       </div>
@@ -182,9 +161,7 @@ export default function FavoritesPage() {
       key={getFavoriteKey(cocktail)}
       className="favorite-card-shell"
     >
-      <Link to={getDetailsPath(cocktail)} className="cocktail-card-link">
-        <CocktailCard cocktail={cocktail} />
-      </Link>
+      <CocktailCard cocktail={cocktail} to={getDetailsPath(cocktail)} />
 
       {renderRemoveButton(cocktail)}
     </div>
