@@ -76,6 +76,11 @@
 }
 
 @media (max-width: 760px) {
+  .notifications-page h1 {
+    font-size: 30px;
+    margin-top: 0;
+  }
+
   .notifications-panel {
     max-width: 100%;
   }

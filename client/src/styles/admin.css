@@ -1,0 +1,403 @@
+/* Admin pages */
+.admin-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.reports-filter-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-create-link,
+.admin-edit-link {
+  min-height: 40px;
+  text-decoration: none;
+  color: #ffffff;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.admin-create-link:hover,
+.admin-edit-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12);
+}
+
+.admin-create-link {
+  background: var(--color-primary);
+}
+
+.admin-create-link:hover {
+  background: var(--color-primary-hover);
+}
+
+.admin-edit-link {
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.admin-edit-link:hover {
+  background: #e0e7ff;
+  color: #312e81;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.admin-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 16px;
+}
+
+.admin-card p {
+  line-height: 1.45;
+}
+
+.admin-card-muted {
+  opacity: 0.78;
+}
+
+.admin-card-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+}
+
+.admin-card-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.report-action-panel {
+  margin-top: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.report-action-panel summary {
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 800;
+  list-style: none;
+  user-select: none;
+}
+
+.report-action-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.report-action-panel summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+.report-action-panel[open] summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.report-action-panel[open] summary::after {
+  transform: rotate(225deg);
+}
+
+.report-action-panel .report-actions,
+.report-action-panel .admin-card-actions {
+  margin: 0;
+  padding: 12px;
+}
+
+.report-action-panel .report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-card-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.admin-card-title-row h3 {
+  margin: 0;
+}
+
+.admin-text-link {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-text-link:hover {
+  text-decoration: underline;
+}
+
+.admin-content-block {
+  margin-top: 14px;
+}
+
+.admin-content-block h4 {
+  margin: 0 0 6px;
+}
+
+.admin-content-block p {
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.admin-users-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 20px;
+}
+
+.admin-chat-action-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-user-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.admin-user-title {
+  margin: 0;
+}
+
+.admin-user-email {
+  margin: 4px 0 0;
+}
+
+.admin-user-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+
+.role-badge {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.role-admin {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.role-superadmin {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.dashboard-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  min-height: 110px;
+  box-shadow: var(--shadow-card);
+  transition: 0.2s;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+}
+
+.dashboard-card h3 {
+  margin-top: 0;
+}
+
+.dashboard-card p {
+  font-size: 28px;
+  margin: 0;
+  font-weight: 700;
+}
+
+
+@media (max-width: 760px) {
+  .admin-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .admin-page-header h1 {
+    margin-top: 0;
+    font-size: 28px;
+    line-height: 1.15;
+  }
+
+  .admin-page-header > .admin-create-link {
+    width: fit-content;
+  }
+
+  .reports-filter-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .reports-filter-row .app-select {
+    width: 100%;
+  }
+
+  .admin-grid,
+  .admin-users-grid,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .admin-card {
+    padding: 14px;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-card p {
+    margin: 8px 0;
+  }
+
+  .admin-card-title-row,
+  .admin-user-card-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .admin-card-title-row h3,
+  .admin-user-title {
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .admin-user-email {
+    overflow-wrap: anywhere;
+  }
+
+  .admin-user-badges {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .admin-chat-action-bar {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .dashboard-card {
+    min-height: 96px;
+    padding: 16px;
+  }
+
+  .dashboard-card p {
+    font-size: 24px;
+  }
+  .admin-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .admin-card-actions .app-button,
+  .admin-card-actions a {
+    width: auto;
+    min-width: 112px;
+    min-height: 40px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .report-action-panel {
+    margin-top: 12px;
+  }
+
+  .report-action-panel summary {
+    min-height: 40px;
+    padding: 9px 10px;
+  }
+
+  .report-action-panel .report-actions,
+  .report-action-panel .admin-card-actions {
+    padding: 10px;
+  }
+
+  .report-actions {
+    gap: 8px;
+  }
+
+  .report-actions button,
+  .report-actions a {
+    flex: 1 1 132px;
+    min-width: 0;
+    min-height: 40px;
+    padding-inline: 12px;
+  }
+  .admin-card-image {
+    height: 220px;
+    object-fit: contain;
+    background: #eef2ff;
+  }
+}
