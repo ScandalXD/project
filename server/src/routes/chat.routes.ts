@@ -6,6 +6,7 @@ import {
   deleteConversationForUserHandler,
   deleteMessageForEveryoneHandler,
   deleteMessageForUserHandler,
+  editTextMessageHandler,
   forwardMessageHandler,
   getConversationMessagesHandler,
   getConversationsHandler,
@@ -53,6 +54,7 @@ router.delete(
 
 router.delete("/chat/messages/:id", deleteMessageForUserHandler);
 router.delete("/chat/messages/:id/everyone", deleteMessageForEveryoneHandler);
+router.patch("/chat/messages/:id", editTextMessageHandler);
 router.post("/chat/messages/:id/forward", forwardMessageHandler);
 router.put("/chat/messages/:id/reaction", setMessageReactionHandler);
 router.delete("/chat/messages/:id/reaction", removeMessageReactionHandler);

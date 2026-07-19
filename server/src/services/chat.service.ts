@@ -899,9 +899,15 @@ const getVisibleMessageForUser = async (
   ensureInteger(messageId, "Invalid message id");
 
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT m.*, u.nickname AS sender_nickname, u.avatar AS sender_avatar
+    `SELECT
+       m.*,
+       u.nickname AS sender_nickname,
+       u.avatar AS sender_avatar,
+       reply.content AS reply_content,
+       reply.message_type AS reply_message_type
      FROM messages m
      JOIN users u ON m.sender_id = u.id
+     LEFT JOIN messages reply ON m.reply_to_message_id = reply.id
      JOIN conversation_participants cp
        ON cp.conversation_id = m.conversation_id
       AND cp.user_id = ?
@@ -920,6 +926,66 @@ const getVisibleMessageForUser = async (
   }
 
   return parseMetadata(rows[0] as ChatMessage);
+};
+
+const isEditableTextMessage = (message: ChatMessage) => {
+  if (message.message_type !== "text") {
+    return false;
+  }
+
+  const metadata = message.metadata;
+
+  if (!metadata || typeof metadata !== "object") {
+    return true;
+  }
+
+  return !(
+    "sharedType" in metadata ||
+    "cocktailName" in metadata ||
+    "fileUrl" in metadata
+  );
+};
+
+export const editTextMessage = async (
+  userId: number,
+  messageId: number,
+  content?: string | null,
+): Promise<ChatMessage> => {
+  const message = await getVisibleMessageForUser(userId, messageId);
+
+  if (Number(message.sender_id) !== Number(userId)) {
+    throw new ServiceError("Only message sender can edit it", 403);
+  }
+
+  if (!isEditableTextMessage(message)) {
+    throw new ServiceError("Only text messages can be edited", 400);
+  }
+
+  const participantIds = await ensureVisibleConversationAccess(
+    userId,
+    Number(message.conversation_id),
+  );
+  const recipientId = getOtherParticipantId(userId, participantIds);
+
+  await ensureCanChatWithUser(userId, recipientId);
+  await ensureUserChatAllowed(userId);
+  validateMessageContent("text", content, null);
+
+  const normalizedContent = content?.trim() ?? "";
+
+  await db.query(
+    `UPDATE messages
+     SET content = ?,
+         is_edited = TRUE,
+         updated_at = NOW()
+     WHERE id = ?`,
+    [normalizedContent, messageId],
+  );
+
+  const updatedMessage = await getVisibleMessageForUser(userId, messageId);
+  const [messageWithState] = await withMessageState(userId, [updatedMessage]);
+
+  return messageWithState;
 };
 
 export const forwardMessage = async (

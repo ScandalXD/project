@@ -200,6 +200,7 @@ export default function ChatWindow({
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [reportMessage, setReportMessage] = useState<ChatMessage | null>(null);
   const [forwardMessage, setForwardMessage] = useState<ChatMessage | null>(null);
   const [isReportUserOpen, setIsReportUserOpen] = useState(false);
@@ -484,7 +485,12 @@ export default function ChatWindow({
     setError("");
 
     try {
-      if (file) {
+      if (editingMessage) {
+        await chatApi.editMessage(editingMessage.id, content.trim());
+        setContent("");
+        setEditingMessage(null);
+        await onMessagesChanged();
+      } else if (file) {
         await chatApi.sendAttachment(
           conversation.id,
           file,
@@ -643,6 +649,20 @@ export default function ChatWindow({
     await refreshMessagesAfterUpdate();
   };
 
+  const handleStartEdit = (message: ChatMessage) => {
+    setError("");
+    setReplyTo(null);
+    setIsComposerEmojiOpen(false);
+    clearAttachment();
+    setEditingMessage(message);
+    setContent(message.content ?? "");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+    setContent("");
+  };
+
   const handleForwardMessage = async (targetConversationId: number) => {
     if (!forwardMessage) return;
 
@@ -703,6 +723,7 @@ export default function ChatWindow({
   const resetComposerDraft = () => {
     setContent("");
     setReplyTo(null);
+    setEditingMessage(null);
     setIsComposerEmojiOpen(false);
     clearAttachment();
 
@@ -899,6 +920,7 @@ export default function ChatWindow({
                   onReport={setReportMessage}
                   onForward={setForwardMessage}
                   onCopy={handleCopyMessage}
+                  onEdit={handleStartEdit}
                   onPin={handlePinMessage}
                   onReact={handleReactMessage}
                   onRemoveReaction={handleRemoveReaction}
@@ -932,7 +954,18 @@ export default function ChatWindow({
             </div>
           )}
 
-          {file && (
+          {editingMessage && (
+            <div className="chat-edit-box">
+              <span>
+                Editing: {editingMessage.content || "message"}
+              </span>
+              <button type="button" onClick={handleCancelEdit}>
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {!editingMessage && file && (
             attachmentType === "voice" ? (
               <div className="voice-draft-panel">
                 <VoiceWaveform
@@ -964,7 +997,7 @@ export default function ChatWindow({
             )
           )}
 
-          {isRecording && (
+          {!editingMessage && isRecording && (
             <div className="voice-recording-panel">
               <span className="voice-recording-dot" aria-hidden="true" />
               <span className="voice-recording-time">
@@ -988,23 +1021,32 @@ export default function ChatWindow({
             </div>
           )}
 
-          <form className="chat-composer" onSubmit={handleSubmit}>
-            <Button
-              type="button"
-              variant="secondary"
-              className="chat-composer-icon-button"
-              onClick={() => setIsShareCocktailOpen(true)}
-              title="Share cocktail"
-              aria-label="Share cocktail"
-            >
-              <GlassWater size={18} aria-hidden="true" />
-            </Button>
+          <form
+            className={`chat-composer ${
+              editingMessage ? "chat-composer-editing" : ""
+            }`}
+            onSubmit={handleSubmit}
+          >
+            {!editingMessage && (
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="chat-composer-icon-button"
+                  onClick={() => setIsShareCocktailOpen(true)}
+                  title="Share cocktail"
+                  aria-label="Share cocktail"
+                >
+                  <GlassWater size={18} aria-hidden="true" />
+                </Button>
 
-            <label className="chat-file-button">
-              <Paperclip size={18} aria-hidden="true" />
-              <span className="sr-only">Attach file</span>
-              <input type="file" onChange={handleFileChange} />
-            </label>
+                <label className="chat-file-button">
+                  <Paperclip size={18} aria-hidden="true" />
+                  <span className="sr-only">Attach file</span>
+                  <input type="file" onChange={handleFileChange} />
+                </label>
+              </>
+            )}
 
             <div className="chat-composer-emoji-wrap">
               <Button
@@ -1036,20 +1078,22 @@ export default function ChatWindow({
               )}
             </div>
 
-            <Button
-              type="button"
-              variant={isRecording ? "danger" : "secondary"}
-              className="chat-composer-icon-button"
-              onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
-              title={isRecording ? "Stop recording" : "Record voice message"}
-              aria-label={isRecording ? "Stop recording" : "Record voice message"}
-            >
-              {isRecording ? (
-                <Square size={17} aria-hidden="true" />
-              ) : (
-                <Mic size={18} aria-hidden="true" />
-              )}
-            </Button>
+            {!editingMessage && (
+              <Button
+                type="button"
+                variant={isRecording ? "danger" : "secondary"}
+                className="chat-composer-icon-button"
+                onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                title={isRecording ? "Stop recording" : "Record voice message"}
+                aria-label={isRecording ? "Stop recording" : "Record voice message"}
+              >
+                {isRecording ? (
+                  <Square size={17} aria-hidden="true" />
+                ) : (
+                  <Mic size={18} aria-hidden="true" />
+                )}
+              </Button>
+            )}
 
             <Input
               value={content}
@@ -1057,11 +1101,17 @@ export default function ChatWindow({
                 setContent(event.target.value);
                 emitTyping();
               }}
-              placeholder={file ? "Optional caption" : "Write a message"}
+              placeholder={
+                editingMessage
+                  ? "Edit message"
+                  : file
+                    ? "Optional caption"
+                    : "Write a message"
+              }
             />
 
             <Button type="submit" disabled={!file && !content.trim()}>
-              Send
+              {editingMessage ? "Save" : "Send"}
             </Button>
           </form>
         </>

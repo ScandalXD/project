@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import {
   Copy,
+  Pencil,
   Flag,
   Forward,
   MoreVertical,
@@ -38,6 +39,7 @@ interface MessageBubbleProps {
   onReport: (message: ChatMessage) => void;
   onForward: (message: ChatMessage) => void;
   onCopy: (message: ChatMessage) => Promise<void>;
+  onEdit: (message: ChatMessage) => void;
   onPin: (message: ChatMessage) => Promise<void>;
   onReact: (message: ChatMessage, emoji: string) => Promise<void>;
   onRemoveReaction: (message: ChatMessage) => Promise<void>;
@@ -262,6 +264,7 @@ export default function MessageBubble({
   onReport,
   onForward,
   onCopy,
+  onEdit,
   onPin,
   onReact,
   onRemoveReaction,
@@ -281,6 +284,12 @@ export default function MessageBubble({
     ? message.metadata
     : null;
   const isPinned = isEnabledFlag(message.is_pinned);
+  const canEdit =
+    isOwn &&
+    message.message_type === "text" &&
+    !commentShare &&
+    !cocktail &&
+    !attachment;
   const forwardedNickname =
     message.metadata && "forwardedFromNickname" in message.metadata
       ? message.metadata.forwardedFromNickname
@@ -354,6 +363,12 @@ export default function MessageBubble({
             <span>Copy</span>
             <Copy size={17} aria-hidden="true" />
           </button>
+          {canEdit && (
+            <button type="button" onClick={() => runAction(() => onEdit(message))}>
+              <span>Edit</span>
+              <Pencil size={17} aria-hidden="true" />
+            </button>
+          )}
           <button type="button" onClick={() => runAction(() => onPin(message))}>
             <span>{isPinned ? "Unpin" : "Pin"}</span>
             {isPinned ? (
@@ -475,6 +490,10 @@ export default function MessageBubble({
               <Pin size={14} aria-hidden="true" />
             </span>
           </div>
+        )}
+
+        {isEnabledFlag(message.is_edited) && (
+          <span className="message-edited-label">Edited</span>
         )}
 
         {message.reactions && message.reactions.length > 0 && (

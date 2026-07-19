@@ -144,6 +144,11 @@ export const chatApi = {
     return res.data;
   },
 
+  async editMessage(messageId: number, content: string): Promise<ChatMessage> {
+    const res = await api.patch(`/chat/messages/${messageId}`, { content });
+    return res.data;
+  },
+
   async forwardMessage(
     messageId: number,
     conversationId: number,

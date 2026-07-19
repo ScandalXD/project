@@ -131,6 +131,8 @@ export default function ChatPage() {
           prev.map((item) => (item.id === message.id ? message : item)),
         );
       }
+
+      loadConversations();
     };
 
     const handleMessageSeen = (payload: {

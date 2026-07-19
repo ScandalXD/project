@@ -5,6 +5,7 @@ import {
   deleteConversationForUser,
   deleteMessageForEveryone,
   deleteMessageForUser,
+  editTextMessage,
   forwardMessage,
   getConversationMessages,
   getUserConversations,
@@ -374,6 +375,28 @@ export const deleteMessageForEveryoneHandler = async (
     );
     emitMessageDeleted(result.conversationId, result.messageId);
     res.json({ message: "Message deleted for everyone" });
+  } catch (e) {
+    handleError(res, e);
+  }
+};
+
+export const editTextMessageHandler = async (
+  req: Request<{ id: string }, {}, { content?: string | null }>,
+  res: Response,
+) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const message = await editTextMessage(
+      req.user.id,
+      Number(req.params.id),
+      req.body.content,
+    );
+
+    emitMessageUpdated(Number(message.conversation_id), message);
+    res.json(message);
   } catch (e) {
     handleError(res, e);
   }
