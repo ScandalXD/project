@@ -106,10 +106,15 @@
 .profile-danger-zone {
   border-top: 1px solid var(--color-border);
   padding-top: 24px;
+  text-align: center;
 }
 
 .profile-danger-title {
   color: var(--color-danger);
+}
+
+.profile-danger-zone .app-button {
+  margin: 0 auto;
 }
 
 
