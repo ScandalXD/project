@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
-import { Link, type To } from "react-router-dom";
+import type { To } from "react-router-dom";
+import PageHeaderAction from "./PageHeaderAction";
 
 interface BackButtonProps {
   label: string;
@@ -23,17 +24,13 @@ export default function BackButton({
 
   const buttonClassName = `page-back-button ${className}`.trim();
 
-  if (to) {
-    return (
-      <Link to={to} className={buttonClassName}>
-        {content}
-      </Link>
-    );
-  }
-
   return (
-    <button type="button" className={buttonClassName} onClick={onClick}>
+    <PageHeaderAction
+      to={to}
+      className={buttonClassName}
+      onClick={onClick}
+    >
       {content}
-    </button>
+    </PageHeaderAction>
   );
 }

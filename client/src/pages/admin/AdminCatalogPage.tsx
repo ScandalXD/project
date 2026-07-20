@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Plus } from "lucide-react";
 import { adminApi } from "../../api/adminApi";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
@@ -7,6 +8,7 @@ import { getImageUrl } from "../../utils/getImageUrl";
 import Button from "../../components/ui/Button";
 import BackButton from "../../components/ui/BackButton";
 import EmptyState from "../../components/ui/EmptyState";
+import PageHeaderAction from "../../components/ui/PageHeaderAction";
 import type { CatalogCocktail } from "../../types/cocktail";
 
 export default function AdminCatalogPage() {
@@ -53,12 +55,13 @@ export default function AdminCatalogPage() {
       <div className="admin-page-header">
         <h1>Admin Catalog</h1>
 
-        <Link
+        <PageHeaderAction
           to="/admin/catalog/create"
           className="admin-create-link"
         >
-          + Create
-        </Link>
+          <Plus size={17} aria-hidden="true" />
+          <span>Create</span>
+        </PageHeaderAction>
       </div>
 
       {message && (

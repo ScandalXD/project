@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Plus } from "lucide-react";
 import { cocktailsApi } from "../../api/cocktailsApi";
 import { formatCocktailCategory } from "../../utils/formatCocktailCategory";
 import { getImageUrl } from "../../utils/getImageUrl";
@@ -8,6 +9,7 @@ import type { UserCocktail } from "../../types/cocktail";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import Modal from "../../components/ui/Modal";
+import PageHeaderAction from "../../components/ui/PageHeaderAction";
 
 function getStatusLabel(status: UserCocktail["publication_status"]) {
   if (status === "draft") return "Draft";
@@ -90,9 +92,13 @@ export default function MyCocktailsPage() {
           <p className="muted-text">Manage your own cocktails.</p>
         </div>
 
-        <Link to="/my-cocktails/create" className="admin-create-link">
-          + Create
-        </Link>
+        <PageHeaderAction
+          to="/my-cocktails/create"
+          className="admin-create-link"
+        >
+          <Plus size={17} aria-hidden="true" />
+          <span>Create</span>
+        </PageHeaderAction>
       </div>
 
       {actionMessage && <p className="success-text">{actionMessage}</p>}

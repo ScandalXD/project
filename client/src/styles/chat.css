@@ -446,6 +446,8 @@
   align-items: flex-end;
   gap: 6px;
   padding-bottom: 8px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .message-row-own {
@@ -1296,10 +1298,16 @@
 }
 
 @media (max-width: 760px) {
+  .chat-page {
+    width: 100%;
+    max-width: none;
+  }
+
   .chat-shell {
     grid-template-columns: 1fr;
-    height: calc(100dvh - 150px);
-    min-height: 560px;
+    height: calc(100dvh - 108px);
+    min-height: 0;
+    border-radius: var(--radius-lg);
     overflow: hidden;
   }
 
@@ -1393,13 +1401,13 @@
   }
 
   .chat-composer {
-    grid-template-columns: 42px 42px 42px 42px minmax(0, 1fr) auto;
-    gap: 6px;
-    padding: 10px;
+    grid-template-columns: repeat(4, 38px) minmax(110px, 1fr) auto;
+    gap: 5px;
+    padding: 8px;
   }
 
   .chat-composer-editing {
-    grid-template-columns: 42px minmax(0, 1fr) auto;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
   }
 
   .chat-composer-emoji-popover {
@@ -1408,8 +1416,15 @@
   }
 
   .chat-composer-emoji-wrap {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .chat-file-button,
+  .chat-composer-icon-button {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
   }
 
   .chat-composer .app-input {
@@ -1417,11 +1432,33 @@
   }
 
   .chat-composer .app-button[type="submit"] {
-    padding: 0 12px;
+    min-height: 38px;
+    padding: 0 11px;
   }
 
   .message-bubble {
-    max-width: 86%;
+    max-width: calc(100% - 92px);
+  }
+
+  .message-row:not(.message-row-own) .message-bubble {
+    max-width: calc(100% - 136px);
+  }
+
+  .message-bubble-share {
+    width: min(280px, 100%);
+    max-width: calc(100% - 92px);
+  }
+
+  .message-row:not(.message-row-own) .message-bubble-share {
+    max-width: calc(100% - 136px);
+  }
+
+  .message-share-post-source {
+    width: min(190px, 78%);
+  }
+
+  .message-share-post {
+    max-width: 100%;
   }
 
   .voice-message {
@@ -1437,5 +1474,30 @@
   .message-emoji-popover-own {
     right: 0;
     left: auto;
+  }
+}
+
+@media (max-width: 430px) {
+  .chat-composer {
+    grid-template-columns: repeat(4, 36px) minmax(0, 1fr) 52px;
+    gap: 4px;
+    padding: 8px 6px;
+  }
+
+  .chat-file-button,
+  .chat-composer-icon-button,
+  .chat-composer-emoji-wrap {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+  }
+
+  .chat-composer .app-input {
+    padding-inline: 10px;
+  }
+
+  .chat-composer .app-button[type="submit"] {
+    min-width: 52px;
+    padding: 0 8px;
   }
 }
