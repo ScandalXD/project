@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth.middleware";
-import { uploadChatAttachment } from "../middleware/uploadChat.middleware";
+import { uploadChatAttachmentHandler } from "../middleware/uploadChat.middleware";
 import {
   deleteConversationForEveryoneHandler,
   deleteConversationForUserHandler,
@@ -39,7 +39,7 @@ router.post(
 );
 router.post(
   "/chat/conversations/:id/messages/attachment",
-  uploadChatAttachment.single("file"),
+  uploadChatAttachmentHandler,
   sendAttachmentMessageHandler,
 );
 router.patch("/chat/conversations/:id/read", markConversationAsReadHandler);

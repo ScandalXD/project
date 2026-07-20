@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import {
   Copy,
+  Download,
+  FileText,
   Pencil,
   Flag,
   Forward,
@@ -63,6 +65,38 @@ function isCommentShareMetadata(
       "sharedType" in metadata &&
       metadata.sharedType === "comment",
   );
+}
+
+function formatAttachmentSize(size?: number) {
+  if (!size) {
+    return "";
+  }
+
+  if (size < 1024 * 1024) {
+    return `${Math.max(1, Math.round(size / 1024))} KB`;
+  }
+
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getAttachmentLabel(attachment: ChatAttachmentMetadata) {
+  if (attachment.mimeType?.includes("pdf")) {
+    return "PDF document";
+  }
+
+  if (attachment.mimeType?.includes("word")) {
+    return "Word document";
+  }
+
+  if (attachment.mimeType?.includes("zip")) {
+    return "ZIP archive";
+  }
+
+  if (attachment.mimeType?.startsWith("text/")) {
+    return "Text file";
+  }
+
+  return attachment.mimeType || "File";
 }
 
 function getCocktailDetailsPath(cocktail: CocktailShareMetadata) {
@@ -171,6 +205,33 @@ function ShareNote({ content }: { content: string | null }) {
   }
 
   return <p className="message-content message-share-note">{content}</p>;
+}
+
+function FileAttachment({ attachment }: { attachment: ChatAttachmentMetadata }) {
+  const fileUrl = getImageUrl(attachment.fileUrl || "");
+  const fileSize = formatAttachmentSize(attachment.fileSize);
+
+  return (
+    <a
+      className="message-file-card"
+      href={fileUrl}
+      target="_blank"
+      rel="noreferrer"
+      download={attachment.fileName}
+    >
+      <span className="message-file-icon">
+        <FileText size={20} aria-hidden="true" />
+      </span>
+      <span className="message-file-info">
+        <strong>{attachment.fileName || "Download file"}</strong>
+        <span>
+          {getAttachmentLabel(attachment)}
+          {fileSize ? ` · ${fileSize}` : ""}
+        </span>
+      </span>
+      <Download size={18} aria-hidden="true" />
+    </a>
+  );
 }
 
 function CommentSharePreview({
@@ -417,7 +478,7 @@ export default function MessageBubble({
       <div
         className={`message-bubble ${isOwn ? "message-bubble-own" : ""} ${
           commentShare || cocktail ? "message-bubble-share" : ""
-        }`}
+        } ${attachment ? "message-bubble-attachment" : ""}`}
       >
         {forwardedNickname && (
           <p className="message-forwarded">Forwarded from {forwardedNickname}</p>
@@ -470,14 +531,7 @@ export default function MessageBubble({
         )}
 
         {attachment && message.message_type === "file" && (
-          <a
-            className="message-file-link"
-            href={getImageUrl(attachment.fileUrl)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {attachment.fileName || "Download file"}
-          </a>
+          <FileAttachment attachment={attachment} />
         )}
 
         {isPinned && (
