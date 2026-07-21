@@ -1,3 +1,5 @@
+import { API_ORIGIN } from "./apiOrigin";
+
 export function getImageUrl(image?: string | null): string {
   if (!image) {
     return "";
@@ -12,8 +14,8 @@ export function getImageUrl(image?: string | null): string {
   }
 
   if (image.startsWith("/")) {
-    return `http://localhost:3000${image}`;
+    return `${API_ORIGIN}${image}`;
   }
 
-  return `http://localhost:3000/uploads/catalog/${image}`;
+  return `${API_ORIGIN}/uploads/catalog/${image}`;
 }

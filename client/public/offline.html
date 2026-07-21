@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111827" />
+    <title>CocktailApp offline</title>
+    <style>
+      :root {
+        color: #111827;
+        background: #f1f5f9;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      main {
+        max-width: 420px;
+        width: 100%;
+        padding: 32px;
+        border: 1px solid #cbd5e1;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+      }
+
+      img {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: block;
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 32px;
+      }
+
+      p {
+        margin: 0 0 20px;
+        color: #475569;
+        line-height: 1.5;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 18px;
+        background: #111827;
+        color: #fff;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icon-192.png" alt="CocktailApp" />
+      <h1>You are offline</h1>
+      <p>
+        CocktailApp is installed, but this page needs an internet or local
+        network connection to load fresh cocktail, chat, and profile data.
+      </p>
+      <button type="button" onclick="window.location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

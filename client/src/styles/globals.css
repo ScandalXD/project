@@ -579,6 +579,10 @@ select {
     padding: 24px 12px;
   }
 
+  .app-main-chat {
+    padding: 0;
+  }
+
   .page-container {
     max-width: 100%;
   }

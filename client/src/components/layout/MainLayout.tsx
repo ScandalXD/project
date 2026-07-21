@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import UserAvatar from "../ui/UserAvatar";
 
@@ -28,6 +28,8 @@ const navItems = [
 export default function MainLayout() {
   const { user, isAuthenticated } = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const location = useLocation();
+  const isChatRoute = location.pathname.startsWith("/chat");
 
   const closeMobileNav = () => {
     setIsMobileNavOpen(false);
@@ -123,7 +125,7 @@ export default function MainLayout() {
         </nav>
       </header>
 
-      <main className="app-main">
+      <main className={`app-main ${isChatRoute ? "app-main-chat" : ""}`}>
         <Outlet />
       </main>
     </>

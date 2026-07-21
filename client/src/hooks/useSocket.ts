@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import { API_ORIGIN } from "../utils/apiOrigin";
 
 export function useSocket(token: string | null) {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -13,7 +14,7 @@ export function useSocket(token: string | null) {
       return;
     }
 
-    const nextSocket = io("http://localhost:3000", {
+    const nextSocket = io(API_ORIGIN, {
       auth: {
         token,
       },

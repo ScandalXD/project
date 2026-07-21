@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import path from "path";
+import { corsOptions } from "./config/cors";
 import authRoutes from "./routes/auth.routes";
 import profileRoutes from "./routes/profile.routes";
 import cocktailRoutes from "./routes/cocktail.routes";
@@ -18,10 +19,7 @@ import adminChatRoutes from "./routes/adminChat.routes";
 const app = express();
 
 app.use(express.json());
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
-}));
+app.use(cors(corsOptions));
 
 app.use("/api/auth", authRoutes);
 app.use("/api", profileRoutes);

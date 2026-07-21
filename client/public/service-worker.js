@@ -1,10 +1,12 @@
-const CACHE_VERSION = "cocktailapp-v1";
+const CACHE_VERSION = "cocktailapp-v3";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
+const OFFLINE_URL = "/offline.html";
 
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
+  OFFLINE_URL,
   "/icon-192.png",
   "/icon-512.png",
 ];
@@ -58,7 +60,23 @@ const networkFirst = async (request) => {
     return response;
   } catch {
     const cached = await cache.match(request);
-    return cached || caches.match("/");
+    return cached || caches.match("/") || caches.match(OFFLINE_URL);
+  }
+};
+
+const navigationFallback = async (request) => {
+  const cache = await caches.open(RUNTIME_CACHE);
+
+  try {
+    const response = await fetch(request);
+
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+
+    return response;
+  } catch {
+    return caches.match(OFFLINE_URL);
   }
 };
 
@@ -93,7 +111,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
-    event.respondWith(networkFirst(request));
+    event.respondWith(navigationFallback(request));
     return;
   }
 

@@ -1370,13 +1370,17 @@
   .chat-page {
     width: 100%;
     max-width: none;
+    margin: 0;
   }
 
   .chat-shell {
     grid-template-columns: 1fr;
-    height: calc(100dvh - 108px);
-    min-height: 0;
-    border-radius: var(--radius-lg);
+    height: calc(100dvh - 60px);
+    min-height: calc(100svh - 60px);
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-shadow: none;
     overflow: hidden;
   }
 

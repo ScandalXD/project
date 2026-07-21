@@ -1,5 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
+import { allowedClientOrigins } from "../config/cors";
 import { db } from "../config/db";
 import { JwtPayload, verifyToken } from "./token.service";
 import {
@@ -107,7 +108,7 @@ const emitUserPresence = (
 export const initializeChatSocket = (httpServer: HttpServer) => {
   const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: allowedClientOrigins,
       credentials: true,
     },
   });
