@@ -151,9 +151,36 @@ select {
 }
 
 .route-loading {
+  width: min(100%, 520px);
+  margin: 0 auto;
   color: var(--color-muted);
-  padding: 32px 0;
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
   text-align: center;
+}
+
+.route-error-card {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 28px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.route-error-card h1 {
+  margin: 0 0 10px;
+  font-size: 28px;
+}
+
+.route-error-card p {
+  margin: 0 0 18px;
+  color: var(--color-muted);
 }
 
 .card {
@@ -580,7 +607,10 @@ select {
   }
 
   .app-main-chat {
+    height: calc(100dvh - 60px);
+    min-height: calc(100svh - 60px);
     padding: 0;
+    overflow: hidden;
   }
 
   .page-container {

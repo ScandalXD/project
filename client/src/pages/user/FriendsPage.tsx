@@ -70,7 +70,7 @@ export default function FriendsPage() {
   return (
     <div className="page-container friends-page">
       {message && <p className="success-text">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
+      {error && <p className="friends-load-error">{error}</p>}
 
       <div className="friends-layout">
         <aside className="friends-side-stack">

@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "vite",
     "dev:host": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-sw-manifest.mjs",
     "preview": "vite preview",
     "preview:host": "vite preview --host 0.0.0.0"
   }

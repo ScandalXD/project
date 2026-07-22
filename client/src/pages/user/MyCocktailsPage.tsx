@@ -77,11 +77,19 @@ export default function MyCocktailsPage() {
   };
 
   if (isLoading) {
-    return <p className="muted-text">Loading your cocktails...</p>;
+    return (
+      <div className="page-container">
+        <EmptyState text="Loading your cocktails..." />
+      </div>
+    );
   }
 
   if (error && cocktails.length === 0) {
-    return <p className="error-text">{error}</p>;
+    return (
+      <div className="page-container">
+        <EmptyState text={error} />
+      </div>
+    );
   }
 
   return (

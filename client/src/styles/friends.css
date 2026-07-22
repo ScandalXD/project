@@ -105,6 +105,15 @@
   margin: 0 0 12px;
 }
 
+.friends-load-error {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .friends-inline-empty {
   margin: 8px 0 0;
   color: var(--color-muted);

@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import MainLayout from "../components/layout/MainLayout";
+import RouteErrorBoundary from "../components/ui/RouteErrorBoundary";
 import GuestRoute from "../routes/GuestRoute";
 import ProtectedRoute from "../routes/ProtectedRoute";
 import AdminRoute from "../routes/AdminRoute";
@@ -33,7 +34,13 @@ const AdminCommentsPage = lazy(() => import("../pages/admin/AdminCommentsPage"))
 const AdminPublicPage = lazy(() => import("../pages/admin/AdminPublicPage"));
 
 function page(element: ReactNode) {
-  return <Suspense fallback={<div className="route-loading">Loading...</div>}>{element}</Suspense>;
+  return (
+    <RouteErrorBoundary>
+      <Suspense fallback={<div className="route-loading">Loading...</div>}>
+        {element}
+      </Suspense>
+    </RouteErrorBoundary>
+  );
 }
 
 export const router = createBrowserRouter([
