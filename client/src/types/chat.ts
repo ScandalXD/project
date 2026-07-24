@@ -100,6 +100,7 @@ export interface ChatMessage {
   sender_avatar?: string | null;
   reply_content?: string | null;
   reply_message_type?: ChatMessageType | null;
+  reply_metadata?: ChatMessageMetadata;
 }
 
 export interface MessageReactionSummary {

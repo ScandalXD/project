@@ -208,6 +208,45 @@ function ShareNote({ content }: { content: string | null }) {
   return <p className="message-content message-share-note">{content}</p>;
 }
 
+function MessageReplyPreview({ message }: { message: ChatMessage }) {
+  const repliedCocktail =
+    message.reply_message_type === "cocktail_share" &&
+    isCocktailMetadata(message.reply_metadata)
+      ? message.reply_metadata
+      : null;
+
+  if (repliedCocktail) {
+    return (
+      <Link
+        to={getCocktailDetailsPath(repliedCocktail)}
+        className="message-reply-preview message-reply-cocktail"
+        title={`Open ${repliedCocktail.cocktailName}`}
+      >
+        {repliedCocktail.cocktailImage ? (
+          <img
+            src={getImageUrl(repliedCocktail.cocktailImage)}
+            alt={repliedCocktail.cocktailName}
+          />
+        ) : (
+          <span className="message-reply-cocktail-placeholder" aria-hidden="true">
+            {repliedCocktail.cocktailName.slice(0, 1)}
+          </span>
+        )}
+        <span className="message-reply-cocktail-info">
+          <strong>{repliedCocktail.cocktailName}</strong>
+          <span>{repliedCocktail.cocktailType} cocktail</span>
+        </span>
+      </Link>
+    );
+  }
+
+  return (
+    <div className="message-reply-preview">
+      {message.reply_message_type}: {message.reply_content || "Attachment"}
+    </div>
+  );
+}
+
 function FileAttachment({ attachment }: { attachment: ChatAttachmentMetadata }) {
   const fileUrl = getImageUrl(attachment.fileUrl || "");
   const fileSize = formatAttachmentSize(attachment.fileSize);
@@ -592,9 +631,7 @@ export default function MessageBubble({
         )}
 
         {message.reply_to_message_id && (
-          <div className="message-reply-preview">
-            {message.reply_message_type}: {message.reply_content || "Attachment"}
-          </div>
+          <MessageReplyPreview message={message} />
         )}
 
         {message.message_type === "text" && !commentShare && (

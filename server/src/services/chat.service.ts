@@ -22,19 +22,34 @@ const parseMetadata = <T extends ChatMessage | ConversationListItem>(
 ): T => {
   const metadataKey = "metadata" in item ? "metadata" : "last_message_metadata";
   const rawMetadata = item[metadataKey as keyof T];
+  const rawReplyMetadata =
+    "reply_metadata" in item ? item.reply_metadata : undefined;
+  let parsedMetadata = rawMetadata;
+  let parsedReplyMetadata = rawReplyMetadata;
 
-  if (typeof rawMetadata !== "string") {
-    return item;
+  if (typeof rawMetadata === "string") {
+    try {
+      parsedMetadata = JSON.parse(rawMetadata);
+    } catch {
+      parsedMetadata = rawMetadata;
+    }
   }
 
-  try {
-    return {
-      ...item,
-      [metadataKey]: JSON.parse(rawMetadata),
-    };
-  } catch {
-    return item;
+  if (typeof rawReplyMetadata === "string") {
+    try {
+      parsedReplyMetadata = JSON.parse(rawReplyMetadata);
+    } catch {
+      parsedReplyMetadata = rawReplyMetadata;
+    }
   }
+
+  return {
+    ...item,
+    [metadataKey]: parsedMetadata,
+    ...("reply_metadata" in item
+      ? { reply_metadata: parsedReplyMetadata }
+      : {}),
+  };
 };
 
 const enrichPublicCocktailShareAuthors = async (
@@ -436,9 +451,16 @@ const createMessage = async (
   await notifyRecipient(recipientId, senderId, input.messageType);
 
   const [rows] = await db.query<RowDataPacket[]>(
-    `SELECT m.*, u.nickname AS sender_nickname, u.avatar AS sender_avatar
+    `SELECT
+       m.*,
+       u.nickname AS sender_nickname,
+       u.avatar AS sender_avatar,
+       reply.content AS reply_content,
+       reply.message_type AS reply_message_type,
+       reply.metadata AS reply_metadata
      FROM messages m
      JOIN users u ON m.sender_id = u.id
+     LEFT JOIN messages reply ON m.reply_to_message_id = reply.id
      WHERE m.id = ?`,
     [result.insertId],
   );
@@ -598,6 +620,7 @@ export const getConversationMessages = async (
        u.avatar AS sender_avatar,
        reply.content AS reply_content,
        reply.message_type AS reply_message_type,
+       reply.metadata AS reply_metadata,
        EXISTS (
          SELECT 1
          FROM message_reads mr
@@ -904,7 +927,8 @@ const getVisibleMessageForUser = async (
        u.nickname AS sender_nickname,
        u.avatar AS sender_avatar,
        reply.content AS reply_content,
-       reply.message_type AS reply_message_type
+       reply.message_type AS reply_message_type,
+       reply.metadata AS reply_metadata
      FROM messages m
      JOIN users u ON m.sender_id = u.id
      LEFT JOIN messages reply ON m.reply_to_message_id = reply.id
