@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Copy,
   Download,
@@ -332,6 +333,92 @@ export default function MessageBubble({
 }: MessageBubbleProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReactionPickerOpen, setIsReactionPickerOpen] = useState(false);
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const moreButtonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
+  const updateMenuPosition = () => {
+    const trigger = moreButtonRef.current;
+    const menu = menuRef.current;
+    if (!trigger || !menu) return;
+
+    const viewportPadding = 12;
+    const gap = 8;
+    const triggerRect = trigger.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const fitsAbove =
+      triggerRect.top - menuRect.height - gap >= viewportPadding;
+    const top = fitsAbove
+      ? triggerRect.top - menuRect.height - gap
+      : Math.min(
+          triggerRect.bottom + gap,
+          window.innerHeight - menuRect.height - viewportPadding,
+        );
+    const preferredLeft = isOwn
+      ? triggerRect.right - menuRect.width
+      : triggerRect.left;
+    const left = Math.min(
+      Math.max(viewportPadding, preferredLeft),
+      window.innerWidth - menuRect.width - viewportPadding,
+    );
+
+    setMenuPosition({
+      top: Math.max(viewportPadding, top),
+      left,
+    });
+  };
+
+  useLayoutEffect(() => {
+    if (!isMenuOpen) {
+      setMenuPosition(null);
+      return;
+    }
+
+    updateMenuPosition();
+  }, [isMenuOpen, isOwn]);
+
+  useEffect(() => {
+    if (!isMenuOpen && !isReactionPickerOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        toolbarRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      setIsMenuOpen(false);
+      setIsReactionPickerOpen(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+        setIsReactionPickerOpen(false);
+      }
+    };
+    const handleViewportChange = () => {
+      setIsMenuOpen(false);
+      setIsReactionPickerOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [isMenuOpen, isReactionPickerOpen]);
 
   if (message.deleted_at) {
     return null;
@@ -363,12 +450,20 @@ export default function MessageBubble({
   };
 
   const messageToolbar = (
-    <div className="message-toolbar">
+    <div
+      ref={toolbarRef}
+      className={`message-toolbar ${
+        isMenuOpen || isReactionPickerOpen ? "message-toolbar-open" : ""
+      }`}
+    >
       <button
         type="button"
         title="React"
         aria-label="React"
-        onClick={() => setIsReactionPickerOpen((open) => !open)}
+        onClick={() => {
+          setIsMenuOpen(false);
+          setIsReactionPickerOpen((open) => !open);
+        }}
       >
         <Smile size={16} aria-hidden="true" />
       </button>
@@ -381,10 +476,15 @@ export default function MessageBubble({
         <Reply size={16} aria-hidden="true" />
       </button>
       <button
+        ref={moreButtonRef}
         type="button"
         title="More"
         aria-label="More"
-        onClick={() => setIsMenuOpen((open) => !open)}
+        aria-expanded={isMenuOpen}
+        onClick={() => {
+          setIsReactionPickerOpen(false);
+          setIsMenuOpen((open) => !open);
+        }}
       >
         <MoreVertical size={16} aria-hidden="true" />
       </button>
@@ -407,12 +507,18 @@ export default function MessageBubble({
         </div>
       )}
 
-      {isMenuOpen && (
-        <div
-          className={`message-menu-popover ${
-            isOwn ? "message-menu-popover-own" : ""
-          }`}
-        >
+      {isMenuOpen &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="message-menu-popover message-menu-popover-floating"
+            style={{
+              top: menuPosition?.top ?? 0,
+              left: menuPosition?.left ?? 0,
+              visibility: menuPosition ? "visible" : "hidden",
+            }}
+            role="menu"
+          >
           <span className="message-menu-date">
             {new Date(message.created_at).toLocaleString("pl-PL")}
           </span>
@@ -458,8 +564,9 @@ export default function MessageBubble({
               <Trash2 size={17} aria-hidden="true" />
             </button>
           )}
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 

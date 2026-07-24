@@ -224,7 +224,15 @@ export default function ChatWindow({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const lastConversationIdRef = useRef<number | null>(null);
   const lastMobileOpenRef = useRef(false);
+  const lastMessageIdRef = useRef<number | null>(null);
   const scrollSettleTimeoutRef = useRef<number | null>(null);
+  const scrollRestoreRef = useRef<{
+    top: number;
+    anchorId: string | null;
+    anchorOffset: number | null;
+  } | null>(null);
+  const keepScrollPositionRef = useRef(false);
+  const isNearBottomRef = useRef(true);
   const typingTimeoutRef = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -251,6 +259,74 @@ export default function ChatWindow({
     bottomRef.current?.scrollIntoView({ behavior });
   };
 
+  const rememberScrollPosition = (messageIdToRemove?: number) => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const messageElements = Array.from(
+      container.querySelectorAll<HTMLElement>(".message-stack-item"),
+    );
+    const visibleIndex = messageElements.findIndex(
+      (element) => element.getBoundingClientRect().bottom > containerRect.top,
+    );
+    let anchor = visibleIndex >= 0 ? messageElements[visibleIndex] : null;
+
+    if (
+      anchor?.id === `chat-message-${messageIdToRemove}` &&
+      visibleIndex >= 0
+    ) {
+      anchor =
+        messageElements[visibleIndex + 1] ??
+        messageElements[visibleIndex - 1] ??
+        null;
+    }
+
+    scrollRestoreRef.current = {
+      top: container.scrollTop,
+      anchorId: anchor?.id ?? null,
+      anchorOffset: anchor
+        ? anchor.getBoundingClientRect().top - containerRect.top
+        : null,
+    };
+    keepScrollPositionRef.current = true;
+  };
+
+  const restoreScrollPosition = () => {
+    const container = messagesContainerRef.current;
+    const snapshot = scrollRestoreRef.current;
+    if (!container || !snapshot) return false;
+
+    if (snapshot.anchorId && snapshot.anchorOffset !== null) {
+      const anchor = document.getElementById(snapshot.anchorId);
+
+      if (anchor) {
+        const containerTop = container.getBoundingClientRect().top;
+        const currentOffset = anchor.getBoundingClientRect().top - containerTop;
+        container.scrollTop += currentOffset - snapshot.anchorOffset;
+      } else {
+        container.scrollTop = snapshot.top;
+      }
+    } else {
+      container.scrollTop = snapshot.top;
+    }
+
+    scrollRestoreRef.current = null;
+    isNearBottomRef.current =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 48;
+
+    window.requestAnimationFrame(() => {
+      keepScrollPositionRef.current = false;
+    });
+
+    return true;
+  };
+
+  const cancelScrollRestore = () => {
+    scrollRestoreRef.current = null;
+    keepScrollPositionRef.current = false;
+  };
+
   useLayoutEffect(() => {
     if (!conversation || isLoading) {
       setAreMessagesReady(true);
@@ -260,9 +336,30 @@ export default function ChatWindow({
     const isNewConversation = lastConversationIdRef.current !== conversation.id;
     const isOpeningMobileConversation = isMobileOpen && !lastMobileOpenRef.current;
     const shouldPrepareScroll = isNewConversation || isOpeningMobileConversation;
+    const lastMessageId = messages[messages.length - 1]?.id ?? null;
+    const hasNewLastMessage =
+      lastMessageIdRef.current !== null &&
+      lastMessageId !== null &&
+      lastMessageIdRef.current !== lastMessageId;
 
     lastConversationIdRef.current = conversation.id;
     lastMobileOpenRef.current = isMobileOpen;
+    lastMessageIdRef.current = lastMessageId;
+
+    if (!isNewConversation && restoreScrollPosition()) {
+      setAreMessagesReady(true);
+      return;
+    }
+
+    if (!shouldPrepareScroll && !hasNewLastMessage) {
+      setAreMessagesReady(true);
+      return;
+    }
+
+    if (!shouldPrepareScroll && !isNearBottomRef.current) {
+      return;
+    }
+
     const behavior: ScrollBehavior = shouldPrepareScroll ? "auto" : "smooth";
 
     if (shouldPrepareScroll) {
@@ -300,7 +397,13 @@ export default function ChatWindow({
       window.cancelAnimationFrame(frameId);
       settleTimeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
     };
-  }, [conversation?.id, isLoading, isMobileOpen, messages.length]);
+  }, [
+    conversation?.id,
+    editingMessage?.id,
+    isLoading,
+    isMobileOpen,
+    messages,
+  ]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -308,6 +411,8 @@ export default function ChatWindow({
 
     let frameId = 0;
     const observer = new ResizeObserver(() => {
+      if (keepScrollPositionRef.current || !isNearBottomRef.current) return;
+
       window.cancelAnimationFrame(frameId);
       frameId = window.requestAnimationFrame(() => scrollToBottom("auto"));
     });
@@ -486,6 +591,7 @@ export default function ChatWindow({
 
     try {
       if (editingMessage) {
+        rememberScrollPosition();
         await chatApi.editMessage(editingMessage.id, content.trim());
         setContent("");
         setEditingMessage(null);
@@ -534,6 +640,7 @@ export default function ChatWindow({
       setDraftVoiceDuration(0);
       setReplyTo(null);
     } catch (err) {
+      cancelScrollRestore();
       setError(getErrorMessage(err, "Failed to send message."));
     }
   };
@@ -542,9 +649,11 @@ export default function ChatWindow({
     setError("");
 
     try {
+      rememberScrollPosition(messageId);
       await chatApi.deleteMessage(messageId);
       await onMessagesChanged();
     } catch (err) {
+      cancelScrollRestore();
       setError(getErrorMessage(err, "Failed to delete message."));
     }
   };
@@ -553,9 +662,11 @@ export default function ChatWindow({
     setError("");
 
     try {
+      rememberScrollPosition(messageId);
       await chatApi.deleteMessageForEveryone(messageId);
       await onMessagesChanged();
     } catch (err) {
+      cancelScrollRestore();
       setError(getErrorMessage(err, "Failed to delete message for everyone."));
     }
   };
@@ -650,6 +761,7 @@ export default function ChatWindow({
   };
 
   const handleStartEdit = (message: ChatMessage) => {
+    rememberScrollPosition();
     setError("");
     setReplyTo(null);
     setIsComposerEmojiOpen(false);
@@ -659,6 +771,7 @@ export default function ChatWindow({
   };
 
   const handleCancelEdit = () => {
+    rememberScrollPosition();
     setEditingMessage(null);
     setContent("");
   };
@@ -887,6 +1000,14 @@ export default function ChatWindow({
             : "chat-messages chat-messages-preparing"
         }
         ref={messagesContainerRef}
+        onScroll={(event) => {
+          const container = event.currentTarget;
+          isNearBottomRef.current =
+            container.scrollHeight -
+              container.scrollTop -
+              container.clientHeight <
+            48;
+        }}
       >
         {isLoading ? (
           <EmptyState text="Loading messages..." />
