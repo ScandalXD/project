@@ -140,7 +140,7 @@ Otwórz w przeglądarce adres `http://localhost:5173`.
 
 Service worker, instalowanie aplikacji jako PWA oraz funkcje offline są aktywne
 dopiero w zbudowanej wersji produkcyjnej. Aby sprawdzić je lokalnie, wykonaj
-`npm run build`, a następnie `npm run preview`.
+`npm run build`, a następnie `npm run preview -- --port 5173`.
 
 ## Opcjonalny dostęp administratora
 
@@ -167,9 +167,24 @@ W osobnym terminalu:
 ```bash
 cd client
 npm run build
-npm run preview
+npm run preview -- --port 5173
 ```
 
-Polecenie `npm run preview` służy do lokalnej weryfikacji zbudowanego klienta.
-W docelowym środowisku pliki z katalogu `client/dist` należy opublikować na
-serwerze przeznaczonym do hostowania aplikacji internetowej.
+Otwórz w przeglądarce adres `http://localhost:5173`. Wskazanie portu `5173`
+pozwala korzystać z domyślnej konfiguracji CORS backendu podczas lokalnego
+sprawdzania zbudowanego klienta.
+
+Polecenie `npm run preview` służy wyłącznie do lokalnej weryfikacji. W docelowym
+środowisku pliki z katalogu `client/dist` należy opublikować na serwerze
+przeznaczonym do hostowania aplikacji internetowej. Przed utworzeniem takiej
+wersji ustaw publiczny adres API, na przykład w pliku `client/.env.local`:
+
+```env
+VITE_API_ORIGIN=https://api.twoja-domena.pl
+```
+
+W konfiguracji opublikowanego backendu dodaj natomiast adres frontendu:
+
+```env
+CLIENT_URLS=https://twoja-domena.pl
+```
