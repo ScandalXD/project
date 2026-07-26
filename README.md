@@ -49,7 +49,8 @@ urządzeniach mobilnych, a także obsługuje tryb Progressive Web App (PWA).
 
 ### Wymagania
 
-- Node.js i npm
+- Node.js `^20.19.0` lub `>=22.12.0`
+- npm
 - MySQL Server
 
 ### 1. Sklonowanie repozytorium
@@ -75,6 +76,12 @@ Następnie wykonaj:
 SOURCE C:/absolute/path/to/project/server/database/schema.sql;
 ```
 
+W systemach Linux i macOS użyj ścieżki w formacie:
+
+```sql
+SOURCE /absolute/path/to/project/server/database/schema.sql;
+```
+
 Zastąp podaną ścieżkę rzeczywistym położeniem sklonowanego projektu.
 
 ### 3. Konfiguracja serwera
@@ -93,7 +100,12 @@ JWT_SECRET=replace_with_a_long_random_secret
 ```
 
 Backend domyślnie akceptuje klienta uruchomionego pod adresem
-`http://localhost:5173`. Inny adres frontendu należy dodać do `CLIENT_URLS`.
+`http://localhost:5173`. Kilka dozwolonych adresów frontendu można podać w
+`CLIENT_URLS`, rozdzielając je przecinkami, na przykład:
+
+```env
+CLIENT_URLS=http://localhost:5173,http://192.168.1.10:5173
+```
 
 ### 4. Konfiguracja klienta
 
@@ -126,6 +138,10 @@ npm run dev
 
 Otwórz w przeglądarce adres `http://localhost:5173`.
 
+Service worker, instalowanie aplikacji jako PWA oraz funkcje offline są aktywne
+dopiero w zbudowanej wersji produkcyjnej. Aby sprawdzić je lokalnie, wykonaj
+`npm run build`, a następnie `npm run preview`.
+
 ## Opcjonalny dostęp administratora
 
 Nowe konta otrzymują rolę `user`. Aby przetestować panel administracyjny, zmień
@@ -138,7 +154,7 @@ UPDATE users SET role = 'superadmin' WHERE email = 'your@email.com';
 
 Po zmianie roli zaloguj się ponownie.
 
-## Wersja produkcyjna
+## Lokalne sprawdzenie wersji produkcyjnej
 
 ```bash
 cd server
@@ -153,3 +169,7 @@ cd client
 npm run build
 npm run preview
 ```
+
+Polecenie `npm run preview` służy do lokalnej weryfikacji zbudowanego klienta.
+W docelowym środowisku pliki z katalogu `client/dist` należy opublikować na
+serwerze przeznaczonym do hostowania aplikacji internetowej.
